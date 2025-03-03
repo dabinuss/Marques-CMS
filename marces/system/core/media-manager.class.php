@@ -113,8 +113,30 @@ class MediaManager {
      * @return array Informationen über die Verwendung des Mediums
      */
     public function findMediaUsage($filename) {
-        $mediaUrl = 'assets/media/' . $filename;
+        // Wir müssen sowohl mit als auch ohne Domain-Pfad suchen
+        $baseMediaUrl = 'assets/media/' . $filename;
         $usageInfo = [];
+        
+        // Protocol und Domain bestimmen für den absoluten Pfad
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $domain = $_SERVER['HTTP_HOST'];
+        
+        // Basis-URL für Suche ohne "admin"-Verzeichnis
+        $scriptPath = dirname($_SERVER['SCRIPT_NAME']); // z.B. /marces/admin
+        $baseUrlPath = dirname($scriptPath); // z.B. /marces
+        $baseUrlPath = $baseUrlPath === '/' ? '' : $baseUrlPath;
+        
+        // Absoluter Pfad mit Domain
+        $absoluteMediaUrl = $protocol . '://' . $domain . $baseUrlPath . '/' . $baseMediaUrl;
+        
+        // Mögliche URLs, die wir suchen müssen (relativ und absolut)
+        $searchUrls = [
+            $baseMediaUrl,
+            $absoluteMediaUrl,
+            // Auch Varianten mit Cache-Busting Parameter berücksichtigen
+            $baseMediaUrl . '?v=',
+            $absoluteMediaUrl . '?v='
+        ];
         
         // Durchsuche die content-Verzeichnisse nach Verweisen auf das Medium
         $contentDirs = [
@@ -124,13 +146,14 @@ class MediaManager {
         
         foreach ($contentDirs as $dir) {
             if (is_dir($dir)) {
-                $this->scanDirForMediaUsage($dir, $mediaUrl, $usageInfo);
+                foreach ($searchUrls as $searchUrl) {
+                    $this->scanDirForMediaUsage($dir, $searchUrl, $usageInfo);
+                }
             }
         }
         
         return $usageInfo;
     }
-    
     
     /**
      * Scannt ein Verzeichnis rekursiv nach Verwendungen eines Mediums
@@ -160,10 +183,21 @@ class MediaManager {
                     
                     // Prüfen, ob die Datei den Media-Link enthält
                     if (strpos($content, $mediaUrl) !== false) {
-                        $usageInfo[] = [
-                            'path' => $path,
-                            'title' => $file
-                        ];
+                        // Duplikate vermeiden (wenn derselbe Pfad bereits erfasst wurde)
+                        $isDuplicate = false;
+                        foreach ($usageInfo as $info) {
+                            if ($info['path'] === $path) {
+                                $isDuplicate = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!$isDuplicate) {
+                            $usageInfo[] = [
+                                'path' => $path,
+                                'title' => $file
+                            ];
+                        }
                     }
                 }
             }
@@ -179,17 +213,43 @@ class MediaManager {
      * @return bool Erfolgsstatus
      */
     public function cleanupMediaReferences($filename, $usageInfo) {
-        $mediaUrl = 'assets/media/' . $filename;
-        $mediaPattern = '/<img[^>]*src=["\']([^"\']*' . preg_quote($mediaUrl, '/') . ')[^"\']*["\'][^>]*>/i';
+        // Protocol und Domain bestimmen für den absoluten Pfad
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $domain = $_SERVER['HTTP_HOST'];
+        
+        // Basis-URL für Suche ohne "admin"-Verzeichnis
+        $scriptPath = dirname($_SERVER['SCRIPT_NAME']); // z.B. /marces/admin
+        $baseUrlPath = dirname($scriptPath); // z.B. /marces
+        $baseUrlPath = $baseUrlPath === '/' ? '' : $baseUrlPath;
+        
+        // Basis und absolute URL
+        $baseMediaUrl = 'assets/media/' . $filename;
+        $absoluteMediaUrl = $protocol . '://' . $domain . $baseUrlPath . '/' . $baseMediaUrl;
+        
+        // Muster für verschiedene Arten von URLs (mit und ohne Cache-Busting)
+        $patterns = [
+            // Relative URLs ohne Parameter
+            '/<img[^>]*src=["\']' . preg_quote($baseMediaUrl, '/') . '["\'][^>]*>/i',
+            // Relative URLs mit Cache-Busting
+            '/<img[^>]*src=["\']' . preg_quote($baseMediaUrl, '/') . '\?v=[0-9]+["\'][^>]*>/i',
+            // Absolute URLs ohne Parameter
+            '/<img[^>]*src=["\']' . preg_quote($absoluteMediaUrl, '/') . '["\'][^>]*>/i',
+            // Absolute URLs mit Cache-Busting
+            '/<img[^>]*src=["\']' . preg_quote($absoluteMediaUrl, '/') . '\?v=[0-9]+["\'][^>]*>/i'
+        ];
+        
         $broken_img_placeholder = '<span class="broken-image">[Bild nicht verfügbar]</span>';
         
         // Iteriere über alle gefundenen Dateien und ersetze die Medienreferenzen
         foreach ($usageInfo as $item) {
             $filePath = $item['path'];
             $content = file_get_contents($filePath);
+            $updatedContent = $content;
             
-            // Alle Bilder mit dem Quellpfad ersetzen
-            $updatedContent = preg_replace($mediaPattern, $broken_img_placeholder, $content);
+            // Alle Bildmuster-Varianten durchlaufen
+            foreach ($patterns as $pattern) {
+                $updatedContent = preg_replace($pattern, $broken_img_placeholder, $updatedContent);
+            }
             
             if ($updatedContent !== $content) {
                 // Nur schreiben, wenn es tatsächlich Änderungen gab

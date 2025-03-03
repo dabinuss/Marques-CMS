@@ -16,7 +16,9 @@ function initTinyMCE(selector) {
         selector: selector,
         height: 500,
         language: 'de',
-        menubar: true,
+        menubar: false, // Menüleiste deaktivieren
+        promotion: false, // Upgrade-Button entfernen
+        license_key: 'gpl', // GPL-Lizenz angeben
         
         // Diese Einstellungen sind für die Pfadauflösung entscheidend
         document_base_url: baseUrl,
@@ -28,7 +30,7 @@ function initTinyMCE(selector) {
             'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
             'searchreplace', 'visualblocks', 'code', 'fullscreen',
             'insertdatetime', 'media', 'table', 'help', 'wordcount',
-            'emoticons', 'hr', 'nonbreaking', 'quickbars'
+            'emoticons', 'nonbreaking', 'quickbars'
         ],
         toolbar: 'undo redo | formatselect styleselect | ' +
             'bold italic underline strikethrough forecolor backcolor | alignleft aligncenter ' +
@@ -40,7 +42,7 @@ function initTinyMCE(selector) {
         // Medien-Upload-Konfiguration
         images_upload_url: 'upload-handler.php',
         automatic_uploads: true,
-        images_reuse_filename: false,
+        images_reuse_filename: true,
         file_picker_types: 'image',
         
         // Eigener Media Browser
@@ -107,52 +109,108 @@ function initTinyMCE(selector) {
             ]}
         ],
         
-        // Bild-Upload-Callback für Fortschrittsanzeige usw.
-        images_upload_handler: function (blobInfo, success, failure) {
-            var xhr, formData;
-            
-            xhr = new XMLHttpRequest();
-            xhr.withCredentials = false;
-            xhr.open('POST', 'upload-handler.php');
-            
-            xhr.onload = function() {
-                var json;
+        // Überarbeiteter Bild-Upload-Handler mit Promise-Rückgabe
+        images_upload_handler: function (blobInfo, progress, failure) {
+            return new Promise(function(resolve, reject) {
+                // Überprüfen, ob das Bild bereits hochgeladen wurde (basierend auf blobUri)
+                var blobUri = blobInfo.blobUri();
+                var images = document.querySelectorAll('img[src^="blob:"]');
+                var imageExists = false;
+                var existingUrl = '';
                 
-                if (xhr.status != 200) {
-                    failure('HTTP-Fehler: ' + xhr.status);
+                // Nach Bildern suchen, die bereits hochgeladen wurden
+                for (var i = 0; i < images.length; i++) {
+                    var img = images[i];
+                    var imgSrc = img.getAttribute('src');
+                    var imgData = img.getAttribute('data-mce-uploaded');
+                    
+                    if (imgSrc === blobUri && imgData) {
+                        imageExists = true;
+                        existingUrl = imgData;
+                        break;
+                    }
+                }
+                
+                // Wenn das Bild bereits hochgeladen wurde, die bestehende URL verwenden
+                if (imageExists && existingUrl) {
+                    resolve(existingUrl);
                     return;
                 }
                 
-                try {
-                    json = JSON.parse(xhr.responseText);
-                } catch (e) {
-                    failure('Ungültige JSON-Antwort: ' + xhr.responseText);
-                    return;
+                var xhr, formData;
+                
+                xhr = new XMLHttpRequest();
+                xhr.withCredentials = false;
+                xhr.open('POST', 'upload-handler.php');
+                
+                if (progress) {
+                    xhr.upload.onprogress = function (e) {
+                        progress(e.loaded / e.total * 100);
+                    };
                 }
                 
-                if (!json || typeof json.location != 'string') {
-                    failure('Ungültige JSON-Antwort: ' + xhr.responseText);
-                    return;
-                }
+                xhr.onload = function() {
+                    var json;
+                    
+                    if (xhr.status < 200 || xhr.status >= 300) {
+                        reject('HTTP-Fehler: ' + xhr.status);
+                        return;
+                    }
+                    
+                    try {
+                        json = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                        reject('Ungültige JSON-Antwort: ' + xhr.responseText);
+                        return;
+                    }
+                    
+                    if (!json || typeof json.location != 'string') {
+                        reject('Ungültige JSON-Antwort: ' + xhr.responseText);
+                        return;
+                    }
+                    
+                    // Das hochgeladene Bild markieren
+                    var uploadedImages = document.querySelectorAll('img[src="' + blobUri + '"]');
+                    for (var i = 0; i < uploadedImages.length; i++) {
+                        uploadedImages[i].setAttribute('data-mce-uploaded', json.location);
+                    }
+                    
+                    resolve(json.location);
+                };
                 
-                success(json.location);
-            };
-            
-            xhr.onerror = function () {
-                failure('Bild-Upload fehlgeschlagen. Bitte versuchen Sie es später erneut.');
-            };
-            
-            formData = new FormData();
-            formData.append('file', blobInfo.blob(), blobInfo.filename());
-            
-            xhr.send(formData);
+                xhr.onerror = function () {
+                    reject('Bild-Upload fehlgeschlagen. Bitte versuchen Sie es später erneut.');
+                };
+                
+                formData = new FormData();
+                formData.append('file', blobInfo.blob(), blobInfo.filename());
+                
+                xhr.send(formData);
+            });
         },
         
         // Paste aus Word und anderen Quellen bereinigen
         paste_data_images: true,
         paste_as_text: false,
         
-        // Deutsche Sprachdatei - entferne diese Option, wenn keine Sprachdatei vorhanden ist
-        // language_url: 'assets/js/tinymce/langs/de.js'
+        // Setup-Funktion für zusätzliche Event-Handler
+        setup: function(editor) {
+            // Bilder nach dem Einfügen markieren, um doppelte Uploads zu vermeiden
+            editor.on('NodeChange', function(e) {
+                if (e.element.nodeName === 'IMG') {
+                    var img = e.element;
+                    var src = img.getAttribute('src');
+                    
+                    // Wenn es ein Blob-Bild ist, das bereits hochgeladen wurde, die src aktualisieren
+                    if (src && src.startsWith('blob:') && img.hasAttribute('data-mce-uploaded')) {
+                        var uploadedSrc = img.getAttribute('data-mce-uploaded');
+                        if (uploadedSrc) {
+                            img.setAttribute('src', uploadedSrc);
+                            img.removeAttribute('data-mce-src');
+                        }
+                    }
+                }
+            });
+        }
     });
 }

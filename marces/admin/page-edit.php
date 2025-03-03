@@ -108,7 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- TinyMCE einbinden -->
-    <script src="https://cdn.tiny.cloud/1/kde6p4uv99x4u39s6lbw4q767ejmg9p7hjyjy1yes5y7oa41/tinymce/5/tinymce.min.js" referrerpolicy="origin"></script>
     <script src="assets/js/tinymce/tinymce.min.js"></script>
     <script src="assets/js/tinymce-config.js"></script>
 </head>

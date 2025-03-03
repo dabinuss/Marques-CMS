@@ -58,17 +58,44 @@ if ($file['size'] > $maxFileSize) {
     returnError('Die Datei ist zu groß (max. 5 MB).');
 }
 
-// Sicheren Dateinamen generieren
-$filename = preg_replace('/[^a-zA-Z0-9_.-]/', '', basename($file['name']));
-$fileExt = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-$uniqueName = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '', pathinfo($filename, PATHINFO_FILENAME)) . '.' . $fileExt;
+// Prüfen, ob die Datei bereits existiert (basierend auf MD5-Hash)
+$fileHash = md5_file($file['tmp_name']);
+$existingFiles = glob($uploadDir . '/*');
+$fileExists = false;
+$existingFilename = '';
 
-// Vollständiger Pfad
-$filePath = $uploadDir . '/' . $uniqueName;
+foreach ($existingFiles as $existingFile) {
+    if (is_file($existingFile)) {
+        $existingHash = md5_file($existingFile);
+        if ($existingHash === $fileHash) {
+            $fileExists = true;
+            $existingFilename = basename($existingFile);
+            break;
+        }
+    }
+}
 
-// Datei verschieben
-if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-    returnError('Fehler beim Hochladen der Datei.');
+// Wenn die Datei bereits existiert, verwende die bestehende
+if ($fileExists) {
+    $uniqueName = $existingFilename;
+} else {
+    // Sicheren Dateinamen generieren
+    $filename = preg_replace('/[^a-zA-Z0-9_.-]/', '', basename($file['name']));
+    $fileExt = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    $safeBasename = preg_replace('/[^a-zA-Z0-9_-]/', '', pathinfo($filename, PATHINFO_FILENAME));
+    
+    // Stellen sicher, dass der Basisname nicht leer ist
+    if (empty($safeBasename)) {
+        $safeBasename = 'image';
+    }
+    
+    $uniqueName = uniqid() . '_' . $safeBasename . '.' . $fileExt;
+    $filePath = $uploadDir . '/' . $uniqueName;
+    
+    // Datei verschieben
+    if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+        returnError('Fehler beim Hochladen der Datei.');
+    }
 }
 
 // Absolute URL mit Domain zum Bild für TinyMCE erzeugen
