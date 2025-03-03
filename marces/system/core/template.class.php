@@ -34,7 +34,7 @@ class Template {
         // Template-Namen abrufen
         $templateName = $data['template'] ?? 'page';
         
-        // Sicherstellen, dass Template-Name nur gültige Zeichen enthält
+        // Prüfen und sicherstellen, dass vorhandene Dateien korrekt sind
         if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $templateName)) {
             throw new \Exception("Ungültiger Template-Name: " . htmlspecialchars($templateName));
         }
@@ -50,33 +50,41 @@ class Template {
         if (!file_exists($baseTemplateFile)) {
             throw new \Exception("Basis-Template nicht gefunden");
         }
-
-        // Konfiguration für Templates verfügbar machen
-        $config = $this->_config;
+    
+        // Systemeinstellungen holen und anpassen
+        $settings_manager = new \Marces\Core\SettingsManager();
+        $system_settings = $settings_manager->getAllSettings();
         
-        // Daten zu Variablen extrahieren für einfache Verwendung im Template
-        // Hinzufügen des Template-Namens
+        // Base URL korrigieren
+        if (defined('IS_ADMIN')) {
+            // Im Admin-Bereich
+            if (strpos($system_settings['base_url'], '/admin') === false) {
+                $system_settings['base_url'] = rtrim($system_settings['base_url'], '/') . '/admin';
+            }
+        } else {
+            // Im Frontend
+            if (strpos($system_settings['base_url'], '/admin') !== false) {
+                $system_settings['base_url'] = preg_replace('|/admin$|', '', $system_settings['base_url']);
+            }
+        }
+        
+        // Aktualisierte Systemeinstellungen zu den Daten hinzufügen
+        $data['system_settings'] = $system_settings;
+        
+        // Rest des Codes bleibt unverändert
         $data = array_merge(['templateName' => $templateName], $data);
         extract($data);
         
-        // Daten gefiltert extrahieren
         foreach ($data as $key => $value) {
-            // Erlaubte Variablen definieren
             if (in_array($key, ['title', 'content', 'description', 'templateName', 'path', 'featured_image', 'date_created', 'date_modified'])) {
                 ${$key} = $value;
             }
         }
         
-        // Konfiguration für Templates verfügbar machen
         $config = $this->_config;
         
-        // Output-Buffering starten
         ob_start();
-        
-        // Das Basis-Template einbinden, das das spezifische Template einbinden wird
         include $baseTemplateFile;
-        
-        // Output-Buffer ausgeben
         echo ob_get_clean();
     }
     
@@ -101,6 +109,26 @@ class Template {
     public function includePartial($partialName, $data = []) {
         // Konfiguration für Templates verfügbar machen
         $config = $this->_config;
+        
+        // Systemeinstellungen holen, falls sie nicht übergeben wurden
+        if (!isset($data['system_settings'])) {
+            $settings_manager = new \Marces\Core\SettingsManager();
+            $system_settings = $settings_manager->getAllSettings();
+            
+            // Base URL korrigieren (wie in render())
+            if (defined('IS_ADMIN')) {
+                if (strpos($system_settings['base_url'], '/admin') === false) {
+                    $system_settings['base_url'] = rtrim($system_settings['base_url'], '/') . '/admin';
+                }
+            } else {
+                if (strpos($system_settings['base_url'], '/admin') !== false) {
+                    $system_settings['base_url'] = preg_replace('|/admin$|', '', $system_settings['base_url']);
+                }
+            }
+            
+            // Systemeinstellungen zu den Daten hinzufügen
+            $data['system_settings'] = $system_settings;
+        }
         
         // Daten zu Variablen extrahieren für einfache Verwendung im Template
         extract($data);

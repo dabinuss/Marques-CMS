@@ -13,13 +13,24 @@ if (!defined('MARCES_ROOT_DIR')) {
     exit('Direkter Zugriff ist nicht erlaubt.');
 }
 
+// Bestimme die Basis-URL einmalig und korrekt
+$script_path = dirname($_SERVER['SCRIPT_NAME']);
+// Entferne /admin vom Pfad, falls vorhanden
+if (strpos($script_path, '/admin') !== false) {
+    $script_path = preg_replace('|/admin$|', '', $script_path);
+}
+
+$base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . 
+            '://' . $_SERVER['HTTP_HOST'] .
+            rtrim($script_path, '/');
+
 return [
     // Grundlegende Website-Informationen
     'site_name' => 'marces CMS',
     'site_description' => 'Ein leichtgewichtiges, dateibasiertes CMS',
-    'base_url' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . 
-                '://' . $_SERVER['HTTP_HOST'] .
-                rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'),
+    'site_logo' => '',
+    'site_favicon' => '',
+    'base_url' => $base_url, // Verwende die vorberechnete URL ohne /admin
     
     // Datums- und Zeiteinstellungen
     'timezone' => 'Europe/Berlin',

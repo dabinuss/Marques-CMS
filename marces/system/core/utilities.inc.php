@@ -16,13 +16,20 @@ if (!defined('MARCES_ROOT_DIR')) {
 /**
  * Lädt die Systemkonfiguration
  *
+ * @param bool $refresh Ob die Konfiguration neu geladen werden soll
  * @return array Systemkonfiguration
  */
-function marces_get_config() {
+function marces_get_config($refresh = false) {
     static $config = null;
     
-    if ($config === null) {
+    // Config neu laden, wenn angefordert
+    if ($refresh || $config === null) {
         $config = require MARCES_CONFIG_DIR . '/system.config.php';
+        
+        // Bei Bedarf base_url korrigieren
+        if (!defined('IS_ADMIN') && isset($config['base_url']) && strpos($config['base_url'], '/admin') !== false) {
+            $config['base_url'] = preg_replace('|/admin$|', '', $config['base_url']);
+        }
     }
     
     return $config;
@@ -38,6 +45,20 @@ function marces_site_url($path = '') {
     $config = marces_get_config();
     $baseUrl = rtrim($config['base_url'] ?? '', '/');
     
+    // Explizite Admin-URL-Erzeugung für Admin-Bereich
+    if (defined('IS_ADMIN')) {
+        // Stelle sicher, dass /admin am Ende der URL steht
+        if (strpos($baseUrl, '/admin') === false) {
+            $baseUrl .= '/admin';
+        }
+    } else {
+        // Im Frontend: Entferne /admin, falls vorhanden
+        if (strpos($baseUrl, '/admin') !== false) {
+            $baseUrl = preg_replace('|/admin$|', '', $baseUrl);
+        }
+    }
+    
+    // Pfad anfügen
     if (!empty($path)) {
         $path = '/' . ltrim($path, '/');
     }
@@ -52,7 +73,25 @@ function marces_site_url($path = '') {
  * @return string Die Asset-URL
  */
 function marces_asset_url($path) {
-    return marces_site_url('assets/' . ltrim($path, '/'));
+    $config = marces_get_config();
+    $baseUrl = rtrim($config['base_url'] ?? '', '/');
+    
+    // Entferne /admin aus der base_url für Frontend-Assets
+    if (strpos($baseUrl, '/admin') !== false && !defined('IS_ADMIN')) {
+        $baseUrl = preg_replace('|/admin$|', '', $baseUrl);
+    }
+    
+    // Verwende den richtigen Assets-Pfad je nach Kontext
+    if (defined('IS_ADMIN')) {
+        // Im Admin-Bereich: Stelle sicher, dass /admin im Pfad ist
+        if (strpos($baseUrl, '/admin') === false) {
+            $baseUrl .= '/admin';
+        }
+        return $baseUrl . '/assets/' . ltrim($path, '/');
+    } else {
+        // Im Frontend: Verwende den /assets/-Pfad
+        return $baseUrl . '/assets/' . ltrim($path, '/');
+    }
 }
 
 /**

@@ -1,23 +1,30 @@
 <!DOCTYPE html>
-<html lang="<?php echo $config['admin_language'] ?? 'de'; ?>">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo marces_escape_html($title ?? $config['site_name']); ?></title>
-    <meta name="description" content="<?php echo marces_escape_html($description ?? $config['site_description']); ?>">
+    <title><?php echo isset($title) ? htmlspecialchars($title) : htmlspecialchars($system_settings['site_name']); ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?php echo marces_asset_url('css/main-style.css'); ?>">
+    <?php if(isset($description) && !empty($description)): ?>
+    <meta name="description" content="<?php echo htmlspecialchars($description); ?>">
+    <?php endif; ?>
 </head>
-<body class="marces-body">
-    <div class="marces-container">
-        <?php $this->includePartial('header'); ?>
-        
-        <main class="marces-content">
-            <?php include MARCES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php'; ?>
-        </main>
-        
-        <?php $this->includePartial('footer'); ?>
-    </div>
+<body>
+    <?php if(isset($this) && method_exists($this, 'includePartial')): ?>
+    <?php $this->includePartial('header'); ?>
+    <?php endif; ?>
     
-    <script src="<?php echo marces_asset_url('js/main.js'); ?>"></script>
+    <main class="marces-content">
+        <div class="marces-container">
+            <?php include MARCES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php'; ?>
+        </div>
+    </main>
+    
+    <?php if(isset($this) && method_exists($this, 'includePartial')): ?>
+    <?php $this->includePartial('footer'); ?>
+    <?php endif; ?>
 </body>
 </html>
