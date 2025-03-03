@@ -50,9 +50,15 @@ class Application {
             if ($settings->getSetting('cache_enabled', false)) {
                 // Cache-Logik implementieren
             }
-
+    
             // Anfrage durch den Router verarbeiten
             $route = $this->_router->processRequest();
+            
+            // WICHTIG: Route als globale Variable setzen
+            $GLOBALS['route'] = $route;
+            
+            // Debug-Ausgabe für Fehlersuche
+            error_log("Globale Route gesetzt: " . print_r($GLOBALS['route'], true));
             
             // Inhalt basierend auf der Route abrufen
             $content = new Content();

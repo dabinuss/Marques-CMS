@@ -42,7 +42,7 @@ $categories = $blogManager->getCategories();
                 <article class="blog-post-summary">
                     <header>
                         <h2 class="post-title">
-                            <a href="<?php echo marces_site_url('blog/' . $post['date'] . '/' . $post['slug']); ?>">
+                            <a href="<?php echo marces_format_blog_url($post); ?>">
                                 <?php echo htmlspecialchars($post['title']); ?>
                             </a>
                         </h2>
@@ -68,7 +68,7 @@ $categories = $blogManager->getCategories();
                     
                     <?php if (!empty($post['featured_image'])): ?>
                         <div class="post-featured-image">
-                            <a href="<?php echo marces_site_url('blog/' . $post['date'] . '/' . $post['slug']); ?>">
+                            <a href="<?php echo marces_format_blog_url($post); ?>">
                                 <img src="<?php echo marces_site_url($post['featured_image']); ?>" alt="<?php echo htmlspecialchars($post['title']); ?>">
                             </a>
                         </div>
@@ -79,7 +79,7 @@ $categories = $blogManager->getCategories();
                     </div>
                     
                     <div class="post-read-more">
-                        <a href="<?php echo marces_site_url('blog/' . $post['date'] . '/' . $post['slug']); ?>" class="read-more-link">
+                        <a href="<?php echo marces_format_blog_url($post); ?>" class="read-more-link">
                             Weiterlesen
                         </a>
                     </div>

@@ -295,6 +295,33 @@ $time_formats = [
                                 <input type="number" id="excerpt_length" name="excerpt_length" min="50" max="500" value="<?php echo (int)($current_settings['excerpt_length'] ?? 150); ?>">
                                 <p class="form-hint">Maximale Anzahl an Zeichen für Artikelauszüge.</p>
                             </div>
+
+                            <div class="form-group">
+                                <label for="blog_url_format">URL-Format:</label>
+                                <select name="blog_url_format" id="blog_url_format" class="form-control">
+                                    <option value="date_slash" <?php echo ($config['blog_url_format'] ?? '') === 'date_slash' ? 'selected' : ''; ?>>
+                                        Standard (blog/YYYY/MM/DD/slug) - z.B. blog/2025/03/15/mein-beitrag
+                                    </option>
+                                    <option value="date_dash" <?php echo ($config['blog_url_format'] ?? '') === 'date_dash' ? 'selected' : ''; ?>>
+                                        Datum mit Bindestrich (blog/YYYY-MM-DD/slug) - z.B. blog/2025-03-15/mein-beitrag
+                                    </option>
+                                    <option value="year_month" <?php echo ($config['blog_url_format'] ?? '') === 'year_month' ? 'selected' : ''; ?>>
+                                        Jahr/Monat (blog/YYYY/MM/slug) - z.B. blog/2025/03/mein-beitrag
+                                    </option>
+                                    <option value="numeric" <?php echo ($config['blog_url_format'] ?? '') === 'numeric' ? 'selected' : ''; ?>>
+                                        ID-basiert (blog/ID) - z.B. blog/123
+                                    </option>
+                                    <option value="post_name" <?php echo ($config['blog_url_format'] ?? '') === 'post_name' ? 'selected' : ''; ?>>
+                                        Nur Slug (blog/slug) - z.B. blog/mein-beitrag
+                                    </option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <p class="text-warning">
+                                    <strong>Wichtig:</strong> Das Ändern dieses Formats kann dazu führen, dass bestehende Links auf Ihre Blog-Beiträge nicht mehr funktionieren. Stellen Sie sicher, dass Sie Redirects einrichten, wenn Sie dieses Format für eine bestehende Website ändern.
+                                </p>
+                            </div>
                             
                             <div class="form-group">
                                 <label class="checkbox-label">

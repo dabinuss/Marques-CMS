@@ -167,3 +167,57 @@ function marces_debug($var, $die = false) {
         }
     }
 }
+
+/**
+ * Generiert eine formatierte Blog-URL basierend auf den Systemeinstellungen
+ *
+ * @param array $post Blog-Post-Daten
+ * @return string Die formatierte Blog-URL
+ */
+function marces_format_blog_url($post) {
+    // Konfiguration laden
+    $config = require MARCES_CONFIG_DIR . '/system.config.php';
+    $format = $config['blog_url_format'] ?? 'date_slash';
+    
+    // Datum und Slug extrahieren
+    $dateParts = explode('-', $post['date']);
+    if (count($dateParts) !== 3) {
+        // Fallback wenn Datum ungültig ist
+        return marces_site_url('blog/' . $post['slug']);
+    }
+    
+    $year = $dateParts[0];
+    $month = $dateParts[1];
+    $day = $dateParts[2];
+    $slug = $post['slug'];
+    
+    // URL basierend auf Format generieren
+    switch ($format) {
+        case 'date_slash':
+            // Format: blog/YYYY/MM/DD/slug
+            return marces_site_url("blog/{$year}/{$month}/{$day}/{$slug}");
+            
+        case 'date_dash':
+            // Format: blog/YYYY-MM-DD/slug
+            return marces_site_url("blog/{$year}-{$month}-{$day}/{$slug}");
+            
+        case 'year_month':
+            // Format: blog/YYYY/MM/slug
+            return marces_site_url("blog/{$year}/{$month}/{$slug}");
+            
+        case 'numeric':
+            // Format: blog/ID (falls ID vorhanden, sonst Fallback)
+            if (isset($post['id']) && !empty($post['id'])) {
+                return marces_site_url("blog/{$post['id']}");
+            }
+            return marces_site_url("blog/{$year}{$month}{$day}-{$slug}");
+            
+        case 'post_name':
+            // Format: blog/slug
+            return marces_site_url("blog/{$slug}");
+            
+        default:
+            // Standard-Format
+            return marces_site_url("blog/{$year}/{$month}/{$day}/{$slug}");
+    }
+}

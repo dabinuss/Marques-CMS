@@ -34,9 +34,17 @@ class Content {
             return $this->_cache[$path];
         }
         
+        // Route-Parameter aus globaler Variable holen
+        $params = isset($GLOBALS['route']['params']) ? $GLOBALS['route']['params'] : [];
+        
+        // Debug-Ausgabe für Fehlersuche
+        error_log("getPage aufgerufen mit path: " . $path);
+        error_log("Route-Parameter: " . print_r($params, true));
+        
         // Bestimmen, ob es sich um einen Blog-Beitrag oder eine spezielle Blog-Seite handelt
         if ($path === 'blog') {
-            return $this->getBlogPost($path);
+            // Parameter explizit übergeben
+            return $this->getBlogPost($path, $params);
         } elseif ($path === 'blog-index' || $path === 'blog-category' || $path === 'blog-archive') {
             return $this->getBlogList($path);
         }
@@ -91,39 +99,92 @@ class Content {
     private function getBlogPost($path, $params = []) {
         // Blog-Manager initialisieren
         $blogManager = new BlogManager();
+        $config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $blogUrlFormat = $config['blog_url_format'] ?? 'date_slash';
+        
+        // Debug-Ausgabe für Fehlersuche
+        error_log("getBlogPost() aufgerufen mit path: " . $path);
+        error_log("Parameter: " . print_r($params, true));
         
         // Wenn es sich um einen einzelnen Blog-Beitrag handelt
-        if ($path === 'blog' && isset($GLOBALS['route']['params'])) {
-            $params = $GLOBALS['route']['params'];
+        if ($path === 'blog') {
+            // Parameter direkt verwenden, nicht von globalen Variablen abhängig
+            $post = null;
             
-            if (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
-                // Blog-Post-ID erstellen (YYYY-MM-DD-slug)
-                $postId = $params['year'] . '-' . $params['month'] . '-' . $params['day'] . '-' . $params['slug'];
-                
-                // Blog-Beitrag abrufen
-                $post = $blogManager->getPost($postId);
-                
-                if (!$post) {
-                    throw new NotFoundException("Blog-Beitrag nicht gefunden: " . $postId);
-                }
-                
-                // Daten für Template vorbereiten
-                $pageData = [
-                    'title' => $post['title'],
-                    'content' => $post['content'],
-                    'description' => $post['excerpt'],
-                    'date_created' => $post['date_created'],
-                    'date_modified' => $post['date_modified'],
-                    'template' => 'blog-post',
-                    'path' => $path,
-                    'params' => $params,
-                    'post' => $post
-                ];
-                
-                return $pageData;
+            // Je nach URL-Format unterschiedliche Logik anwenden
+            switch ($blogUrlFormat) {
+                case 'date_slash':
+                case 'date_dash':
+                    if (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
+                        // Blog-Post-ID erstellen (YYYY-MM-DD-slug)
+                        $postId = $params['year'] . '-' . $params['month'] . '-' . $params['day'] . '-' . $params['slug'];
+                        error_log("Suche nach Blog-Post mit ID: " . $postId);
+                        $post = $blogManager->getPost($postId);
+                    }
+                    break;
+                    
+                case 'year_month':
+                    if (isset($params['year'], $params['month'], $params['slug'])) {
+                        // Suche nach dem ersten Post mit passendem Jahr, Monat und Slug
+                        $pattern = $params['year'] . '-' . $params['month'] . '-*-' . $params['slug'];
+                        error_log("Suche nach Blog-Post mit Pattern: " . $pattern);
+                        $post = $blogManager->getPostByPattern($pattern);
+                    }
+                    break;
+                    
+                case 'numeric':
+                    if (isset($params['id'])) {
+                        // Suche nach Post mit übereinstimmender ID
+                        error_log("Suche nach Blog-Post mit ID: " . $params['id']);
+                        $post = $blogManager->getPostById($params['id']);
+                    } elseif (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
+                        $postId = $params['year'] . '-' . $params['month'] . '-' . $params['day'] . '-' . $params['slug'];
+                        error_log("Suche nach Blog-Post mit ID: " . $postId);
+                        $post = $blogManager->getPost($postId);
+                    }
+                    break;
+                    
+                case 'post_name':
+                    if (isset($params['slug'])) {
+                        // Suche nach Post mit übereinstimmendem Slug
+                        error_log("Suche nach Blog-Post mit Slug: " . $params['slug']);
+                        $post = $blogManager->getPostBySlug($params['slug']);
+                    }
+                    break;
+                    
+                default:
+                    // Standard: date_slash Format
+                    if (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
+                        $postId = $params['year'] . '-' . $params['month'] . '-' . $params['day'] . '-' . $params['slug'];
+                        error_log("Suche nach Blog-Post mit ID: " . $postId);
+                        $post = $blogManager->getPost($postId);
+                    }
             }
+            
+            if (!$post) {
+                error_log("Blog-Post nicht gefunden! Parameter: " . print_r($params, true));
+                throw new NotFoundException("Blog-Beitrag nicht gefunden");
+            }
+            
+            error_log("Blog-Post gefunden: " . print_r($post['title'], true));
+            
+            // Daten für Template vorbereiten
+            $pageData = [
+                'title' => $post['title'],
+                'content' => $post['content'],
+                'description' => $post['excerpt'] ?? '',
+                'date_created' => $post['date_created'] ?? $post['date'] ?? '',
+                'date_modified' => $post['date_modified'] ?? $post['date'] ?? '',
+                'template' => 'blog-post',
+                'path' => $path,
+                'params' => $params,
+                'post' => $post
+            ];
+            
+            return $pageData;
         }
         
+        error_log("Ungültiger Blog-Pfad: " . $path . ", Parameter: " . print_r($params, true));
         throw new NotFoundException("Ungültiger Blog-Pfad");
     }
 

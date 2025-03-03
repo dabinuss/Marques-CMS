@@ -422,4 +422,76 @@ class BlogManager {
         
         return $text;
     }
+
+    /**
+     * Prüft, ob ein Blog-Beitrag mit der angegebenen ID existiert
+     *
+     * @param int $id Die Beitrags-ID
+     * @return bool True, wenn der Beitrag existiert
+     */
+    public function postExistsById($id) {
+        // Implementiere Logik, um Blog-Posts durch ID zu finden
+        // Dies könnte eine Datei mit Metadaten sein oder eine Datenbank-Abfrage
+        
+        // Einfache Implementierung: Suche alle Posts und prüfe auf ID
+        $posts = $this->getAllPosts();
+        foreach ($posts as $post) {
+            if (isset($post['id']) && $post['id'] == $id) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Holt einen Blog-Beitrag anhand seiner ID
+     *
+     * @param int $id Die Beitrags-ID
+     * @return array|null Der Blog-Beitrag oder null, wenn nicht gefunden
+     */
+    public function getPostById($id) {
+        $posts = $this->getAllPosts();
+        foreach ($posts as $post) {
+            if (isset($post['id']) && $post['id'] == $id) {
+                return $post;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Holt einen Blog-Beitrag anhand eines Dateimuster-Patterns
+     *
+     * @param string $pattern Das Dateimuster (z.B. "2023-03-*-slug")
+     * @return array|null Der Blog-Beitrag oder null, wenn nicht gefunden
+     */
+    public function getPostByPattern($pattern) {
+        $files = glob(MARCES_CONTENT_DIR . '/blog/' . $pattern . '.md');
+        if (!empty($files)) {
+            // Ersten gefundenen Post verwenden
+            $fileInfo = pathinfo($files[0]);
+            $postId = $fileInfo['filename']; // Ohne .md-Erweiterung
+            return $this->getPost($postId);
+        }
+        return null;
+    }
+
+    /**
+     * Holt einen Blog-Beitrag anhand seines Slugs
+     *
+     * @param string $slug Der Blog-Post-Slug
+     * @return array|null Der Blog-Beitrag oder null, wenn nicht gefunden
+     */
+    public function getPostBySlug($slug) {
+        $files = glob(MARCES_CONTENT_DIR . '/blog/*-' . $slug . '.md');
+        if (!empty($files)) {
+            // Ersten gefundenen Post verwenden
+            $fileInfo = pathinfo($files[0]);
+            $postId = $fileInfo['filename']; // Ohne .md-Erweiterung
+            return $this->getPost($postId);
+        }
+        return null;
+    }
 }

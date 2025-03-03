@@ -40,6 +40,7 @@ return [
     // Inhaltseinstellungen
     'posts_per_page' => 10,
     'excerpt_length' => 150,
+    'blog_url_format' => 'date_slash', // Mögliche Werte: date_slash, date_dash, year_month, numeric, post_name
     
     // Systemeinstellungen
     'debug' => true, // Im Produktiveinsatz auf false setzen
