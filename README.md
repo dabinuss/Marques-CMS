@@ -83,11 +83,10 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 2**       | Medienverwaltung: Medien-Upload                                    | ✅ Fertig         |
 | **Phase 2**       | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig         |
 | **Phase 2**       | Medienverwaltung: Integration in den Editor                        | ✅ Fertig         |
-| **Phase 3**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | ❌ Noch nicht     |
+| **Phase 3**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | 🔄 In Bearbeitung     |
 | **Phase 3**       | Caching-System                                                     | ❌ Noch nicht     |
 | **Phase 3**       | SEO-Funktionen                                                     | ❌ Noch nicht     |
 | **Phase 3**       | Benutzerrollen und -berechtigungen                                 | ❌ Noch nicht     |
-| **Phase 3**       | Erweiterbarkeit/Plugins                                             | ❌ Noch nicht     |
 | **Phase 3**       | Leistungsoptimierung                                               | ❌ Noch nicht     |
 
 ## Mitmachen und Feedback
