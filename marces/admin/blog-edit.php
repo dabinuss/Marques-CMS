@@ -55,6 +55,10 @@ $post = [
 
 // Überprüfen, ob es sich um die Bearbeitung eines bestehenden Beitrags handelt
 $editing = false;
+
+// Stelle sicher, dass die Katalogdateien existieren
+$blogManager->initCatalogFiles();
+
 if (isset($_GET['id']) && !empty($_GET['id'])) {
     $post_id = $_GET['id'];
     $existing_post = $blogManager->getPost($post_id);
@@ -114,6 +118,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Nach der POST-Verarbeitung der Kategorien und Tags, etwa Zeile 95
+if (!empty($post['categories'])) {
+    foreach ($post['categories'] as $category) {
+        if (!empty($category)) {
+            // Kategorie zum Katalog hinzufügen
+            $blogManager->addCategory($category);
+        }
+    }
+}
+
+if (!empty($post['tags'])) {
+    foreach ($post['tags'] as $tag) {
+        if (!empty($tag)) {
+            // Tag zum Katalog hinzufügen
+            $blogManager->addTag($tag);
+        }
+    }
+}
+
 // Erfolgsmeldung von Weiterleitung anzeigen
 if (isset($_GET['saved']) && $_GET['saved'] === '1') {
     $success_message = 'Beitrag erfolgreich gespeichert.';
@@ -123,16 +146,8 @@ if (isset($_GET['saved']) && $_GET['saved'] === '1') {
 $all_categories = $blogManager->getCategories();
 $categories_json = json_encode(array_keys($all_categories));
 
-$all_posts = $blogManager->getAllPosts();
-$all_tags = [];
-foreach ($all_posts as $p) {
-    foreach ($p['tags'] as $tag) {
-        if (!empty($tag) && !in_array($tag, $all_tags)) {
-            $all_tags[] = $tag;
-        }
-    }
-}
-$tags_json = json_encode($all_tags);
+$all_tags = $blogManager->getTags();
+$tags_json = json_encode(array_keys($all_tags));
 
 ?>
 <!DOCTYPE html>
@@ -374,19 +389,38 @@ $tags_json = json_encode($all_tags);
                     slugInput.value = slug;
                 }
             });
-            
+
             // Kategorie- und Tag-System
             const categories = <?php echo $categories_json; ?>;
             const tags = <?php echo $tags_json; ?>;
-            
+
             setupTagSystem('category', categories);
             setupTagSystem('tag', tags);
-            
+
             function setupTagSystem(type, suggestions) {
                 const container = document.getElementById(type + 'Container');
                 const input = document.getElementById(type + 'Input');
-                const hiddenInput = document.getElementById(type + 's'); // categories oder tags
+
+                // Spezielle Behandlung für "category" (wird zu "categories")
+                const hiddenInputId = type === 'category' ? 'categories' : type + 's';
+                const hiddenInput = document.getElementById(hiddenInputId);
+                console.log(`${type} - Hidden-Input-ID:`, hiddenInputId);
+
                 const suggestionBox = document.getElementById(type + 'Suggestions');
+                
+                // Debugging: Prüfen, ob Elemente vorhanden sind
+                console.log(`${type} Setup - Elemente gefunden:`, {
+                    container: !!container,
+                    input: !!input,
+                    hiddenInput: !!hiddenInput,
+                    suggestionBox: !!suggestionBox
+                });
+                
+                // Überprüfen, ob alle Elemente existieren
+                if (!container || !input || !hiddenInput || !suggestionBox) {
+                    console.error(`Ein Element für das ${type}-System fehlt!`);
+                    return; // Abbrechen, wenn ein Element fehlt
+                }
                 
                 // Event-Listener für Entfernen von Tags
                 container.addEventListener('click', function(e) {
@@ -394,6 +428,7 @@ $tags_json = json_encode($all_tags);
                         const value = e.target.dataset.value;
                         e.target.parentElement.remove();
                         updateHiddenInput();
+                        console.log(`${type} entfernt:`, value);
                     }
                 });
                 
@@ -401,8 +436,22 @@ $tags_json = json_encode($all_tags);
                 input.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ',') {
                         e.preventDefault();
-                        addTag(input.value.trim());
+                        const value = input.value.trim();
+                        if (value) {
+                            addTag(value);
+                            console.log(`${type} hinzugefügt:`, value);
+                        }
                     }
+                });
+
+                // Füge zusätzlich einen blur-Event-Listener hinzu, der auch einen Tag/Kategorie hinzufügt:
+                input.addEventListener('blur', function() {
+                    const value = input.value.trim();
+                    if (value) {
+                        addTag(value);
+                        console.log(`${type} beim Verlassen des Feldes hinzugefügt:`, value);
+                    }
+                    suggestionBox.style.display = 'none';
                 });
                 
                 // Fokus- und Blur-Ereignisse
@@ -424,10 +473,17 @@ $tags_json = json_encode($all_tags);
                 function showSuggestions() {
                     const inputVal = input.value.trim().toLowerCase();
                     
+                    // Debugging
+                    console.log(`${type} Suggestions - Eingabe:`, inputVal);
+                    console.log(`${type} Suggestions - Verfügbare Werte:`, suggestions);
+                    
                     // Vorschläge filtern
                     const filtered = suggestions.filter(item => {
-                        return item.toLowerCase().includes(inputVal) && !getValues().includes(item);
+                        const itemLower = (typeof item === 'string') ? item.toLowerCase() : '';
+                        return itemLower.includes(inputVal) && !getValues().includes(item);
                     });
+                    
+                    console.log(`${type} Suggestions - Gefilterte Werte:`, filtered);
                     
                     // Vorschlagbox aktualisieren
                     suggestionBox.innerHTML = '';
@@ -439,6 +495,7 @@ $tags_json = json_encode($all_tags);
                             div.textContent = item;
                             div.addEventListener('click', function() {
                                 addTag(item);
+                                console.log(`${type} aus Vorschlag ausgewählt:`, item);
                             });
                             suggestionBox.appendChild(div);
                         });
@@ -458,6 +515,7 @@ $tags_json = json_encode($all_tags);
                 function addTag(value) {
                     value = value.trim();
                     if (value && !getValues().includes(value)) {
+                        console.log(`${type} - Füge hinzu:`, value);
                         const tag = document.createElement('div');
                         tag.className = 'tag';
                         tag.innerHTML = `${value}<span class="tag-remove" data-value="${value}">×</span>`;
@@ -470,18 +528,31 @@ $tags_json = json_encode($all_tags);
                 
                 // Aktuelle Tags/Kategorien erhalten
                 function getValues() {
-                    const tags = container.querySelectorAll('.tag');
-                    return Array.from(tags).map(tag => {
-                        return tag.textContent.slice(0, -1); // "×" entfernen
+                    const tagElements = container.querySelectorAll('.tag');
+                    const values = Array.from(tagElements).map(tag => {
+                        // Nimm nur den Textinhalt ohne das "×"
+                        const text = tag.textContent || '';
+                        return text.replace(/×$/, '').trim();
                     });
+                    console.log(`${type} - Aktuelle Werte:`, values);
+                    return values;
                 }
                 
                 // Hidden-Input aktualisieren
                 function updateHiddenInput() {
-                    hiddenInput.value = getValues().join(',');
+                    const values = getValues();
+                    if (hiddenInput) {
+                        hiddenInput.value = values.join(',');
+                        console.log(`${type} - Hidden-Input aktualisiert:`, hiddenInput.value);
+                    } else {
+                        console.error(`${type} - Hidden-Input nicht gefunden!`);
+                    }
                 }
             }
+
         });
+
     </script>
+    
 </body>
 </html>

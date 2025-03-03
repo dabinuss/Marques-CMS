@@ -92,6 +92,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 3**       | Benutzerrollen und -berechtigungen                                 | 🔄 In Bearbeitung     |
 | **Phase 4**       | Große Fehlersuche und Korrektur                                    | ❌ Noch nicht     |
 | **Phase 4**       | Leistungsoptimierung                                               | ❌ Noch nicht     |
+| **Abschluss V. 1.0**       | Potenzielles Installationsscript                                               | ❌ Noch nicht     |
 
 ## Mitmachen und Feedback
 

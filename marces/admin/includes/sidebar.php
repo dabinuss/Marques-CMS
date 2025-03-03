@@ -31,6 +31,12 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
                     <span class="admin-menu-icon"><i class="fas fa-blog"></i></span>
                     Blog
                 </a>
+                <ul class="admin-submenu">
+                    <li><a href="blog.php" class="admin-submenu-link <?php echo $current_page === 'blog.php' ? 'active' : ''; ?>">Alle Beiträge</a></li>
+                    <li><a href="blog-edit.php" class="admin-submenu-link <?php echo $current_page === 'blog-edit.php' ? 'active' : ''; ?>">Neuer Beitrag</a></li>
+                    <li><a href="blog-categories.php" class="admin-submenu-link <?php echo $current_page === 'blog-categories.php' ? 'active' : ''; ?>">Kategorien</a></li>
+                    <li><a href="blog-tags.php" class="admin-submenu-link <?php echo $current_page === 'blog-tags.php' ? 'active' : ''; ?>">Tags</a></li>
+                </ul>
             </li>
             <li class="admin-menu-item">
                 <a href="media.php" class="admin-menu-link <?php echo $current_page === 'media.php' ? 'active' : ''; ?>">

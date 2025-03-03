@@ -251,7 +251,19 @@ class BlogManager {
         }
         
         // Inhalt zusammensetzen
-        $content = "---\n" . $yamlContent . "---\n\n" . $postData['content'];
+        $content = "---\n" . $yamlContent . "---\n\n";
+        // Füge den Content nur hinzu, wenn er existiert
+        if (isset($postData['content'])) {
+            $content .= $postData['content'];
+        } else {
+            // Wenn kein neuer Inhalt vorhanden ist, den alten beibehalten
+            if ($isUpdate && file_exists($oldFile)) {
+                $existingPost = $this->getPost($postData['id']);
+                if (isset($existingPost['content'])) {
+                    $content .= $existingPost['content'];
+                }
+            }
+        }
         
         // Datei speichern
         if (file_put_contents($file, $content) === false) {
@@ -295,9 +307,24 @@ class BlogManager {
      * @return array Kategorien mit Anzahl der Beiträge
      */
     public function getCategories() {
+        // Kategoriekatalog laden
+        $catalogFile = MARCES_CONFIG_DIR . '/categories.json';
+        $catalogCategories = [];
+        
+        if (file_exists($catalogFile)) {
+            $catalogCategories = json_decode(file_get_contents($catalogFile), true) ?: [];
+        }
+        
+        // Kategorien aus Posts zählen
         $posts = $this->getAllPosts();
         $categories = [];
         
+        // Erst alle Kategorien aus dem Katalog initialisieren
+        foreach ($catalogCategories as $categoryName) {
+            $categories[$categoryName] = 0;
+        }
+        
+        // Dann die Zählung aus den Blog-Posts durchführen
         foreach ($posts as $post) {
             foreach ($post['categories'] as $category) {
                 $category = trim($category);
@@ -322,9 +349,24 @@ class BlogManager {
      * @return array Tags mit Anzahl der Beiträge
      */
     public function getTags() {
+        // Tag-Katalog laden
+        $catalogFile = MARCES_CONFIG_DIR . '/tags.json';
+        $catalogTags = [];
+        
+        if (file_exists($catalogFile)) {
+            $catalogTags = json_decode(file_get_contents($catalogFile), true) ?: [];
+        }
+        
+        // Tags aus Posts zählen
         $posts = $this->getAllPosts();
         $tags = [];
         
+        // Erst alle Tags aus dem Katalog initialisieren
+        foreach ($catalogTags as $tagName) {
+            $tags[$tagName] = 0;
+        }
+        
+        // Dann die Zählung aus den Blog-Posts durchführen
         foreach ($posts as $post) {
             foreach ($post['tags'] as $tag) {
                 $tag = trim($tag);
@@ -493,5 +535,311 @@ class BlogManager {
             return $this->getPost($postId);
         }
         return null;
+    }
+
+    /**
+     * Fügt eine neue Kategorie hinzu
+     * 
+     * @param string $categoryName Name der Kategorie
+     * @return bool Erfolg
+     */
+    public function addCategory($categoryName) {
+        // Kategoriedatei laden
+        $catalogFile = MARCES_CONFIG_DIR . '/categories.json';
+        $categories = [];
+        
+        if (file_exists($catalogFile)) {
+            $categories = json_decode(file_get_contents($catalogFile), true) ?: [];
+        }
+        
+        // Prüfen, ob Kategorie bereits existiert
+        if (in_array($categoryName, $categories)) {
+            return false;
+        }
+        
+        // Kategorie hinzufügen
+        $categories[] = $categoryName;
+        
+        // Speichern
+        if (file_put_contents($catalogFile, json_encode($categories, JSON_PRETTY_PRINT)) === false) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Benennt eine Kategorie um
+     * 
+     * @param string $oldName Alter Kategoriename
+     * @param string $newName Neuer Kategoriename
+     * @return bool Erfolg
+     */
+    public function renameCategory($oldName, $newName) {
+        if ($oldName === $newName) {
+            return true; // Nichts zu tun
+        }
+        
+        // Kategoriedatei laden
+        $catalogFile = MARCES_CONFIG_DIR . '/categories.json';
+        $categories = [];
+        
+        if (file_exists($catalogFile)) {
+            $categories = json_decode(file_get_contents($catalogFile), true) ?: [];
+        }
+        
+        // Prüfen, ob alte Kategorie existiert
+        $oldIndex = array_search($oldName, $categories);
+        if ($oldIndex === false) {
+            return false;
+        }
+        
+        // Prüfen, ob neue Kategorie bereits existiert
+        if (in_array($newName, $categories)) {
+            return false;
+        }
+        
+        // Kategorie umbenennen
+        $categories[$oldIndex] = $newName;
+        
+        // Speichern
+        if (file_put_contents($catalogFile, json_encode($categories, JSON_PRETTY_PRINT)) === false) {
+            return false;
+        }
+        
+        // Alle Beiträge laden und Kategorie umbenennen
+        $posts = $this->getAllPosts();
+        
+        foreach ($posts as $post) {
+            $postCategories = $post['categories'];
+            $index = array_search($oldName, $postCategories);
+            
+            if ($index !== false) {
+                // Kategorie im Post aktualisieren
+                $postCategories[$index] = $newName;
+                
+                // Post mit neuen Kategorien speichern
+                $post['categories'] = $postCategories;
+                // Sicherstellen, dass wir den vollständigen Post haben, bevor wir speichern
+                $fullPost = $this->getPost($post['id']);
+                if ($fullPost) {
+                    // Nur die Kategorien aktualisieren
+                    $fullPost['categories'] = $postCategories;
+                    $this->savePost($fullPost);
+                }
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Löscht eine Kategorie
+     * 
+     * @param string $categoryName Name der zu löschenden Kategorie
+     * @return bool Erfolg
+     */
+    public function deleteCategory($categoryName) {
+        // Kategoriedatei laden
+        $catalogFile = MARCES_CONFIG_DIR . '/categories.json';
+        $categories = [];
+        
+        if (file_exists($catalogFile)) {
+            $categories = json_decode(file_get_contents($catalogFile), true) ?: [];
+        }
+        
+        // Prüfen, ob Kategorie existiert
+        $index = array_search($categoryName, $categories);
+        if ($index === false) {
+            return false;
+        }
+        
+        // Kategorie entfernen
+        unset($categories[$index]);
+        $categories = array_values($categories); // Indizes neu anordnen
+        
+        // Speichern
+        if (file_put_contents($catalogFile, json_encode($categories, JSON_PRETTY_PRINT)) === false) {
+            return false;
+        }
+        
+        // Alle Beiträge laden und Kategorie entfernen
+        $posts = $this->getAllPosts();
+        
+        foreach ($posts as $post) {
+            $postCategories = $post['categories'];
+            $index = array_search($categoryName, $postCategories);
+            
+            if ($index !== false) {
+                // Kategorie aus dem Post entfernen
+                unset($postCategories[$index]);
+                $postCategories = array_values($postCategories); // Indizes neu anordnen
+                
+                // Post mit aktualisierten Kategorien speichern
+                $post['categories'] = $postCategories;
+                $this->savePost($post);
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Fügt einen neuen Tag hinzu
+     * 
+     * @param string $tagName Name des Tags
+     * @return bool Erfolg
+     */
+    public function addTag($tagName) {
+        // Tag-Datei laden
+        $catalogFile = MARCES_CONFIG_DIR . '/tags.json';
+        $tags = [];
+        
+        if (file_exists($catalogFile)) {
+            $tags = json_decode(file_get_contents($catalogFile), true) ?: [];
+        }
+        
+        // Prüfen, ob Tag bereits existiert
+        if (in_array($tagName, $tags)) {
+            return false;
+        }
+        
+        // Tag hinzufügen
+        $tags[] = $tagName;
+        
+        // Speichern
+        if (file_put_contents($catalogFile, json_encode($tags, JSON_PRETTY_PRINT)) === false) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Benennt einen Tag um
+     * 
+     * @param string $oldName Alter Tagname
+     * @param string $newName Neuer Tagname
+     * @return bool Erfolg
+     */
+    public function renameTag($oldName, $newName) {
+        if ($oldName === $newName) {
+            return true; // Nichts zu tun
+        }
+        
+        // Tag-Datei laden
+        $catalogFile = MARCES_CONFIG_DIR . '/tags.json';
+        $tags = [];
+        
+        if (file_exists($catalogFile)) {
+            $tags = json_decode(file_get_contents($catalogFile), true) ?: [];
+        }
+        
+        // Prüfen, ob alter Tag existiert
+        $oldIndex = array_search($oldName, $tags);
+        if ($oldIndex === false) {
+            return false;
+        }
+        
+        // Prüfen, ob neuer Tag bereits existiert
+        if (in_array($newName, $tags)) {
+            return false;
+        }
+        
+        // Tag umbenennen
+        $tags[$oldIndex] = $newName;
+        
+        // Speichern
+        if (file_put_contents($catalogFile, json_encode($tags, JSON_PRETTY_PRINT)) === false) {
+            return false;
+        }
+        
+        // Alle Beiträge laden und Tag umbenennen
+        $posts = $this->getAllPosts();
+        
+        foreach ($posts as $post) {
+            $postTags = $post['tags'];
+            $index = array_search($oldName, $postTags);
+            
+            if ($index !== false) {
+                // Tag im Post aktualisieren
+                $postTags[$index] = $newName;
+                
+                // Post mit neuen Tags speichern
+                $post['tags'] = $postTags;
+                $this->savePost($post);
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Löscht einen Tag
+     * 
+     * @param string $tagName Name des zu löschenden Tags
+     * @return bool Erfolg
+     */
+    public function deleteTag($tagName) {
+        // Tag-Datei laden
+        $catalogFile = MARCES_CONFIG_DIR . '/tags.json';
+        $tags = [];
+        
+        if (file_exists($catalogFile)) {
+            $tags = json_decode(file_get_contents($catalogFile), true) ?: [];
+        }
+        
+        // Prüfen, ob Tag existiert
+        $index = array_search($tagName, $tags);
+        if ($index === false) {
+            return false;
+        }
+        
+        // Tag entfernen
+        unset($tags[$index]);
+        $tags = array_values($tags); // Indizes neu anordnen
+        
+        // Speichern
+        if (file_put_contents($catalogFile, json_encode($tags, JSON_PRETTY_PRINT)) === false) {
+            return false;
+        }
+        
+        // Alle Beiträge laden und Tag entfernen
+        $posts = $this->getAllPosts();
+        
+        foreach ($posts as $post) {
+            $postTags = $post['tags'];
+            $index = array_search($tagName, $postTags);
+            
+            if ($index !== false) {
+                // Tag aus dem Post entfernen
+                unset($postTags[$index]);
+                $postTags = array_values($postTags); // Indizes neu anordnen
+                
+                // Post mit aktualisierten Tags speichern
+                $post['tags'] = $postTags;
+                $this->savePost($post);
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Initialisiert die Konfigurationsdateien für Tags und Kategorien
+     */
+    public function initCatalogFiles() {
+        $categoriesFile = MARCES_CONFIG_DIR . '/categories.json';
+        $tagsFile = MARCES_CONFIG_DIR . '/tags.json';
+        
+        // Kategoriedatei initialisieren, wenn sie nicht existiert
+        if (!file_exists($categoriesFile)) {
+            file_put_contents($categoriesFile, json_encode([], JSON_PRETTY_PRINT));
+        }
+        
+        // Tag-Datei initialisieren, wenn sie nicht existiert
+        if (!file_exists($tagsFile)) {
+            file_put_contents($tagsFile, json_encode([], JSON_PRETTY_PRINT));
+        }
     }
 }
