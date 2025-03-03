@@ -6,6 +6,15 @@ Willkommen zum **Marces CMS** – einem modularen, flexiblen und dateibasierten 
 
 Marces CMS ist darauf ausgelegt, die Basis für ein modernes, benutzerfreundliches CMS zu legen – und das ganz ohne herkömmliche Datenbank! Mit einer sauberen Architektur und einem modularen Aufbau wollen wir die Erstellung und Verwaltung von Inhalten so angenehm wie möglich gestalten. Die Entwicklung erfolgt in klar definierten Phasen, die jeweils wichtige Kernfunktionen und erweiterte Features hinzufügen.
 
+## Anforderungen
+
+Marces benötigt keinerlei Datenbanken, Pakete oder Serverumgebungen. Es funktioniert auf einfachen Webhosting Services. Deshalb gibt es auch keinerlei Anforderungen.
+- **Keine Anforderungen** Außer Webspace
+
+## Installation
+
+Das CMS befindet sich noch in Entwicklung. Zum Testen das Projekt unter /marces/ einfach hochladen und im Browser öffnen. Unter /config/users.config.php/ kann man Nutzer anlegen sowie ändern. Beachte das Passwörter via PHP als Passwort Hash gespeichert werden müssen.
+
 ## Entwicklungsphasen
 
 ### Phase 1: Grundstruktur und Kern
@@ -27,24 +36,11 @@ In dieser Phase wurden die Basisarchitektur und grundlegenden Funktionen impleme
 
 In dieser Phase kommen erweiterte Funktionalitäten hinzu, die Interaktivität und Sicherheit verbessern:
 
-- **Sichere Authentifizierung:**
-  - Login-System mit Passwort-Hashing
-  - Session-Management
-  - Zugriffskontrollen
-- **Admin-Dashboard:**
-  - Übersichtliche Startseite
-  - Navigation zu allen Verwaltungsbereichen
-- **Content-Management:**
-  - Erstellen, Bearbeiten und Löschen von Seiten
-  - Verwaltung von Blog-Beiträgen
-  - Versionsmanagement für Inhalte
-- **TinyMCE-Integration:**
-  - WYSIWYG-Editor für einfache Inhaltserstellung
-  - Markdown-Unterstützung
-- **Medienverwaltung:**
-  - Medien-Upload
-  - Medienbibliothek
-  - Integration in den Editor
+- **Sichere Authentifizierung:** Login-System mit Passwort-Hashing, Session-Management & Zugriffskontrollen
+- **Admin-Dashboard:** Übersichtliche Startseite, Navigation zu allen Verwaltungsbereichen
+- **Content-Management:** Erstellen, Bearbeiten und Löschen von Seiten, Verwaltung von Blog-Beiträgen, Versionsmanagement für Inhalte
+- **TinyMCE-Integration:** WYSIWYG-Editor tinyMCE für einfache Inhaltserstellung, Markdown-Unterstützung
+- **Medienverwaltung:** Medien-Upload, Medienbibliothek, Integration in den Editor
 
 ### Phase 3: Erweiterung
 
