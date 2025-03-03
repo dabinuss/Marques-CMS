@@ -76,7 +76,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 2**       | Admin-Dashboard: Übersichtliche Startseite                         | ✅ Fertig         |
 | **Phase 2**       | Admin-Dashboard: Navigation zu allen Verwaltungsbereichen          | ✅ Fertig         |
 | **Phase 2**       | Content-Management: Seiten erstellen, bearbeiten, löschen          | ✅ Fertig         |
-| **Phase 2**       | Content-Management: Blog-Beiträge verwalten                        | 🔄 In Bearbeitung |
+| **Phase 2**       | Content-Management: Blog-Beiträge verwalten                        | ✅ Fertig |
 | **Phase 2**       | Content-Management: Versionsmanagement für Inhalte                 | ✅ Fertig         |
 | **Phase 2**       | TinyMCE-Integration: WYSIWYG-Editor (TINYMCE)                      | ✅ Fertig         |
 | **Phase 2**       | TinyMCE-Integration: Markdown-Unterstützung                        | ✅ Fertig         |
@@ -86,6 +86,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 2**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | 🔄 In Bearbeitung     |
 | **Phase 3**       | Navigationsverwaltung                                               | ❌ Noch nicht     |
 | **Phase 3**       | Systemsettings des CMS                                              | 🔄 In Bearbeitung     |
+| **Phase 3**       | Systemsettings des CMS: Einstellbare Blog URLs                      | ✅ Fertig     |
 | **Phase 3**       | Caching-System                                                     | ❌ Noch nicht     |
 | **Phase 3**       | SEO-Funktionen                                                     | ❌ Noch nicht     |
 | **Phase 3**       | Benutzerrollen und -berechtigungen                                 | 🔄 In Bearbeitung     |
