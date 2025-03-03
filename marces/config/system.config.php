@@ -33,7 +33,7 @@ return [
     // Systemeinstellungen
     'debug' => true, // Im Produktiveinsatz auf false setzen
     'cache_enabled' => false, // Im Produktiveinsatz auf true setzen
-    'version' => '0.1.0',
+    'version' => '0.3.0', // Phase 3 der Entwicklung
     
     // Admin-Einstellungen
     'admin_language' => 'de',
