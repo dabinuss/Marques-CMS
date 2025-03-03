@@ -46,7 +46,7 @@ In dieser Phase kommen erweiterte Funktionalitäten hinzu, die Interaktivität u
   - Medienbibliothek
   - Integration in den Editor
 
-### Phase 3: Erweiterung und Optimierung
+### Phase 3: Erweiterung
 
 In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche Features zu integrieren:
 
@@ -54,7 +54,11 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 - **Caching-System:** Verbesserung der Performance
 - **SEO-Funktionen:** Optimierung für Suchmaschinen
 - **Benutzerrollen und -berechtigungen:** Fein abgestimmte Zugriffskontrolle
-- **Erweiterbarkeit/Plugins:** Einfache Integration weiterer Module
+- **Navigationsverwaltung:** Verwalten von Links in der Navigation
+
+### Phase 4: Optimierung
+
+- **Fehlerbehebungen:** Große Fehlersuche
 - **Leistungsoptimierung:** Effizienteres Systemverhalten
 
 ## Feature-Übersicht
@@ -84,10 +88,12 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 2**       | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig         |
 | **Phase 2**       | Medienverwaltung: Integration in den Editor                        | ✅ Fertig         |
 | **Phase 2**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | 🔄 In Bearbeitung     |
+| **Phase 3**       | Navigationsverwaltung                                               | ❌ Noch nicht     |
 | **Phase 3**       | Caching-System                                                     | ❌ Noch nicht     |
 | **Phase 3**       | SEO-Funktionen                                                     | ❌ Noch nicht     |
 | **Phase 3**       | Benutzerrollen und -berechtigungen                                 | ❌ Noch nicht     |
-| **Phase 3**       | Leistungsoptimierung                                               | ❌ Noch nicht     |
+| **Phase 4**       | Große Fehlersuche und Korrektur                                    | ❌ Noch nicht     |
+| **Phase 4**       | Leistungsoptimierung                                               | ❌ Noch nicht     |
 
 ## Mitmachen und Feedback
 
