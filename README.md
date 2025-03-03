@@ -1,5 +1,7 @@
 # Marques CMS
 
+![marques logo](assets/logo-text.png)
+
 Willkommen zum **Marques CMS** – einem modularen, flexiblen und dateibasierten (Flat File) Content-Management-System, das in mehreren Entwicklungsphasen entsteht. 🎉
 
 ## Überblick
