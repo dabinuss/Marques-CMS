@@ -25,10 +25,10 @@ function initTinyMCE(selector) {
         remove_script_host: false,
         
         plugins: [
-            'advlist autolink lists link image charmap print preview anchor',
-            'searchreplace visualblocks code fullscreen',
-            'insertdatetime media table paste code help wordcount',
-            'emoticons hr imagetools nonbreaking quickbars'
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+            'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'help', 'wordcount',
+            'emoticons', 'hr', 'nonbreaking', 'quickbars'
         ],
         toolbar: 'undo redo | formatselect styleselect | ' +
             'bold italic underline strikethrough forecolor backcolor | alignleft aligncenter ' +
@@ -37,7 +37,7 @@ function initTinyMCE(selector) {
         toolbar_mode: 'sliding',
         content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
         
-        // Verbesserte Medien-Upload-Konfiguration
+        // Medien-Upload-Konfiguration
         images_upload_url: 'upload-handler.php',
         automatic_uploads: true,
         images_reuse_filename: false,
@@ -151,11 +151,8 @@ function initTinyMCE(selector) {
         // Paste aus Word und anderen Quellen bereinigen
         paste_data_images: true,
         paste_as_text: false,
-        paste_word_valid_elements: 'b,strong,i,em,h1,h2,h3,h4,h5,h6,p,ol,ul,li,a[href],img[src]',
-        paste_webkit_styles: 'color font-size',
-        paste_retain_style_properties: 'color font-size',
         
-        // Deutsch als Standardsprache
-        language_url: 'https://cdn.tiny.cloud/1/kde6p4uv99x4u39s6lbw4q767ejmg9p7hjyjy1yes5y7oa41/tinymce/5/langs/de.js'
+        // Deutsche Sprachdatei - entferne diese Option, wenn keine Sprachdatei vorhanden ist
+        // language_url: 'assets/js/tinymce/langs/de.js'
     });
 }

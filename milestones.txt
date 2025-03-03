@@ -3,7 +3,7 @@ Bisher haben wir nur die erste Phase des Projekts abgeschlossen:
 
 Phase 1: Grundstruktur und Kern
 Aufbau der Projektstruktur mit Ordnern und Dateien
-Entwicklung der Kernmodule:
+tinymce.jEntwicklung der Kernmodule:
 Router (URL-Verarbeitung)
 Content-Parser (Markdown-Verarbeitung)
 Template-Engine (Darstellung)

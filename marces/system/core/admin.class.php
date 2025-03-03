@@ -100,6 +100,31 @@ class Admin {
         $files = glob($dir . '/*.md');
         return count($files);
     }
+
+    /**
+     * Zählt die Anzahl der Mediendateien
+     *
+     * @return int Anzahl der Mediendateien
+     */
+    private function _countMediaFiles() {
+        $mediaDir = MARCES_ROOT_DIR . '/assets/media';
+        
+        if (!is_dir($mediaDir)) {
+            return 0;
+        }
+        
+        $mediaFiles = glob($mediaDir . '/*');
+        
+        // Verzeichnisse ausschließen, nur Dateien zählen
+        $fileCount = 0;
+        foreach ($mediaFiles as $file) {
+            if (is_file($file)) {
+                $fileCount++;
+            }
+        }
+        
+        return $fileCount;
+    }
     
     /**
      * Gibt die Festplattenbelegung des CMS zurück
