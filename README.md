@@ -1,19 +1,19 @@
-# Marces CMS
+# Marques CMS
 
-Willkommen zum **Marces CMS** – einem modularen, flexiblen und dateibasierten (Flat File) Content-Management-System, das in mehreren Entwicklungsphasen entsteht. 🎉
+Willkommen zum **Marques CMS** – einem modularen, flexiblen und dateibasierten (Flat File) Content-Management-System, das in mehreren Entwicklungsphasen entsteht. 🎉
 
 ## Überblick
 
-Marces CMS ist darauf ausgelegt, die Basis für ein modernes, benutzerfreundliches CMS zu legen – und das ganz ohne herkömmliche Datenbank! Mit einer sauberen Architektur und einem modularen Aufbau wollen wir die Erstellung und Verwaltung von Inhalten so angenehm wie möglich gestalten. Die Entwicklung erfolgt in klar definierten Phasen, die jeweils wichtige Kernfunktionen und erweiterte Features hinzufügen.
+Marques CMS ist darauf ausgelegt, die Basis für ein modernes, benutzerfreundliches CMS zu legen – und das ganz ohne herkömmliche Datenbank! Mit einer sauberen Architektur und einem modularen Aufbau wollen wir die Erstellung und Verwaltung von Inhalten so angenehm wie möglich gestalten. Die Entwicklung erfolgt in klar definierten Phasen, die jeweils wichtige Kernfunktionen und erweiterte Features hinzufügen.
 
 ## Anforderungen
 
-Marces benötigt keinerlei Datenbanken, Pakete oder Serverumgebungen. Es funktioniert auf einfachen Webhosting Services. Deshalb gibt es auch keinerlei Anforderungen.
+Marques benötigt keinerlei Datenbanken, Pakete oder Serverumgebungen. Es funktioniert auf einfachen Webhosting Services. Deshalb gibt es auch keinerlei Anforderungen.
 - **Keine Anforderungen** Außer Webspace
 
 ## Installation
 
-Das CMS befindet sich noch in Entwicklung. Zum Testen das Projekt unter /marces/ einfach hochladen und im Browser öffnen. Unter /config/users.config.php/ kann man Nutzer anlegen sowie ändern. Beachte das Passwörter via PHP als Passwort Hash gespeichert werden müssen.
+Das CMS befindet sich noch in Entwicklung. Zum Testen das Projekt unter /marques/ einfach hochladen und im Browser öffnen. Unter /config/users.config.php/ kann man Nutzer anlegen sowie ändern. Beachte das Passwörter via PHP als Passwort Hash gespeichert werden müssen.
 
 ## Entwicklungsphasen
 
@@ -96,7 +96,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 
 ## Mitmachen und Feedback
 
-Wir freuen uns über Beiträge, Anregungen und konstruktives Feedback! Wenn du Ideen hast, wie wir Marces CMS noch besser machen können, oder wenn du einfach mal über die Technik plaudern möchtest – zögere nicht, dich einzubringen. 😊
+Wir freuen uns über Beiträge, Anregungen und konstruktives Feedback! Wenn du Ideen hast, wie wir Marques CMS noch besser machen können, oder wenn du einfach mal über die Technik plaudern möchtest – zögere nicht, dich einzubringen. 😊
 
 ## Lizenz
 
@@ -104,4 +104,4 @@ Dieses Projekt ist Open Source. Details zur Lizenz findest du in der [LICENSE](L
 
 ---
 
-Viel Spaß beim Erkunden und Mitentwickeln von Marces CMS! Was findest du besonders spannend an einem modularen und dateibasierten CMS? 🤔💬
+Viel Spaß beim Erkunden und Mitentwickeln von Marques CMS! Was findest du besonders spannend an einem modularen und dateibasierten CMS? 🤔💬

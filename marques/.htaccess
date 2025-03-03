@@ -1,0 +1,29 @@
+# Dynamische RewriteBase (funktioniert sowohl in Root als auch in Unterverzeichnissen)
+RewriteEngine On
+RewriteBase /
+# Wenn in Unterverzeichnis installiert, diese Zeile anpassen
+# RewriteBase /marques/
+
+# Systemdateien schützen
+RewriteRule ^system/.* - [F,L]
+RewriteRule ^content/.* - [F,L]
+RewriteRule ^config/.* - [F,L]
+
+# Direkten Zugriff auf Assets und Admin erlauben
+RewriteCond %{REQUEST_URI} !^/assets/
+RewriteCond %{REQUEST_URI} !^/admin/
+
+# Alles andere an index.php senden
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# .htaccess-Datei schützen
+<Files .htaccess>
+  Order Allow,Deny
+  Deny from all
+</Files>
+
+# PHP-Dateien im Cache-Verzeichnis schützen
+<FilesMatch "^\.">
+  Order Allow,Deny
+  Deny from all
+</FilesMatch>
