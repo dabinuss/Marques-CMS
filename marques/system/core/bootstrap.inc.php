@@ -156,3 +156,34 @@ if (!defined('IS_ADMIN') && $settings->getSetting('maintenance_mode', false)) {
         exit;
     }
 }
+
+// Nur Seitenaufrufe von echten Benutzern erfassen (keine Bots, keine Admin-Besuche)
+if (!defined('IS_ADMIN') && !preg_match('/(bot|crawler|spider|slurp|bingbot|googlebot)/i', $_SERVER['HTTP_USER_AGENT'] ?? '')) {
+    // Statistikverzeichnis prüfen/erstellen
+    $statsDir = __DIR__ . '/../logs/stats';
+    if (!is_dir($statsDir)) {
+        @mkdir($statsDir, 0755, true);
+    }
+    
+    // Daten für die Statistik sammeln
+    $logData = [
+        'time' => date('Y-m-d H:i:s'),
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
+        'url' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}",
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+        'referrer' => $_SERVER['HTTP_REFERER'] ?? ''
+    ];
+    
+    // Anonymisierte IP (DSGVO-konform)
+    $parts = explode('.', $logData['ip']);
+    if (count($parts) === 4) {
+        $logData['ip'] = $parts[0] . '.' . $parts[1] . '.' . $parts[2] . '.0';
+    }
+    
+    // Logdatei für den aktuellen Tag
+    $logFile = $statsDir . '/' . date('Y-m-d') . '.log';
+    
+    // In die Logdatei schreiben
+    @file_put_contents($logFile, json_encode($logData) . PHP_EOL, FILE_APPEND);
+}
+?>
