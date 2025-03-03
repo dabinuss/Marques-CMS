@@ -83,7 +83,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 2**       | Medienverwaltung: Medien-Upload                                    | ✅ Fertig         |
 | **Phase 2**       | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig         |
 | **Phase 2**       | Medienverwaltung: Integration in den Editor                        | ✅ Fertig         |
-| **Phase 2**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | 🔄 In Bearbeitung     |
+| **Phase 2**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | ✅ Fertig       |
 | **Phase 3**       | Navigationsverwaltung                                               | ❌ Noch nicht     |
 | **Phase 3**       | Systemsettings des CMS                                              | 🔄 In Bearbeitung     |
 | **Phase 3**       | Systemsettings des CMS: Einstellbare Blog URLs                      | ✅ Fertig     |
