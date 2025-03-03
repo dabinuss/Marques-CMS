@@ -59,36 +59,36 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 
 ## Feature-Übersicht
 
-| Entwicklungsphase                         | Feature                                                         | Status            |
-|-------------------------------------------|-----------------------------------------------------------------|-------------------|
-| **Phase 1: Grundstruktur und Kern**       | Projektstruktur: Einrichtung von Ordnern und Dateien              | ✅ Fertig         |
-| **Phase 1: Grundstruktur und Kern**       | Kernmodul: Router (URL-Verarbeitung)                              | ✅ Fertig         |
-| **Phase 1: Grundstruktur und Kern**       | Kernmodul: Content-Parser (Markdown-Verarbeitung)                 | ✅ Fertig         |
-| **Phase 1: Grundstruktur und Kern**       | Kernmodul: Template-Engine (Darstellung)                          | ✅ Fertig         |
-| **Phase 1: Grundstruktur und Kern**       | Konfigurationsdateien                                             | ✅ Fertig         |
-| **Phase 1: Grundstruktur und Kern**       | Templates und Partials                                            | ✅ Fertig         |
-| **Phase 1: Grundstruktur und Kern**       | CSS/JS-Assets                                                     | ✅ Fertig         |
-| **Phase 1: Grundstruktur und Kern**       | Beispielinhalte                                                   | ✅ Fertig         |
-| **Phase 1: Grundstruktur und Kern**       | Grundlegende Admin-Bereich-Struktur                               | ✅ Fertig         |
-| **Phase 2: Plan und Komponenten**         | Sichere Authentifizierung: Login-System mit Passwort-Hashing        | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | Sichere Authentifizierung: Session-Management                      | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | Sichere Authentifizierung: Zugriffskontrollen                      | 🔄 In Bearbeitung |
-| **Phase 2: Plan und Komponenten**         | Admin-Dashboard: Übersichtliche Startseite                         | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | Admin-Dashboard: Navigation zu allen Verwaltungsbereichen          | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | Content-Management: Seiten erstellen, bearbeiten, löschen          | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | Content-Management: Blog-Beiträge verwalten                        | 🔄 In Bearbeitung |
-| **Phase 2: Plan und Komponenten**         | Content-Management: Versionsmanagement für Inhalte                 | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | TinyMCE-Integration: WYSIWYG-Editor (TINYMCE)                      | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | TinyMCE-Integration: Markdown-Unterstützung                        | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | Medienverwaltung: Medien-Upload                                    | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig |
-| **Phase 2: Plan und Komponenten**         | Medienverwaltung: Integration in den Editor                        | ✅ Fertig |
-| **Phase 3: Erweiterung und Optimierung**    | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | ❌ Noch nicht     |
-| **Phase 3: Erweiterung und Optimierung**    | Caching-System                                                     | ❌ Noch nicht     |
-| **Phase 3: Erweiterung und Optimierung**    | SEO-Funktionen                                                     | ❌ Noch nicht     |
-| **Phase 3: Erweiterung und Optimierung**    | Benutzerrollen und -berechtigungen                                 | ❌ Noch nicht     |
-| **Phase 3: Erweiterung und Optimierung**    | Erweiterbarkeit/Plugins                                             | ❌ Noch nicht     |
-| **Phase 3: Erweiterung und Optimierung**    | Leistungsoptimierung                                               | ❌ Noch nicht     |
+| Entwicklungsphase | Feature                                                         | Status            |
+|-------------------|-----------------------------------------------------------------|-------------------|
+| **Phase 1**       | Projektstruktur: Einrichtung von Ordnern und Dateien              | ✅ Fertig         |
+| **Phase 1**       | Kernmodul: Router (URL-Verarbeitung)                              | ✅ Fertig         |
+| **Phase 1**       | Kernmodul: Content-Parser (Markdown-Verarbeitung)                 | ✅ Fertig         |
+| **Phase 1**       | Kernmodul: Template-Engine (Darstellung)                          | ✅ Fertig         |
+| **Phase 1**       | Konfigurationsdateien                                             | ✅ Fertig         |
+| **Phase 1**       | Templates und Partials                                            | ✅ Fertig         |
+| **Phase 1**       | CSS/JS-Assets                                                     | ✅ Fertig         |
+| **Phase 1**       | Beispielinhalte                                                   | ✅ Fertig         |
+| **Phase 1**       | Grundlegende Admin-Bereich-Struktur                               | ✅ Fertig         |
+| **Phase 2**       | Sichere Authentifizierung: Login-System mit Passwort-Hashing        | ✅ Fertig         |
+| **Phase 2**       | Sichere Authentifizierung: Session-Management                      | ✅ Fertig         |
+| **Phase 2**       | Sichere Authentifizierung: Zugriffskontrollen                      | 🔄 In Bearbeitung |
+| **Phase 2**       | Admin-Dashboard: Übersichtliche Startseite                         | ✅ Fertig         |
+| **Phase 2**       | Admin-Dashboard: Navigation zu allen Verwaltungsbereichen          | ✅ Fertig         |
+| **Phase 2**       | Content-Management: Seiten erstellen, bearbeiten, löschen          | ✅ Fertig         |
+| **Phase 2**       | Content-Management: Blog-Beiträge verwalten                        | 🔄 In Bearbeitung |
+| **Phase 2**       | Content-Management: Versionsmanagement für Inhalte                 | ✅ Fertig         |
+| **Phase 2**       | TinyMCE-Integration: WYSIWYG-Editor (TINYMCE)                      | ✅ Fertig         |
+| **Phase 2**       | TinyMCE-Integration: Markdown-Unterstützung                        | ✅ Fertig         |
+| **Phase 2**       | Medienverwaltung: Medien-Upload                                    | ✅ Fertig         |
+| **Phase 2**       | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig         |
+| **Phase 2**       | Medienverwaltung: Integration in den Editor                        | ✅ Fertig         |
+| **Phase 3**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | ❌ Noch nicht     |
+| **Phase 3**       | Caching-System                                                     | ❌ Noch nicht     |
+| **Phase 3**       | SEO-Funktionen                                                     | ❌ Noch nicht     |
+| **Phase 3**       | Benutzerrollen und -berechtigungen                                 | ❌ Noch nicht     |
+| **Phase 3**       | Erweiterbarkeit/Plugins                                             | ❌ Noch nicht     |
+| **Phase 3**       | Leistungsoptimierung                                               | ❌ Noch nicht     |
 
 ## Mitmachen und Feedback
 
