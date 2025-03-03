@@ -1,6 +1,6 @@
 # Marques CMS
 
-![marques logo](assets/logo-text.png =x250)
+<img src="logo-text.jpg" alt="marques logo" width="200"/>
 
 Willkommen zum **Marques CMS** – einem modularen, flexiblen und dateibasierten (Flat File) Content-Management-System, das in mehreren Entwicklungsphasen entsteht. 🎉
 
