@@ -58,6 +58,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Überprüfen, ob die Standardpasswortmeldung angezeigt werden soll
+$showAdminDefaultPassword = false;
+$users = require MARCES_CONFIG_DIR . '/users.config.php';
+if (isset($users['admin']) && empty($users['admin']['password'])) {
+    $showAdminDefaultPassword = true;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $system_config['admin_language'] ?? 'de'; ?>">
@@ -66,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - <?php echo htmlspecialchars($system_config['site_name'] ?? 'marces CMS'); ?></title>
     <link rel="stylesheet" href="assets/css/login-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="login-container">
@@ -78,21 +86,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
         
+        <?php if ($showAdminDefaultPassword): ?>
+            <div class="info-message">
+                <i class="fas fa-info-circle"></i> Standardzugang:
+                <ul>
+                    <li>Benutzername: admin</li>
+                    <li>Passwort: admin</li>
+                </ul>
+                <p>Bitte ändern Sie das Passwort nach dem ersten Login!</p>
+            </div>
+        <?php endif; ?>
+        
         <form class="login-form" method="post" action="">
             <div class="form-group">
                 <label for="username">Benutzername</label>
-                <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($username); ?>" required>
+                <div class="input-icon-wrapper">
+                    <span class="input-icon"><i class="fas fa-user"></i></span>
+                    <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($username); ?>" required>
+                </div>
             </div>
             
             <div class="form-group">
                 <label for="password">Passwort</label>
-                <input type="password" id="password" name="password" required>
+                <div class="input-icon-wrapper">
+                    <span class="input-icon"><i class="fas fa-lock"></i></span>
+                    <input type="password" id="password" name="password" required>
+                </div>
             </div>
             
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
             
-            <button type="submit" class="submit-button">Anmelden</button>
+            <button type="submit" class="submit-button">
+                <i class="fas fa-sign-in-alt"></i> Anmelden
+            </button>
         </form>
+        
+        <div class="login-footer">
+            <p>marces CMS v<?php echo MARCES_VERSION; ?></p>
+        </div>
     </div>
 </body>
 </html>

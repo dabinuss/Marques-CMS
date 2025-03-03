@@ -75,16 +75,23 @@ class User {
         
         $user = $users[$username];
         
-        // Prüfen, ob das Passwort leer ist
+        // Prüfen, ob das Passwort leer ist (Standardfall beim ersten Start)
         if (empty($user['password'])) {
-            error_log("Login fehlgeschlagen: Passwort für Benutzer '$username' ist leer.");
-            return false;
-        }
-        
-        // Passwort verifizieren
-        if (!password_verify($password, $user['password'])) {
-            error_log("Login fehlgeschlagen: Falsches Passwort für Benutzer '$username'.");
-            return false;
+            if ($username === 'admin' && $password === 'admin') {
+                // Erstes Login mit Standardpasswort
+                $user['password'] = $this->hashPassword('admin');
+                $users[$username] = $user;
+                $this->_saveUsers($users);
+            } else {
+                error_log("Login fehlgeschlagen: Passwort für Benutzer '$username' ist leer.");
+                return false;
+            }
+        } else {
+            // Passwort verifizieren
+            if (!password_verify($password, $user['password'])) {
+                error_log("Login fehlgeschlagen: Falsches Passwort für Benutzer '$username'.");
+                return false;
+            }
         }
         
         // Session setzen
@@ -132,6 +139,15 @@ class User {
     }
     
     /**
+     * Gibt den Anzeigenamen des aktuell eingeloggten Benutzers zurück
+     *
+     * @return string|null Anzeigename oder null wenn nicht eingeloggt
+     */
+    public function getCurrentDisplayName() {
+        return $this->_session['display_name'] ?? null;
+    }
+    
+    /**
      * Prüft, ob der aktuelle Benutzer ein Administrator ist
      *
      * @return bool True wenn Administrator
@@ -164,6 +180,11 @@ class User {
             return false;
         }
         
+        // Benutzernamen validieren
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            return false;
+        }
+        
         // Benutzerdaten vorbereiten
         $users = $this->_getUsers();
         $users[$username] = [
@@ -175,6 +196,34 @@ class User {
         ];
         
         // Benutzer speichern
+        return $this->_saveUsers($users);
+    }
+    
+    /**
+     * Aktualisiert einen bestehenden Benutzer
+     *
+     * @param string $username Benutzername
+     * @param array $userData Zu aktualisierende Benutzerdaten
+     * @return bool True bei Erfolg
+     */
+    public function updateUser($username, $userData) {
+        $users = $this->_getUsers();
+        
+        if (!isset($users[$username])) {
+            return false;
+        }
+        
+        // Passwort nur aktualisieren, wenn eines angegeben wurde
+        if (isset($userData['password']) && !empty($userData['password'])) {
+            $userData['password'] = $this->hashPassword($userData['password']);
+        } else {
+            // Altes Passwort beibehalten
+            unset($userData['password']);
+        }
+        
+        // Benutzerdaten aktualisieren
+        $users[$username] = array_merge($users[$username], $userData);
+        
         return $this->_saveUsers($users);
     }
     
@@ -206,6 +255,11 @@ class User {
     public function deleteUser($username) {
         $users = $this->_getUsers();
         
+        // Admin-Benutzer kann nicht gelöscht werden
+        if ($username === 'admin') {
+            return false;
+        }
+        
         if (!isset($users[$username])) {
             return false;
         }
@@ -213,6 +267,51 @@ class User {
         unset($users[$username]);
         
         return $this->_saveUsers($users);
+    }
+    
+    /**
+     * Holt Informationen zu einem bestimmten Benutzer
+     *
+     * @param string $username Benutzername
+     * @return array|null Benutzerdaten oder null wenn nicht gefunden
+     */
+    public function getUserInfo($username) {
+        $users = $this->_getUsers();
+        
+        if (!isset($users[$username])) {
+            return null;
+        }
+        
+        $userInfo = $users[$username];
+        // Passwort aus der Rückgabe entfernen
+        unset($userInfo['password']);
+        
+        // Username hinzufügen
+        $userInfo['username'] = $username;
+        
+        return $userInfo;
+    }
+    
+    /**
+     * Gibt alle Benutzer zurück
+     *
+     * @return array Benutzer mit Informationen
+     */
+    public function getAllUsers() {
+        $users = $this->_getUsers();
+        $result = [];
+        
+        foreach ($users as $username => $data) {
+            // Passwort aus der Rückgabe entfernen
+            unset($data['password']);
+            
+            // Username hinzufügen
+            $data['username'] = $username;
+            
+            $result[$username] = $data;
+        }
+        
+        return $result;
     }
     
     /**
@@ -260,10 +359,10 @@ class User {
         $users = require $userFile;
         
         // Prüfen, ob Admin-Benutzer ein leeres Passwort hat
-        if (isset($users['admin']) && (empty($users['admin']['password']) || $users['admin']['password'] === '')) {
-            // Admin-Passwort zurücksetzen
-            $users['admin']['password'] = $this->hashPassword('admin');
-            $this->_saveUsers($users);
+        if (isset($users['admin']) && empty($users['admin']['password'])) {
+            // Admin-Passwort bleibt leer, wird beim ersten Login gesetzt
+            // $users['admin']['password'] = $this->hashPassword('admin');
+            // $this->_saveUsers($users);
         }
         
         return $users;
