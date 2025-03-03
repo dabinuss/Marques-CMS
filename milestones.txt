@@ -1,0 +1,53 @@
+marces CMS - Entwicklungsphasen
+Bisher haben wir nur die erste Phase des Projekts abgeschlossen:
+
+Phase 1: Grundstruktur und Kern
+Aufbau der Projektstruktur mit Ordnern und Dateien
+Entwicklung der Kernmodule:
+Router (URL-Verarbeitung)
+Content-Parser (Markdown-Verarbeitung)
+Template-Engine (Darstellung)
+Erstellung von Konfigurationsdateien
+Implementierung von Templates und Partials
+Entwicklung von CSS/JS-Assets
+Erstellung von Beispielinhalten
+Grundlegende Admin-Bereich-Struktur
+Diese Phase konzentrierte sich darauf, die Basisarchitektur des CMS zu etablieren und statische Seiten anzuzeigen. Wir haben gerade erst begonnen, Fehler zu beheben, um diese Grundfunktionalität zu stabilisieren.
+
+
+Phase 2: Plan und Komponenten
+In dieser Phase werden wir folgende Komponenten entwickeln:
+
+Sichere Authentifizierung
+    Login-System mit Passwort-Hashing
+    Session-Management
+    Zugriffskontrollen
+
+Admin-Dashboard
+    Übersichtliche Startseite
+    Navigation zu allen Verwaltungsbereichen
+
+Content-Management
+    Seiten erstellen/bearbeiten/löschen
+    Blog-Beiträge verwalten
+    Versionsmanagement für Inhalte
+
+TinyMCE-Integration
+    WYSIWYG-Editor für Inhalte
+    Markdown-Unterstützung
+    
+Medienverwaltung
+    Medien-Upload
+    Medienbibliothek
+    Integration in den Editor
+
+
+
+
+Phase 3: Erweiterung und Optimierung
+    Erweiterte Funktionen (z.B. Tags, Kategorien)
+    Caching-System
+    SEO-Funktionen
+    Benutzerrollen und -berechtigungen
+    Erweiterbarkeit/Plugins
+    Leistungsoptimierung

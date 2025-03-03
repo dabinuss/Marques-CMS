@@ -1,0 +1,164 @@
+/* marces CMS - Hauptstylesheet */
+
+/* Basis */
+:root {
+    --primary-color: #4a6fa5;
+    --secondary-color: #336699;
+    --text-color: #333333;
+    --light-gray: #eeeeee;
+    --medium-gray: #dddddd;
+    --border-color: #cccccc;
+    --background-color: #ffffff;
+    --header-font: 'Arial', sans-serif;
+    --body-font: 'Helvetica', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--body-font);
+    color: var(--text-color);
+    line-height: 1.6;
+    background-color: var(--background-color);
+}
+
+.marces-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Typografie */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--header-font);
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+p {
+    margin-bottom: 1.5rem;
+}
+
+a {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Header */
+.marces-header {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.marces-site-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.marces-site-description {
+    color: #666;
+    font-size: 1rem;
+}
+
+/* Navigation */
+.marces-main-navigation {
+    margin-top: 1rem;
+}
+
+.marces-menu {
+    list-style: none;
+    display: flex;
+}
+
+.marces-menu-item {
+    margin-right: 1.5rem;
+}
+
+.marces-menu-item:last-child {
+    margin-right: 0;
+}
+
+.marces-menu-item a {
+    font-weight: bold;
+}
+
+/* Inhalt */
+.marces-content {
+    padding: 2rem 0;
+}
+
+.marces-page {
+    margin-bottom: 3rem;
+}
+
+.marces-page-header {
+    margin-bottom: 2rem;
+}
+
+.marces-page-title {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.marces-featured-image {
+    margin-bottom: 1.5rem;
+}
+
+.marces-featured-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.marces-page-content {
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+/* Footer */
+.marces-footer {
+    padding: 2rem 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 2rem;
+    text-align: center;
+    color: #666;
+}
+
+.marces-copyright {
+    margin-bottom: 0.5rem;
+}
+
+.marces-powered-by {
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .marces-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .marces-menu {
+        flex-direction: column;
+        margin-top: 1rem;
+    }
+    
+    .marces-menu-item {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+}

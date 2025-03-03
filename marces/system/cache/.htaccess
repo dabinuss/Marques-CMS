@@ -1,0 +1,5 @@
+# Verzeichnisauflistung deaktivieren
+Options -Indexes
+
+# Zugriff für alle verweigern
+Deny from all
