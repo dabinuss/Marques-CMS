@@ -70,8 +70,8 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 1**       | CSS/JS-Assets                                                     | ✅ Fertig         |
 | **Phase 1**       | Beispielinhalte                                                   | ✅ Fertig         |
 | **Phase 1**       | Grundlegende Admin-Bereich-Struktur                               | ✅ Fertig         |
-| **Phase 2**       | Sichere Authentifizierung: Login-System mit Passwort-Hashing        | ✅ Fertig         |
-| **Phase 2**       | Sichere Authentifizierung: Session-Management                      | ✅ Fertig         |
+| **Phase 2**       | Sichere Authentifizierung: Login-System mit Passwort-Hashing        | 🔄 In Bearbeitung         |
+| **Phase 2**       | Sichere Authentifizierung: Session-Management                      | 🔄 In Bearbeitung         |
 | **Phase 2**       | Sichere Authentifizierung: Zugriffskontrollen                      | 🔄 In Bearbeitung |
 | **Phase 2**       | Admin-Dashboard: Übersichtliche Startseite                         | ✅ Fertig         |
 | **Phase 2**       | Admin-Dashboard: Navigation zu allen Verwaltungsbereichen          | ✅ Fertig         |
