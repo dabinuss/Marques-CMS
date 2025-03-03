@@ -4,13 +4,13 @@ Willkommen zum **Marces CMS** – einem modularen, flexiblen und dateibasierten 
 
 ## Überblick
 
-Marces CMS ist darauf ausgelegt, die Basis für ein modernes, benutzerfreundliches CMS zu legen – und das ganz ohne herkömmliche Datenbank! Mit einer sauberen Architektur und einem modularen Aufbau, wollen wir die Erstellung und Verwaltung von Inhalten so angenehm wie möglich gestalten. Die Entwicklung erfolgt in klar definierten Phasen, die jeweils wichtige Kernfunktionen und erweiterte Features hinzufügen.
+Marces CMS ist darauf ausgelegt, die Basis für ein modernes, benutzerfreundliches CMS zu legen – und das ganz ohne herkömmliche Datenbank! Mit einer sauberen Architektur und einem modularen Aufbau wollen wir die Erstellung und Verwaltung von Inhalten so angenehm wie möglich gestalten. Die Entwicklung erfolgt in klar definierten Phasen, die jeweils wichtige Kernfunktionen und erweiterte Features hinzufügen.
 
 ## Entwicklungsphasen
 
 ### Phase 1: Grundstruktur und Kern
 
-In der ersten Phase haben wir die Basisarchitektur etabliert und die grundlegenden Funktionen implementiert:
+In dieser Phase wurden die Basisarchitektur und grundlegenden Funktionen implementiert:
 
 - **Projektstruktur:** Einrichtung von Ordnern und Dateien
 - **Kernmodule:** 
@@ -23,11 +23,9 @@ In der ersten Phase haben wir die Basisarchitektur etabliert und die grundlegend
 - **Beispielinhalte:** Erste statische Inhalte zur Demonstration
 - **Admin-Bereich:** Grundlegende Struktur für administrative Aufgaben
 
-Diese Phase diente dazu, eine stabile Basis zu schaffen, auf der das CMS aufbauen kann. Der Fokus lag auf der Darstellung statischer Seiten und der grundlegenden Fehlerbehebung.
-
 ### Phase 2: Plan und Komponenten
 
-Die nächste Phase bringt erweiterte Funktionalitäten, die die Interaktivität und Sicherheit verbessern:
+In dieser Phase kommen erweiterte Funktionalitäten hinzu, die Interaktivität und Sicherheit verbessern:
 
 - **Sichere Authentifizierung:**
   - Login-System mit Passwort-Hashing
@@ -58,6 +56,39 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 - **Benutzerrollen und -berechtigungen:** Fein abgestimmte Zugriffskontrolle
 - **Erweiterbarkeit/Plugins:** Einfache Integration weiterer Module
 - **Leistungsoptimierung:** Effizienteres Systemverhalten
+
+## Feature-Übersicht
+
+| Entwicklungsphase                         | Feature                                                         | Status            |
+|-------------------------------------------|-----------------------------------------------------------------|-------------------|
+| **Phase 1: Grundstruktur und Kern**       | Projektstruktur: Einrichtung von Ordnern und Dateien              | ✅ Fertig         |
+| **Phase 1: Grundstruktur und Kern**       | Kernmodul: Router (URL-Verarbeitung)                              | ✅ Fertig         |
+| **Phase 1: Grundstruktur und Kern**       | Kernmodul: Content-Parser (Markdown-Verarbeitung)                 | ✅ Fertig         |
+| **Phase 1: Grundstruktur und Kern**       | Kernmodul: Template-Engine (Darstellung)                          | ✅ Fertig         |
+| **Phase 1: Grundstruktur und Kern**       | Konfigurationsdateien                                             | ✅ Fertig         |
+| **Phase 1: Grundstruktur und Kern**       | Templates und Partials                                            | ✅ Fertig         |
+| **Phase 1: Grundstruktur und Kern**       | CSS/JS-Assets                                                     | ✅ Fertig         |
+| **Phase 1: Grundstruktur und Kern**       | Beispielinhalte                                                   | ✅ Fertig         |
+| **Phase 1: Grundstruktur und Kern**       | Grundlegende Admin-Bereich-Struktur                               | ✅ Fertig         |
+| **Phase 2: Plan und Komponenten**         | Sichere Authentifizierung: Login-System mit Passwort-Hashing        | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | Sichere Authentifizierung: Session-Management                      | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | Sichere Authentifizierung: Zugriffskontrollen                      | 🔄 In Bearbeitung |
+| **Phase 2: Plan und Komponenten**         | Admin-Dashboard: Übersichtliche Startseite                         | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | Admin-Dashboard: Navigation zu allen Verwaltungsbereichen          | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | Content-Management: Seiten erstellen, bearbeiten, löschen          | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | Content-Management: Blog-Beiträge verwalten                        | 🔄 In Bearbeitung |
+| **Phase 2: Plan und Komponenten**         | Content-Management: Versionsmanagement für Inhalte                 | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | TinyMCE-Integration: WYSIWYG-Editor (TINYMCE)                      | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | TinyMCE-Integration: Markdown-Unterstützung                        | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | Medienverwaltung: Medien-Upload                                    | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig |
+| **Phase 2: Plan und Komponenten**         | Medienverwaltung: Integration in den Editor                        | ✅ Fertig |
+| **Phase 3: Erweiterung und Optimierung**    | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | ❌ Noch nicht     |
+| **Phase 3: Erweiterung und Optimierung**    | Caching-System                                                     | ❌ Noch nicht     |
+| **Phase 3: Erweiterung und Optimierung**    | SEO-Funktionen                                                     | ❌ Noch nicht     |
+| **Phase 3: Erweiterung und Optimierung**    | Benutzerrollen und -berechtigungen                                 | ❌ Noch nicht     |
+| **Phase 3: Erweiterung und Optimierung**    | Erweiterbarkeit/Plugins                                             | ❌ Noch nicht     |
+| **Phase 3: Erweiterung und Optimierung**    | Leistungsoptimierung                                               | ❌ Noch nicht     |
 
 ## Mitmachen und Feedback
 
