@@ -338,136 +338,278 @@ function detectDevice($userAgent) {
             </div>
             
             <?php if ($page === 'dashboard'): ?>
-                <!-- Willkommensbereich mit Hinweisen -->
-                <div class="admin-welcome">
-                    <h3>Willkommen, <?php echo htmlspecialchars($user->getCurrentDisplayName()); ?>!</h3>
-                    <p>
-                        Heute ist <?php echo date('l, d. F Y', time()); ?>. 
-                        Sie haben sich zuletzt am <?php echo date('d.m.Y \u\m H:i', $_SESSION['marques_user']['last_login']); ?> Uhr angemeldet.
-                    </p>
-                    
-                    <?php if($systemHealth['maintenance_mode']): ?>
-                    <div class="admin-alert error">
-                        <i class="fas fa-exclamation-triangle"></i> Die Website befindet sich im Wartungsmodus und ist für normale Besucher nicht erreichbar.
-                    </div>
-                    <?php endif; ?>
-                    
-                    <?php if($systemHealth['debug_mode']): ?>
-                    <div class="admin-alert warning">
-                        <i class="fas fa-bug"></i> Der Debug-Modus ist aktiviert. Für die Produktivumgebung sollte dieser deaktiviert werden.
-                    </div>
-                    <?php endif; ?>
-                    
-                    <?php foreach($systemHealth['write_permissions'] as $dir => $writable): ?>
-                        <?php if(!$writable): ?>
-                        <div class="admin-alert error">
-                            <i class="fas fa-lock"></i> Keine Schreibberechtigung für <?php echo htmlspecialchars($dir); ?>-Verzeichnis!
-                        </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
                 
-                <!-- Besuchsstatistik-Karten -->
-                <div class="admin-stats">
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-icon"><i class="fas fa-chart-line"></i></div>
-                        <div class="admin-stat-title">Besuche heute</div>
-                        <div class="admin-stat-value"><?php echo number_format($siteStats['visits_today']); ?></div>
-                        <div class="admin-stat-trend">
-                            <?php 
-                            $change = $siteStats['visits_yesterday'] > 0 ? 
-                                (($siteStats['visits_today'] - $siteStats['visits_yesterday']) / $siteStats['visits_yesterday'] * 100) : 
-                                100;
-                            $icon = $change >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
-                            $class = $change >= 0 ? 'positive' : 'negative';
-                            ?>
-                            <span class="<?php echo $class; ?>">
-                                <i class="fas <?php echo $icon; ?>"></i> 
-                                <?php echo abs(round($change)); ?>% vs. gestern
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-icon"><i class="fas fa-users"></i></div>
-                        <div class="admin-stat-title">Besuche diese Woche</div>
-                        <div class="admin-stat-value"><?php echo number_format($siteStats['visits_this_week']); ?></div>
-                        <div class="admin-stat-action">
-                            <a href="?page=statistics" class="admin-stat-link">Details anzeigen <i class="fas fa-chevron-right"></i></a>
-                        </div>
-                    </div>
-                    
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-icon"><i class="fas fa-calendar-alt"></i></div>
-                        <div class="admin-stat-title">Besuche diesen Monat</div>
-                        <div class="admin-stat-value"><?php echo number_format($siteStats['visits_this_month']); ?></div>
-                        <div class="admin-stat-action">
-                            <a href="?page=statistics" class="admin-stat-link">Details anzeigen <i class="fas fa-chevron-right"></i></a>
-                        </div>
-                    </div>
-                    
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-icon"><i class="fas fa-globe"></i></div>
-                        <div class="admin-stat-title">Gesamtbesuche</div>
-                        <div class="admin-stat-value"><?php echo number_format($siteStats['total_visits']); ?></div>
-                        <div class="admin-stat-action">
-                            <a href="?page=statistics" class="admin-stat-link">Details anzeigen <i class="fas fa-chevron-right"></i></a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Hauptstatistiken -->
-                <div class="admin-stats">
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-icon"><i class="fas fa-file-alt"></i></div>
-                        <div class="admin-stat-title">Seiten</div>
-                        <div class="admin-stat-value"><?php echo $stats['pages']; ?></div>
-                        <div class="admin-stat-action">
-                            <a href="pages.php">Verwalten <i class="fas fa-chevron-right"></i></a>
-                        </div>
-                    </div>
-                    
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-icon"><i class="fas fa-blog"></i></div>
-                        <div class="admin-stat-title">Blog-Beiträge</div>
-                        <div class="admin-stat-value"><?php echo $stats['blog_posts']; ?></div>
-                        <div class="admin-stat-action">
-                            <a href="blog.php">Verwalten <i class="fas fa-chevron-right"></i></a>
-                        </div>
-                    </div>
-                    
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-icon"><i class="fas fa-images"></i></div>
-                        <div class="admin-stat-title">Mediendateien</div>
-                        <div class="admin-stat-value"><?php echo $stats['media_files']; ?></div>
-                        <div class="admin-stat-action">
-                            <a href="media.php">Verwalten <i class="fas fa-chevron-right"></i></a>
-                        </div>
-                    </div>
-                    
-                    <div class="admin-stat-card">
-                        <div class="admin-stat-icon"><i class="fas fa-users"></i></div>
-                        <div class="admin-stat-title">Benutzer</div>
-                        <div class="admin-stat-value"><?php echo count($allUsers ?? []); ?></div>
-                        <div class="admin-stat-action">
-                            <a href="users.php">Verwalten <i class="fas fa-chevron-right"></i></a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Besuchs-Diagramm -->
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h3><i class="fas fa-chart-bar"></i> Besucherstatistik (letzte 14 Tage)</h3>
-                    </div>
-                    <div class="admin-card-content">
-                        <canvas id="visitsChart" height="100"></canvas>
-                    </div>
-                </div>
-                
-                <!-- Zweite Reihe mit spezifischeren Statistiken -->
+                <!-- 1. Reihe: Welcome | Quick Actions -->
                 <div class="admin-dashboard-row">
-                    <!-- Linke Spalte: Top-Seiten -->
+                    <!-- Linke Spalte: Willkommensbereich mit Hinweisen -->
+                    <div class="admin-dashboard-column">
+                        <div class="admin-welcome">
+                            <h3>Willkommen, <?php echo htmlspecialchars($user->getCurrentDisplayName()); ?>!</h3>
+                            <p>
+                                Heute ist <?php echo date('l, d. F Y', time()); ?>. 
+                                Sie haben sich zuletzt am <?php echo date('d.m.Y \u\m H:i', $_SESSION['marques_user']['last_login']); ?> Uhr angemeldet.
+                            </p>
+                            
+                            <?php if($systemHealth['maintenance_mode']): ?>
+                            <div class="admin-alert error">
+                                <i class="fas fa-exclamation-triangle"></i> Die Website befindet sich im Wartungsmodus und ist für normale Besucher nicht erreichbar.
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if($systemHealth['debug_mode']): ?>
+                            <div class="admin-alert warning">
+                                <i class="fas fa-bug"></i> Der Debug-Modus ist aktiviert. Für die Produktivumgebung sollte dieser deaktiviert werden.
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php foreach($systemHealth['write_permissions'] as $dir => $writable): ?>
+                                <?php if(!$writable): ?>
+                                <div class="admin-alert error">
+                                    <i class="fas fa-lock"></i> Keine Schreibberechtigung für <?php echo htmlspecialchars($dir); ?>-Verzeichnis!
+                                </div>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    
+                    <!-- Rechte Spalte: Schnellzugriff -->
+                    <div class="admin-dashboard-column">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-bolt"></i> Schnellzugriff</h3>
+                            </div>
+                            <div class="admin-card-content">
+                                <div class="admin-quick-actions">
+                                    <a href="page-edit.php" class="admin-quick-action">
+                                        <i class="fas fa-file-alt"></i>
+                                        <span>Neue Seite</span>
+                                    </a>
+                                    <a href="blog-edit.php" class="admin-quick-action">
+                                        <i class="fas fa-blog"></i>
+                                        <span>Neuer Beitrag</span>
+                                    </a>
+                                    <a href="media.php?action=upload" class="admin-quick-action">
+                                        <i class="fas fa-upload"></i>
+                                        <span>Medien hochladen</span>
+                                    </a>
+                                    <a href="settings.php" class="admin-quick-action">
+                                        <i class="fas fa-cog"></i>
+                                        <span>Einstellungen</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 2. Reihe: Statistik-Karten | Besuchs-Diagramm -->
+                <div class="admin-dashboard-row">
+                    <!-- Linke Spalte: Alle Statistik-Karten -->
+                    <div class="admin-dashboard-column">
+                        <!-- Besuchsstatistik-Karten -->
+                        <div class="admin-stats">
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon"><i class="fas fa-chart-line"></i></div>
+                                <div class="admin-stat-title">Besuche heute</div>
+                                <div class="admin-stat-value"><?php echo number_format($siteStats['visits_today']); ?></div>
+                                <div class="admin-stat-trend">
+                                    <?php 
+                                    $change = $siteStats['visits_yesterday'] > 0 ? 
+                                        (($siteStats['visits_today'] - $siteStats['visits_yesterday']) / $siteStats['visits_yesterday'] * 100) : 
+                                        100;
+                                    $icon = $change >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                                    $class = $change >= 0 ? 'positive' : 'negative';
+                                    ?>
+                                    <span class="<?php echo $class; ?>">
+                                        <i class="fas <?php echo $icon; ?>"></i> 
+                                        <?php echo abs(round($change)); ?>% vs. gestern
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon"><i class="fas fa-users"></i></div>
+                                <div class="admin-stat-title">Besuche Woche</div>
+                                <div class="admin-stat-value"><?php echo number_format($siteStats['visits_this_week']); ?></div>
+                                <div class="admin-stat-action">
+                                    <a href="?page=statistics" class="admin-stat-link">Details <i class="fas fa-chevron-right"></i></a>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon"><i class="fas fa-file-alt"></i></div>
+                                <div class="admin-stat-title">Seiten</div>
+                                <div class="admin-stat-value"><?php echo $stats['pages']; ?></div>
+                                <div class="admin-stat-action">
+                                    <a href="pages.php">Verwalten <i class="fas fa-chevron-right"></i></a>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon"><i class="fas fa-blog"></i></div>
+                                <div class="admin-stat-title">Blog-Beiträge</div>
+                                <div class="admin-stat-value"><?php echo $stats['blog_posts']; ?></div>
+                                <div class="admin-stat-action">
+                                    <a href="blog.php">Verwalten <i class="fas fa-chevron-right"></i></a>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon"><i class="fas fa-images"></i></div>
+                                <div class="admin-stat-title">Mediendateien</div>
+                                <div class="admin-stat-value"><?php echo $stats['media_files']; ?></div>
+                                <div class="admin-stat-action">
+                                    <a href="media.php">Verwalten <i class="fas fa-chevron-right"></i></a>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon"><i class="fas fa-users"></i></div>
+                                <div class="admin-stat-title">Benutzer</div>
+                                <div class="admin-stat-value"><?php echo count($allUsers ?? []); ?></div>
+                                <div class="admin-stat-action">
+                                    <a href="users.php">Verwalten <i class="fas fa-chevron-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rechte Spalte: Besuchs-Diagramm -->
+                    <div class="admin-dashboard-column">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-chart-bar"></i> Besucherstatistik (letzte 14 Tage)</h3>
+                            </div>
+                            <div class="admin-card-content">
+                                <canvas id="visitsChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 3. Reihe: Neueste Aktivitäten | Neueste Blog-Beiträge -->
+                <div class="admin-dashboard-row">
+                    <!-- Linke Spalte: Neueste Aktivitäten -->
+                    <div class="admin-dashboard-column">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-history"></i> Neueste Aktivitäten</h3>
+                            </div>
+                            <div class="admin-card-content">
+                                <?php if (empty($recentActivity)): ?>
+                                    <p class="admin-no-data">Keine kürzlichen Aktivitäten gefunden.</p>
+                                <?php else: ?>
+                                    <ul class="admin-activity-list">
+                                        <?php foreach ($recentActivity as $activity): ?>
+                                            <li class="admin-activity-item">
+                                                <span class="admin-activity-icon">
+                                                    <i class="fas fa-<?php echo $activity['icon']; ?>"></i>
+                                                </span>
+                                                <div class="admin-activity-details">
+                                                    <a href="<?php echo $activity['url']; ?>" class="admin-activity-title">
+                                                        <?php echo htmlspecialchars($activity['title']); ?>
+                                                    </a>
+                                                    <span class="admin-activity-date">
+                                                        <?php echo date('d.m.Y H:i', strtotime($activity['date'])); ?>
+                                                    </span>
+                                                </div>
+                                                <span class="admin-activity-type">
+                                                    <?php echo $activity['type'] === 'page' ? 'Seite' : 'Beitrag'; ?>
+                                                </span>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rechte Spalte: Neueste Blog-Beiträge -->
+                    <div class="admin-dashboard-column">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-newspaper"></i> Neueste Blog-Beiträge</h3>
+                            </div>
+                            <div class="admin-card-content">
+                                <?php if (empty($recentPosts)): ?>
+                                    <p class="admin-no-data">Keine Blog-Beiträge vorhanden.</p>
+                                <?php else: ?>
+                                    <table class="admin-table admin-table-mini">
+                                        <thead>
+                                            <tr>
+                                                <th>Titel</th>
+                                                <th>Datum</th>
+                                                <th>Status</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($recentPosts as $post): ?>
+                                                <tr>
+                                                    <td><?php echo htmlspecialchars($post['title']); ?></td>
+                                                    <td><?php echo date('d.m.Y', strtotime($post['date'])); ?></td>
+                                                    <td>
+                                                        <span class="status-badge status-<?php echo $post['status']; ?>">
+                                                            <?php echo ucfirst($post['status']); ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="admin-table-actions">
+                                                        <a href="blog-edit.php?id=<?php echo $post['id']; ?>" class="admin-table-action" title="Bearbeiten">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="../blog/<?php echo $post['slug']; ?>" target="_blank" class="admin-table-action" title="Ansehen">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                    <div class="admin-card-footer">
+                                        <a href="blog.php" class="admin-button-small">Alle Blog-Beiträge anzeigen</a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 4. Reihe: Zusätzliche Inhalte (Top-Seiten, Gerätenutzung, Systeminfo) -->
+                <div class="admin-dashboard-row">
+                    <!-- Linke Spalte: Systeminfo -->
+                    <div class="admin-dashboard-column">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-server"></i> Systeminformationen</h3>
+                            </div>
+                            <div class="admin-card-content">
+                                <table class="admin-system-info">
+                                    <tr>
+                                        <td><i class="fas fa-code"></i> PHP-Version:</td>
+                                        <td><?php echo $stats['php_version']; ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-tag"></i> marques CMS-Version:</td>
+                                        <td><?php echo $stats['marques_version']; ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-hdd"></i> Speichernutzung:</td>
+                                        <td><?php echo $stats['disk_usage']; ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-clock"></i> Serverzeit:</td>
+                                        <td><?php echo date('d.m.Y H:i:s'); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-sitemap"></i> Kategorien/Tags:</td>
+                                        <td><?php echo count($categories); ?> / <?php echo count($tags); ?></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mittlere Spalte: Top-Seiten -->
                     <div class="admin-dashboard-column">
                         <div class="admin-card">
                             <div class="admin-card-header">
@@ -520,161 +662,14 @@ function detectDevice($userAgent) {
                     </div>
                 </div>
                 
-                <!-- Dritte Reihe -->
-                <div class="admin-dashboard-row">
-                    <!-- Linke Spalte: Neueste Aktivitäten -->
-                    <div class="admin-dashboard-column">
-                        <div class="admin-card">
-                            <div class="admin-card-header">
-                                <h3><i class="fas fa-history"></i> Neueste Aktivitäten</h3>
-                            </div>
-                            <div class="admin-card-content">
-                                <?php if (empty($recentActivity)): ?>
-                                    <p class="admin-no-data">Keine kürzlichen Aktivitäten gefunden.</p>
-                                <?php else: ?>
-                                    <ul class="admin-activity-list">
-                                        <?php foreach ($recentActivity as $activity): ?>
-                                            <li class="admin-activity-item">
-                                                <span class="admin-activity-icon">
-                                                    <i class="fas fa-<?php echo $activity['icon']; ?>"></i>
-                                                </span>
-                                                <div class="admin-activity-details">
-                                                    <a href="<?php echo $activity['url']; ?>" class="admin-activity-title">
-                                                        <?php echo htmlspecialchars($activity['title']); ?>
-                                                    </a>
-                                                    <span class="admin-activity-date">
-                                                        <?php echo date('d.m.Y H:i', strtotime($activity['date'])); ?>
-                                                    </span>
-                                                </div>
-                                                <span class="admin-activity-type">
-                                                    <?php echo $activity['type'] === 'page' ? 'Seite' : 'Beitrag'; ?>
-                                                </span>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Rechte Spalte: Schnellzugriff und System -->
-                    <div class="admin-dashboard-column">
-                        <!-- Schnellzugriff-Karte -->
-                        <div class="admin-card">
-                            <div class="admin-card-header">
-                                <h3><i class="fas fa-bolt"></i> Schnellzugriff</h3>
-                            </div>
-                            <div class="admin-card-content">
-                                <div class="admin-quick-actions">
-                                    <a href="page-edit.php" class="admin-quick-action">
-                                        <i class="fas fa-file-alt"></i>
-                                        <span>Neue Seite</span>
-                                    </a>
-                                    <a href="blog-edit.php" class="admin-quick-action">
-                                        <i class="fas fa-blog"></i>
-                                        <span>Neuer Beitrag</span>
-                                    </a>
-                                    <a href="media.php?action=upload" class="admin-quick-action">
-                                        <i class="fas fa-upload"></i>
-                                        <span>Medien hochladen</span>
-                                    </a>
-                                    <a href="settings.php" class="admin-quick-action">
-                                        <i class="fas fa-cog"></i>
-                                        <span>Einstellungen</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Systeminfo-Karte -->
-                        <div class="admin-card">
-                            <div class="admin-card-header">
-                                <h3><i class="fas fa-server"></i> Systeminformationen</h3>
-                            </div>
-                            <div class="admin-card-content">
-                                <table class="admin-system-info">
-                                    <tr>
-                                        <td><i class="fas fa-code"></i> PHP-Version:</td>
-                                        <td><?php echo $stats['php_version']; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-tag"></i> marques CMS-Version:</td>
-                                        <td><?php echo $stats['marques_version']; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-hdd"></i> Speichernutzung:</td>
-                                        <td><?php echo $stats['disk_usage']; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-clock"></i> Serverzeit:</td>
-                                        <td><?php echo date('d.m.Y H:i:s'); ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td><i class="fas fa-sitemap"></i> Kategorien/Tags:</td>
-                                        <td><?php echo count($categories); ?> / <?php echo count($tags); ?></td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Blog-Beiträge-Karte -->
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h3><i class="fas fa-newspaper"></i> Neueste Blog-Beiträge</h3>
-                    </div>
-                    <div class="admin-card-content">
-                        <?php if (empty($recentPosts)): ?>
-                            <p class="admin-no-data">Keine Blog-Beiträge vorhanden.</p>
-                        <?php else: ?>
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Titel</th>
-                                        <th>Datum</th>
-                                        <th>Autor</th>
-                                        <th>Status</th>
-                                        <th>Aktionen</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($recentPosts as $post): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($post['title']); ?></td>
-                                            <td><?php echo date('d.m.Y', strtotime($post['date'])); ?></td>
-                                            <td><?php echo htmlspecialchars($post['author']); ?></td>
-                                            <td>
-                                                <span class="status-badge status-<?php echo $post['status']; ?>">
-                                                    <?php echo ucfirst($post['status']); ?>
-                                                </span>
-                                            </td>
-                                            <td class="admin-table-actions">
-                                                <a href="blog-edit.php?id=<?php echo $post['id']; ?>" class="admin-table-action" title="Bearbeiten">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <a href="../blog/<?php echo $post['slug']; ?>" target="_blank" class="admin-table-action" title="Ansehen">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                            <div class="admin-card-footer">
-                                <a href="blog.php" class="admin-button-small">Alle Blog-Beiträge anzeigen</a>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                
             <?php elseif ($page === 'statistics'): ?>
-                <!-- Erweiterte Statistikseite -->
+                <!-- Erweiterte Statistikseite (code bleibt unverändert) -->
                 <div class="admin-welcome">
                     <h3>Website-Statistiken</h3>
                     <p>Hier sehen Sie detaillierte Zugriffsstatistiken für Ihre Website.</p>
                 </div>
                 
+                <!-- Rest des Statistik-Codes (unverändert) -->
                 <!-- Statistik-Übersicht -->
                 <div class="admin-stats">
                     <div class="admin-stat-card">
