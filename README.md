@@ -63,6 +63,19 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 
 | Entwicklungsphase | Feature                                                         | Status            |
 |-------------------|-----------------------------------------------------------------|-------------------|
+| **Phase 3**       | Navigationsverwaltung                                               | ✅ Fertig     |
+| **Phase 3**       | Systemsettings des CMS                                              | 🔄 In Bearbeitung     |
+| **Phase 3**       | Systemsettings des CMS: Einstellbare Blog URLs                      | ✅ Fertig     |
+| **Phase 3**       | Caching-System                                                     | ❌ Noch nicht     |
+| **Phase 3**       | SEO-Funktionen                                                     | ❌ Noch nicht     |
+| **Phase 3**       | Benutzerrollen und -berechtigungen                                 | 🔄 In Bearbeitung     |
+| **Phase 4**       | Große Fehlersuche und Korrektur                                    | ❌ Noch nicht     |
+| **Phase 4**       | Leistungsoptimierung                                               | ❌ Noch nicht     |
+| **Abschluss V. 1.0**       | Potenzielles Installationsscript                                               | ❌ Noch nicht     |
+
+<details><summary>Abgeschlossene Entwicklungsphasen</summary>>
+| Entwicklungsphase | Feature                                                         | Status            |
+|-------------------|-----------------------------------------------------------------|-------------------|
 | **Phase 1**       | Projektstruktur: Einrichtung von Ordnern und Dateien              | ✅ Fertig         |
 | **Phase 1**       | Kernmodul: Router (URL-Verarbeitung)                              | ✅ Fertig         |
 | **Phase 1**       | Kernmodul: Content-Parser (Markdown-Verarbeitung)                 | ✅ Fertig         |
@@ -86,15 +99,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 2**       | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig         |
 | **Phase 2**       | Medienverwaltung: Integration in den Editor                        | ✅ Fertig         |
 | **Phase 2**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | ✅ Fertig       |
-| **Phase 3**       | Navigationsverwaltung                                               | ✅ Fertig     |
-| **Phase 3**       | Systemsettings des CMS                                              | 🔄 In Bearbeitung     |
-| **Phase 3**       | Systemsettings des CMS: Einstellbare Blog URLs                      | ✅ Fertig     |
-| **Phase 3**       | Caching-System                                                     | ❌ Noch nicht     |
-| **Phase 3**       | SEO-Funktionen                                                     | ❌ Noch nicht     |
-| **Phase 3**       | Benutzerrollen und -berechtigungen                                 | 🔄 In Bearbeitung     |
-| **Phase 4**       | Große Fehlersuche und Korrektur                                    | ❌ Noch nicht     |
-| **Phase 4**       | Leistungsoptimierung                                               | ❌ Noch nicht     |
-| **Abschluss V. 1.0**       | Potenzielles Installationsscript                                               | ❌ Noch nicht     |
+</details>
 
 ## Mitmachen und Feedback
 
