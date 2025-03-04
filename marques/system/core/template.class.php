@@ -15,6 +15,7 @@ class Template {
      * @var array Systemkonfiguration
      */
     private $_config;
+    private $_navManager = null;
     
     /**
      * Konstruktor
@@ -140,5 +141,17 @@ class Template {
         } else {
             echo "<!-- Partial nicht gefunden: $partialName -->";
         }
+    }
+
+    /**
+     * Gibt den NavigationManager zurück oder erstellt ihn, falls er noch nicht existiert
+     *
+     * @return NavigationManager
+     */
+    public function getNavigationManager() {
+        if ($this->_navManager === null) {
+            $this->_navManager = new \Marques\Core\NavigationManager();
+        }
+        return $this->_navManager;
     }
 }

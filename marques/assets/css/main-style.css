@@ -244,6 +244,10 @@ hr {
     margin-top: var(--spacing-xs);
 }
 
+.marques-footer-navigation {
+    margin-top: var(--spacing-xs);
+}
+
 .marques-menu {
     list-style: none;
     display: flex;
@@ -922,4 +926,73 @@ hr {
     max-width: var(--container-width);
     margin-left: auto;
     margin-right: auto;
+}
+
+/* Hauptmenü-Styling */
+.main-menu {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.main-menu li {
+    margin-right: 20px;
+}
+
+.main-menu li:last-child {
+    margin-right: 0;
+}
+
+.main-menu a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.main-menu a:hover,
+.main-menu li.active a {
+    color: var(--primary);
+}
+
+/* Footermenü-Styling */
+.footer-menu {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-wrap: wrap;
+}
+
+.footer-menu li {
+    margin-right: 15px;
+    margin-bottom: 10px;
+}
+
+.footer-menu li:last-child {
+    margin-right: 0;
+}
+
+.footer-menu a {
+    text-decoration: none;
+    color: #777;
+    font-size: 0.9rem;
+    transition: color 0.3s;
+}
+
+.footer-menu a:hover {
+    color: var(--primary);
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 768px) {
+    .main-menu {
+        flex-direction: column;
+    }
+    
+    .main-menu li {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
 }

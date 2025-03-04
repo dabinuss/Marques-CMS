@@ -307,13 +307,9 @@ class BlogManager {
      * @return array Kategorien mit Anzahl der Beiträge
      */
     public function getCategories() {
-        // Kategoriekatalog laden
-        $catalogFile = MARCES_CONFIG_DIR . '/categories.json';
-        $catalogCategories = [];
-        
-        if (file_exists($catalogFile)) {
-            $catalogCategories = json_decode(file_get_contents($catalogFile), true) ?: [];
-        }
+        // ConfigManager verwenden
+        $configManager = ConfigManager::getInstance();
+        $catalogCategories = $configManager->load('categories') ?: [];
         
         // Kategorien aus Posts zählen
         $posts = $this->getAllPosts();
@@ -349,13 +345,9 @@ class BlogManager {
      * @return array Tags mit Anzahl der Beiträge
      */
     public function getTags() {
-        // Tag-Katalog laden
-        $catalogFile = MARCES_CONFIG_DIR . '/tags.json';
-        $catalogTags = [];
-        
-        if (file_exists($catalogFile)) {
-            $catalogTags = json_decode(file_get_contents($catalogFile), true) ?: [];
-        }
+        // ConfigManager verwenden
+        $configManager = ConfigManager::getInstance();
+        $catalogTags = $configManager->load('tags') ?: [];
         
         // Tags aus Posts zählen
         $posts = $this->getAllPosts();
@@ -544,13 +536,9 @@ class BlogManager {
      * @return bool Erfolg
      */
     public function addCategory($categoryName) {
-        // Kategoriedatei laden
-        $catalogFile = MARCES_CONFIG_DIR . '/categories.json';
-        $categories = [];
-        
-        if (file_exists($catalogFile)) {
-            $categories = json_decode(file_get_contents($catalogFile), true) ?: [];
-        }
+        // ConfigManager verwenden
+        $configManager = ConfigManager::getInstance();
+        $categories = $configManager->load('categories') ?: [];
         
         // Prüfen, ob Kategorie bereits existiert
         if (in_array($categoryName, $categories)) {
@@ -561,11 +549,7 @@ class BlogManager {
         $categories[] = $categoryName;
         
         // Speichern
-        if (file_put_contents($catalogFile, json_encode($categories, JSON_PRETTY_PRINT)) === false) {
-            return false;
-        }
-        
-        return true;
+        return $configManager->save('categories', $categories);
     }
 
     /**
@@ -580,13 +564,9 @@ class BlogManager {
             return true; // Nichts zu tun
         }
         
-        // Kategoriedatei laden
-        $catalogFile = MARCES_CONFIG_DIR . '/categories.json';
-        $categories = [];
-        
-        if (file_exists($catalogFile)) {
-            $categories = json_decode(file_get_contents($catalogFile), true) ?: [];
-        }
+        // ConfigManager verwenden
+        $configManager = ConfigManager::getInstance();
+        $categories = $configManager->load('categories') ?: [];
         
         // Prüfen, ob alte Kategorie existiert
         $oldIndex = array_search($oldName, $categories);
@@ -603,7 +583,7 @@ class BlogManager {
         $categories[$oldIndex] = $newName;
         
         // Speichern
-        if (file_put_contents($catalogFile, json_encode($categories, JSON_PRETTY_PRINT)) === false) {
+        if (!$configManager->save('categories', $categories)) {
             return false;
         }
         
@@ -640,13 +620,9 @@ class BlogManager {
      * @return bool Erfolg
      */
     public function deleteCategory($categoryName) {
-        // Kategoriedatei laden
-        $catalogFile = MARCES_CONFIG_DIR . '/categories.json';
-        $categories = [];
-        
-        if (file_exists($catalogFile)) {
-            $categories = json_decode(file_get_contents($catalogFile), true) ?: [];
-        }
+        // ConfigManager verwenden
+        $configManager = ConfigManager::getInstance();
+        $categories = $configManager->load('categories') ?: [];
         
         // Prüfen, ob Kategorie existiert
         $index = array_search($categoryName, $categories);
@@ -659,7 +635,7 @@ class BlogManager {
         $categories = array_values($categories); // Indizes neu anordnen
         
         // Speichern
-        if (file_put_contents($catalogFile, json_encode($categories, JSON_PRETTY_PRINT)) === false) {
+        if (!$configManager->save('categories', $categories)) {
             return false;
         }
         
@@ -691,13 +667,9 @@ class BlogManager {
      * @return bool Erfolg
      */
     public function addTag($tagName) {
-        // Tag-Datei laden
-        $catalogFile = MARCES_CONFIG_DIR . '/tags.json';
-        $tags = [];
-        
-        if (file_exists($catalogFile)) {
-            $tags = json_decode(file_get_contents($catalogFile), true) ?: [];
-        }
+        // ConfigManager verwenden
+        $configManager = ConfigManager::getInstance();
+        $tags = $configManager->load('tags') ?: [];
         
         // Prüfen, ob Tag bereits existiert
         if (in_array($tagName, $tags)) {
@@ -708,11 +680,7 @@ class BlogManager {
         $tags[] = $tagName;
         
         // Speichern
-        if (file_put_contents($catalogFile, json_encode($tags, JSON_PRETTY_PRINT)) === false) {
-            return false;
-        }
-        
-        return true;
+        return $configManager->save('tags', $tags);
     }
 
     /**
@@ -727,13 +695,9 @@ class BlogManager {
             return true; // Nichts zu tun
         }
         
-        // Tag-Datei laden
-        $catalogFile = MARCES_CONFIG_DIR . '/tags.json';
-        $tags = [];
-        
-        if (file_exists($catalogFile)) {
-            $tags = json_decode(file_get_contents($catalogFile), true) ?: [];
-        }
+        // ConfigManager verwenden
+        $configManager = ConfigManager::getInstance();
+        $tags = $configManager->load('tags') ?: [];
         
         // Prüfen, ob alter Tag existiert
         $oldIndex = array_search($oldName, $tags);
@@ -750,7 +714,7 @@ class BlogManager {
         $tags[$oldIndex] = $newName;
         
         // Speichern
-        if (file_put_contents($catalogFile, json_encode($tags, JSON_PRETTY_PRINT)) === false) {
+        if (!$configManager->save('tags', $tags)) {
             return false;
         }
         
@@ -781,13 +745,9 @@ class BlogManager {
      * @return bool Erfolg
      */
     public function deleteTag($tagName) {
-        // Tag-Datei laden
-        $catalogFile = MARCES_CONFIG_DIR . '/tags.json';
-        $tags = [];
-        
-        if (file_exists($catalogFile)) {
-            $tags = json_decode(file_get_contents($catalogFile), true) ?: [];
-        }
+        // ConfigManager verwenden
+        $configManager = ConfigManager::getInstance();
+        $tags = $configManager->load('tags') ?: [];
         
         // Prüfen, ob Tag existiert
         $index = array_search($tagName, $tags);
@@ -800,7 +760,7 @@ class BlogManager {
         $tags = array_values($tags); // Indizes neu anordnen
         
         // Speichern
-        if (file_put_contents($catalogFile, json_encode($tags, JSON_PRETTY_PRINT)) === false) {
+        if (!$configManager->save('tags', $tags)) {
             return false;
         }
         
@@ -829,17 +789,18 @@ class BlogManager {
      * Initialisiert die Konfigurationsdateien für Tags und Kategorien
      */
     public function initCatalogFiles() {
-        $categoriesFile = MARCES_CONFIG_DIR . '/categories.json';
-        $tagsFile = MARCES_CONFIG_DIR . '/tags.json';
+        $configManager = ConfigManager::getInstance();
         
         // Kategoriedatei initialisieren, wenn sie nicht existiert
-        if (!file_exists($categoriesFile)) {
-            file_put_contents($categoriesFile, json_encode([], JSON_PRETTY_PRINT));
+        $categories = $configManager->load('categories');
+        if (empty($categories)) {
+            $configManager->save('categories', []);
         }
         
         // Tag-Datei initialisieren, wenn sie nicht existiert
-        if (!file_exists($tagsFile)) {
-            file_put_contents($tagsFile, json_encode([], JSON_PRETTY_PRINT));
+        $tags = $configManager->load('tags');
+        if (empty($tags)) {
+            $configManager->save('tags', []);
         }
     }
 }

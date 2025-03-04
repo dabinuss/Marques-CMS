@@ -27,7 +27,7 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
                 </a>
             </li>
             <li class="admin-menu-item">
-                <a href="blog.php" class="admin-menu-link <?php echo $current_page === 'blog.php' || $current_page === 'blog-edit.php' ? 'active' : ''; ?>">
+                <a href="blog.php" class="admin-menu-link <?php echo $current_page === 'blog.php' || $current_page === 'blog-categories.php' || $current_page === 'blog-tags.php' || $current_page === 'blog-edit.php' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-blog"></i></span>
                     Blog
                 </a>
@@ -42,6 +42,12 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
                 <a href="media.php" class="admin-menu-link <?php echo $current_page === 'media.php' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-images"></i></span>
                     Medien
+                </a>
+            </li>
+            <li class="admin-menu-item">
+                <a href="navigation.php" class="admin-menu-link <?php echo $current_page === 'navigation.php' ? 'active' : ''; ?>">
+                    <span class="admin-menu-icon"><i class="fas fa-bars"></i></span>
+                    Menüs
                 </a>
             </li>
             <?php if (isset($user) && $user->isAdmin()): ?>

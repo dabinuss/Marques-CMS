@@ -7,8 +7,14 @@
                 </h1>
                 <p class="marques-site-description"><?php echo marques_escape_html(isset($system_settings) && isset($system_settings['site_description']) ? $system_settings['site_description'] : ''); ?></p>
             </div>
+
+            <?php
+            echo $this->getNavigationManager()->renderMainMenu();
+            ?>
             
+            <!--
             <nav class="marques-main-navigation">
+                
                 <ul class="marques-menu">
                     <li class="marques-menu-item"><a href="<?php echo marques_site_url(); ?>">Startseite</a></li>
                     <li class="marques-menu-item"><a href="<?php echo marques_site_url('blog'); ?>">Blog</a></li>
@@ -16,6 +22,7 @@
                     <li class="marques-menu-item"><a href="<?php echo marques_site_url('contact'); ?>">Kontakt</a></li>
                 </ul>
             </nav>
+            -->
         </div>
     </div>
 </header>

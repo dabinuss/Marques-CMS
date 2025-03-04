@@ -186,4 +186,6 @@ if (!defined('IS_ADMIN') && !preg_match('/(bot|crawler|spider|slurp|bingbot|goog
     // In die Logdatei schreiben
     @file_put_contents($logFile, json_encode($logData) . PHP_EOL, FILE_APPEND);
 }
-?>
+
+// ConfigManager initialisieren (einmalig, da Singleton)
+$configManager = \Marques\Core\ConfigManager::getInstance();
