@@ -47,6 +47,10 @@ return [
     'cache_enabled' => false, // Im Produktiveinsatz auf true setzen
     'version' => '0.3.0', // Phase 3 der Entwicklung
     
+    // Theme-Einstellungen
+    'active_theme' => 'default', // Standard-Theme
+    'themes_path' => MARCES_THEMES_DIR, // Pfad zum Themes-Verzeichnis
+    
     // Admin-Einstellungen
     'admin_language' => 'de',
 ];

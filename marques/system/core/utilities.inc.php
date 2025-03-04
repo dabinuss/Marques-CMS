@@ -72,7 +72,8 @@ function marques_site_url($path = '') {
  * @param string $path Pfad zum Asset
  * @return string Die Asset-URL
  */
-function marques_asset_url($path) {
+/*
+function marques_theme_url($path) {
     $config = marques_get_config();
     $baseUrl = rtrim($config['base_url'] ?? '', '/');
     
@@ -92,6 +93,17 @@ function marques_asset_url($path) {
         // Im Frontend: Verwende den /assets/-Pfad
         return $baseUrl . '/assets/' . ltrim($path, '/');
     }
+}
+*/
+/**
+ * Gibt die URL zu einer Theme-Asset-Datei zurück
+ */
+function marques_theme_url($path = '') {
+    static $themeManager = null;
+    if ($themeManager === null) {
+        $themeManager = new \Marques\Core\ThemeManager();
+    }
+    return $themeManager->getThemeAssetsUrl($path);
 }
 
 /**
@@ -220,4 +232,6 @@ function marques_format_blog_url($post) {
             // Standard-Format
             return marques_site_url("blog/{$year}/{$month}/{$day}/{$slug}");
     }
+
+
 }

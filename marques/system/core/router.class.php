@@ -50,6 +50,13 @@ class Router {
             
             // Führende und nachfolgende Schrägstriche entfernen
             $path = trim($path, '/');
+
+            // WICHTIG: Theme-Asset-Pfade ignorieren
+            if (strpos($path, 'themes/') === 0 || strpos($path, 'assets/') === 0) {
+                // Dies ist wahrscheinlich ein Asset-Pfad, wir sollten 404 zurückgeben,
+                // aber das wird durch den Webserver behandelt, nicht durch unser Routing
+                throw new NotFoundException("Statischer Asset-Pfad: " . htmlspecialchars($path));
+            }
             
             // Pfadvalidierung - nur alphanumerische Zeichen, Bindestriche, Unterstriche und Schrägstriche erlauben
             if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $path)) {
@@ -235,8 +242,18 @@ class Router {
      */
     private function routeExists($path, $params = []) {
         // Konfiguration laden
+        $requestUri = $this->getRequestUri();
         $config = require MARCES_CONFIG_DIR . '/system.config.php';
         $blogUrlFormat = $config['blog_url_format'] ?? 'date_slash';
+
+        // Standard-Routendaten
+        $routeData = [
+            'path' => 'home', // Standardpfad
+            'params' => [],
+            'query' => $_GET
+        ];
+
+        
         
         // Für Blog-Beiträge die tatsächliche Datei oder Daten prüfen
         if ($path === 'blog') {

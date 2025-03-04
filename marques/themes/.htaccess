@@ -1,0 +1,5 @@
+# /themes/.htaccess
+<FilesMatch "theme\.json$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>

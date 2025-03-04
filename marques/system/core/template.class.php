@@ -16,12 +16,29 @@ class Template {
      */
     private $_config;
     private $_navManager = null;
+
+    /**
+     * @var string Pfad zum Template-Verzeichnis
+     */
+    private $templatePath; // Vorab deklarieren
     
     /**
      * Konstruktor
      */
     public function __construct() {
         $this->_config = require MARCES_CONFIG_DIR . '/system.config.php';
+
+        $themeManager = new ThemeManager();
+        $this->templatePath = $themeManager->getThemePath('templates');
+    }
+
+    // Methode für Template-Assets
+    public function themeUrl($path = '') {
+        static $themeManager = null;
+        if ($themeManager === null) {
+            $themeManager = new ThemeManager();
+        }
+        return $themeManager->getThemeAssetsUrl($path);
     }
     
     /**
@@ -40,16 +57,24 @@ class Template {
             throw new \Exception("Ungültiger Template-Name: " . htmlspecialchars($templateName));
         }
         
-        // Prüfen, ob Template existiert
-        $templateFile = MARCES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
+        // Prüfen, ob Template im Theme existiert
+        $templateFile = $this->templatePath . '/' . $templateName . '.tpl.php';
         if (!file_exists($templateFile)) {
-            throw new \Exception("Template nicht gefunden: " . $templateName);
+            // Fallback auf Standard-Template-Verzeichnis
+            $templateFile = MARCES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
+            if (!file_exists($templateFile)) {
+                throw new \Exception("Template nicht gefunden: " . $templateName);
+            }
         }
         
-        // Prüfen, ob Basis-Template existiert
-        $baseTemplateFile = MARCES_TEMPLATE_DIR . '/base.tpl.php';
+        // Prüfen, ob Basis-Template im Theme existiert
+        $baseTemplateFile = $this->templatePath . '/base.tpl.php';
         if (!file_exists($baseTemplateFile)) {
-            throw new \Exception("Basis-Template nicht gefunden");
+            // Fallback auf Standard-Basis-Template
+            $baseTemplateFile = MARCES_TEMPLATE_DIR . '/base.tpl.php';
+            if (!file_exists($baseTemplateFile)) {
+                throw new \Exception("Basis-Template nicht gefunden");
+            }
         }
     
         // Systemeinstellungen holen und anpassen
@@ -68,11 +93,17 @@ class Template {
                 $system_settings['base_url'] = preg_replace('|/admin$|', '', $system_settings['base_url']);
             }
         }
+
+        // Theme-Manager der View zur Verfügung stellen
+        $themeManager = new ThemeManager();
+        $data['themeManager'] = $themeManager;
+
+        // Template-Datei für base.tpl.php verfügbar machen
+        $data['templateFile'] = $templateFile;
         
         // Aktualisierte Systemeinstellungen zu den Daten hinzufügen
         $data['system_settings'] = $system_settings;
         
-        // Rest des Codes bleibt unverändert
         $data = array_merge(['templateName' => $templateName], $data);
         extract($data);
         
@@ -87,17 +118,6 @@ class Template {
         ob_start();
         include $baseTemplateFile;
         echo ob_get_clean();
-    }
-    
-    /**
-     * Prüft, ob ein Template existiert
-     *
-     * @param string $templateName Template-Name
-     * @return bool True, wenn das Template existiert
-     */
-    public function exists($templateName) {
-        $templateFile = MARCES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
-        return file_exists($templateFile);
     }
     
     /**
@@ -134,12 +154,18 @@ class Template {
         // Daten zu Variablen extrahieren für einfache Verwendung im Template
         extract($data);
         
-        // Das Partial-Template einbinden
-        $partialFile = MARCES_TEMPLATE_DIR . '/partials/' . $partialName . '.tpl.php';
-        if (file_exists($partialFile)) {
-            include $partialFile;
+        // Das Partial-Template aus dem Theme-Verzeichnis einbinden
+        $partialFile = $this->templatePath . '/partials/' . $partialName . '.tpl.php';
+        if (!file_exists($partialFile)) {
+            // Fallback auf Standard-Template-Verzeichnis
+            $partialFile = MARCES_TEMPLATE_DIR . '/partials/' . $partialName . '.tpl.php';
+            if (file_exists($partialFile)) {
+                include $partialFile;
+            } else {
+                echo "<!-- Partial nicht gefunden: $partialName -->";
+            }
         } else {
-            echo "<!-- Partial nicht gefunden: $partialName -->";
+            include $partialFile;
         }
     }
 
@@ -153,5 +179,23 @@ class Template {
             $this->_navManager = new \Marques\Core\NavigationManager();
         }
         return $this->_navManager;
+    }
+
+    /**
+     * Prüft, ob ein Template existiert
+     *
+     * @param string $templateName Template-Name
+     * @return bool True, wenn das Template existiert
+     */
+    public function exists($templateName) {
+        // Zuerst im Theme-Verzeichnis suchen
+        $templateFile = $this->templatePath . '/' . $templateName . '.tpl.php';
+        if (file_exists($templateFile)) {
+            return true;
+        }
+        
+        // Fallback auf Standard-Template-Verzeichnis
+        $templateFile = MARCES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
+        return file_exists($templateFile);
     }
 }

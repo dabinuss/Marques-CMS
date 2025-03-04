@@ -1,4 +1,4 @@
-# Dynamische RewriteBase (funktioniert sowohl in Root als auch in Unterverzeichnissen)
+# Dynamische RewriteBase
 RewriteEngine On
 RewriteBase /
 # Wenn in Unterverzeichnis installiert, diese Zeile anpassen
@@ -9,12 +9,32 @@ RewriteRule ^system/.* - [F,L]
 RewriteRule ^content/.* - [F,L]
 RewriteRule ^config/.* - [F,L]
 
-# Direkten Zugriff auf Assets und Admin erlauben
-RewriteCond %{REQUEST_URI} !^/assets/
-RewriteCond %{REQUEST_URI} !^/admin/
+# Statische Dateien und Theme-Assets direkt ausliefern
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule \.(css|js|jpe?g|png|gif|ico|svg|woff2?|ttf|eot|map)$ - [L]
 
-# Alles andere an index.php senden
-RewriteRule ^(.*)$ index.php [QSA,L]
+# Theme-Verzeichnis direkt durchlassen, wenn die Datei existiert
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^themes/ - [L]
+
+# Assets-Verzeichnis direkt durchlassen, wenn die Datei existiert
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^assets/ - [L]
+
+# PHP-Dateien direkt ausliefern
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^(.+\.php)$ $1 [L]
+
+# Admin-Bereich spezielle Behandlung
+RewriteCond %{REQUEST_URI} ^/admin/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ admin/index.php [L]
+
+# Alle anderen Anfragen an index.php weiterleiten
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
 
 # .htaccess-Datei schützen
 <Files .htaccess>

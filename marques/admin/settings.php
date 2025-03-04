@@ -90,6 +90,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 break;
                 
+            case 'appearance':
+                $themeManager = new \Marques\Core\ThemeManager();
+                $newTheme = $_POST['active_theme'] ?? 'default';
+                $themeManager->setActiveTheme($newTheme);
+                break;
+
             case 'seo':
                 $settings->setMultipleSettings([
                     'meta_keywords' => $_POST['meta_keywords'] ?? '',
@@ -121,7 +127,7 @@ $current_settings = $settings->getAllSettings();
 
 // Aktiven Tab bestimmen
 $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
-$allowed_tabs = ['general', 'social', 'content', 'system', 'seo'];
+$allowed_tabs = ['general', 'social', 'content', 'system', 'seo', 'appearance'];
 
 if (!in_array($active_tab, $allowed_tabs)) {
     $active_tab = 'general';
@@ -196,6 +202,9 @@ $time_formats = [
                     <a href="?tab=system" class="admin-tab <?php echo $active_tab === 'system' ? 'active' : ''; ?>">
                         <i class="fas fa-server"></i> System
                     </a>
+                    <a href="?tab=appearance" class="admin-tab <?php echo $active_tab === 'appearance' ? 'active' : ''; ?>">
+                        <i class="fas fa-paint-brush"></i> Design
+                    </a>
                     <a href="?tab=seo" class="admin-tab <?php echo $active_tab === 'seo' ? 'active' : ''; ?>">
                         <i class="fas fa-search"></i> SEO
                     </a>
@@ -236,7 +245,8 @@ $time_formats = [
                                 <input type="text" id="contact_phone" name="contact_phone" value="<?php echo htmlspecialchars($current_settings['contact_phone'] ?? ''); ?>">
                                 <p class="form-hint">Öffentliche Telefonnummer für Kontakt.</p>
                             </div>
-                        
+
+                        <?php /*
                         <?php elseif ($active_tab === 'social'): ?>
                             <div class="form-group">
                                 <label for="social_facebook">Facebook</label>
@@ -282,7 +292,8 @@ $time_formats = [
                                 </div>
                                 <p class="form-hint">Vollständige URL zum YouTube-Kanal.</p>
                             </div>
-                        
+                        */ ?>
+
                         <?php elseif ($active_tab === 'content'): ?>
                             <div class="form-group">
                                 <label for="posts_per_page">Beiträge pro Seite</label>
@@ -398,6 +409,44 @@ $time_formats = [
                                 <p class="form-hint">Diese Nachricht wird angezeigt, wenn der Wartungsmodus aktiv ist.</p>
                             </div>
                         
+                            <?php elseif ($active_tab === 'appearance'): 
+                                // Theme Manager initialisieren
+                                $themeManager = new \Marques\Core\ThemeManager();
+                                $themes = $themeManager->getThemes();
+                                $activeTheme = $themeManager->getActiveTheme();
+                            ?>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="active_theme" class="form-label">Theme auswählen</label>
+                                        <select id="active_theme" name="active_theme" class="form-control">
+                                            <?php foreach ($themes as $themeId => $theme): ?>
+                                                <option value="<?php echo htmlspecialchars($themeId); ?>" <?php echo $activeTheme === $themeId ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($theme['name'] ?? $themeId); ?> 
+                                                    <?php if (isset($theme['version'])): ?>(v<?php echo htmlspecialchars($theme['version']); ?>)<?php endif; ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <div class="form-help">Wählen Sie das Theme für Ihre Website.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-help mt-3">
+                                        <p><strong>Hinweis:</strong> Neue Themes können im Verzeichnis <code>/themes/</code> installiert werden. 
+                                        Jedes Theme benötigt mindestens die Unterordner <code>/assets/</code> und <code>/templates/</code> sowie eine 
+                                        <code>theme.json</code> Datei mit grundlegenden Informationen.</p>
+                                        
+                                        <?php if (isset($themes[$activeTheme]['author'])): ?>
+                                            <p class="mt-2">Aktuelles Theme: <strong><?php echo htmlspecialchars($themes[$activeTheme]['name'] ?? $activeTheme); ?></strong> 
+                                            von <?php echo htmlspecialchars($themes[$activeTheme]['author']); ?></p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+
                         <?php elseif ($active_tab === 'seo'): ?>
                             <div class="form-group">
                                 <label for="meta_keywords">Meta-Keywords</label>

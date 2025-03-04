@@ -25,6 +25,7 @@ define('MARCES_CONTENT_DIR', MARCES_ROOT_DIR . '/content');
 define('MARCES_TEMPLATE_DIR', MARCES_ROOT_DIR . '/templates');
 define('MARCES_CACHE_DIR', MARCES_SYSTEM_DIR . '/cache');
 define('MARCES_ADMIN_DIR', MARCES_ROOT_DIR . '/admin');
+define('MARCES_THEMES_DIR', MARCES_ROOT_DIR . '/themes');
 
 // Temporäre Fehleranzeige für die Entwicklung
 error_reporting(E_ALL);
@@ -186,6 +187,89 @@ if (!defined('IS_ADMIN') && !preg_match('/(bot|crawler|spider|slurp|bingbot|goog
     // In die Logdatei schreiben
     @file_put_contents($logFile, json_encode($logData) . PHP_EOL, FILE_APPEND);
 }
+
+// Hilfsfunktionen für das Theme-System
+function marques_init_default_theme() {
+    $defaultThemePath = MARCES_THEMES_DIR . '/default';
+    
+    if (!is_dir($defaultThemePath)) {
+        // Verzeichnisse erstellen
+        mkdir($defaultThemePath . '/assets', 0755, true);
+        mkdir($defaultThemePath . '/templates', 0755, true);
+        
+        // Minimale theme.json
+        $themeData = [
+            'name' => 'Default Theme',
+            'version' => '1.0.0',
+            'author' => 'marques CMS'
+        ];
+        
+        file_put_contents(
+            $defaultThemePath . '/theme.json',
+            json_encode($themeData, JSON_PRETTY_PRINT)
+        );
+        
+        // Kopiere die bestehenden Templates ins neue Theme-Verzeichnis
+        if (is_dir(MARCES_TEMPLATE_DIR)) {
+            $templateFiles = glob(MARCES_TEMPLATE_DIR . '/*.tpl.php');
+            foreach ($templateFiles as $templateFile) {
+                $fileName = basename($templateFile);
+                copy($templateFile, $defaultThemePath . '/templates/' . $fileName);
+            }
+            
+            // Partials-Verzeichnis
+            if (is_dir(MARCES_TEMPLATE_DIR . '/partials')) {
+                mkdir($defaultThemePath . '/templates/partials', 0755, true);
+                $partialFiles = glob(MARCES_TEMPLATE_DIR . '/partials/*.tpl.php');
+                foreach ($partialFiles as $partialFile) {
+                    $fileName = basename($partialFile);
+                    copy($partialFile, $defaultThemePath . '/templates/partials/' . $fileName);
+                }
+            }
+        }
+        
+        // Kopiere die bestehenden Assets ins neue Theme-Verzeichnis
+        if (is_dir(MARCES_ROOT_DIR . '/assets')) {
+            // CSS-Dateien
+            $cssFiles = glob(MARCES_ROOT_DIR . '/assets/css/*.css');
+            if (!empty($cssFiles)) {
+                mkdir($defaultThemePath . '/assets/css', 0755, true);
+                foreach ($cssFiles as $cssFile) {
+                    $fileName = basename($cssFile);
+                    copy($cssFile, $defaultThemePath . '/assets/css/' . $fileName);
+                }
+            }
+            
+            // JavaScript-Dateien
+            $jsFiles = glob(MARCES_ROOT_DIR . '/assets/js/*.js');
+            if (!empty($jsFiles)) {
+                mkdir($defaultThemePath . '/assets/js', 0755, true);
+                foreach ($jsFiles as $jsFile) {
+                    $fileName = basename($jsFile);
+                    copy($jsFile, $defaultThemePath . '/assets/js/' . $fileName);
+                }
+            }
+            
+            // Bilder
+            $imgFiles = glob(MARCES_ROOT_DIR . '/assets/images/*.*');
+            if (!empty($imgFiles)) {
+                mkdir($defaultThemePath . '/assets/images', 0755, true);
+                foreach ($imgFiles as $imgFile) {
+                    $fileName = basename($imgFile);
+                    copy($imgFile, $defaultThemePath . '/assets/images/' . $fileName);
+                }
+            }
+        }
+    }
+}
+
+// Alias-Funktion für Abwärtskompatibilität
+function marques_asset_url($path = '') {
+    return marques_theme_url($path);
+}
+
+// Default-Theme initialisieren
+marques_init_default_theme();
 
 // ConfigManager initialisieren (einmalig, da Singleton)
 $configManager = \Marques\Core\ConfigManager::getInstance();
