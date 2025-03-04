@@ -74,6 +74,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Abschluss V. 1.0**       | Potenzielles Installationsscript                                               | ❌ Noch nicht     |
 
 <details><summary>Abgeschlossene Entwicklungsphasen</summary>>
+
 | Entwicklungsphase | Feature                                                         | Status            |
 |-------------------|-----------------------------------------------------------------|-------------------|
 | **Phase 1**       | Projektstruktur: Einrichtung von Ordnern und Dateien              | ✅ Fertig         |
@@ -99,6 +100,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 2**       | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig         |
 | **Phase 2**       | Medienverwaltung: Integration in den Editor                        | ✅ Fertig         |
 | **Phase 2**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | ✅ Fertig       |
+
 </details>
 
 ## Mitmachen und Feedback
