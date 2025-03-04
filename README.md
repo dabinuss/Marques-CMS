@@ -66,6 +66,7 @@ In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche F
 | **Phase 3**       | Navigationsverwaltung                                               | ✅ Fertig     |
 | **Phase 3**       | Systemsettings des CMS                                              | 🔄 In Bearbeitung     |
 | **Phase 3**       | Systemsettings des CMS: Einstellbare Blog URLs                      | ✅ Fertig     |
+| **Phase 3**       | Theme-Manager / Custom Themes                                       | ✅ Fertig     |
 | **Phase 3**       | Caching-System                                                     | ❌ Noch nicht     |
 | **Phase 3**       | SEO-Funktionen                                                     | ❌ Noch nicht     |
 | **Phase 3**       | Benutzerrollen und -berechtigungen                                 | 🔄 In Bearbeitung     |
