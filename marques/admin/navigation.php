@@ -162,15 +162,24 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
         .menu-list {
             margin-top: 20px;
             min-height: 50px;
+            background-color: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
         }
         
         .menu-item {
             display: flex;
             align-items: center;
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-200);
             background-color: white;
             cursor: move;
+            transition: background-color 0.2s;
+        }
+        
+        .menu-item:hover {
+            background-color: var(--gray-100);
         }
         
         .menu-item:last-child {
@@ -180,6 +189,7 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
         .menu-item-title {
             flex: 1;
             font-weight: 500;
+            color: var(--text-dark);
         }
         
         .menu-item-url {
@@ -191,8 +201,9 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
         .menu-item-target {
             margin-right: 20px;
             font-size: 0.8rem;
-            padding: 2px 6px;
-            background-color: var(--gray-200);
+            padding: 3px 8px;
+            background-color: var(--primary);
+            color: white;
             border-radius: 3px;
         }
         
@@ -205,6 +216,9 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
             padding: 20px;
             text-align: center;
             color: var(--text-light);
+            background-color: var(--gray-100);
+            border-radius: var(--radius);
+            margin-bottom: 20px;
         }
         
         .add-form {
@@ -215,18 +229,30 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
             display: flex;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
+            background-color: var(--white);
+            border-radius: var(--radius) var(--radius) 0 0;
+            overflow: hidden;
         }
         
         .menu-tab {
-            padding: 10px 20px;
+            padding: 12px 20px;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
             font-weight: 500;
+            transition: all 0.2s;
+            color: var(--text-dark);
+            text-decoration: none;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .menu-tab:hover {
+            background-color: var(--gray-100);
+            color: var(--primary);
         }
         
         .menu-tab.active {
             border-bottom-color: var(--primary);
             color: var(--primary);
+            background-color: var(--gray-100);
         }
         
         .ui-sortable-helper {
@@ -251,11 +277,15 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
             margin-right: 10px;
             color: var(--primary);
             text-decoration: none;
+            padding: 2px 8px;
+            border-radius: 3px;
+            background-color: rgba(74, 111, 165, 0.1);
         }
 
         .quick-url-link:hover,
         .quick-url-link-edit:hover {
-            text-decoration: underline;
+            text-decoration: none;
+            background-color: rgba(74, 111, 165, 0.2);
         }
         
         /* Modal Styling */
@@ -268,7 +298,10 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0, 0, 0, 0.4);
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            align-items: center;
+            justify-content: center;
         }
 
         .admin-modal-content {
@@ -276,10 +309,16 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
             background-color: white;
             margin: 10% auto;
             padding: 25px;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: var(--radius);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             width: 90%;
             max-width: 600px;
+            animation: modalFadeIn 0.3s;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .admin-modal-close {
@@ -289,12 +328,20 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
             font-size: 24px;
             font-weight: bold;
             cursor: pointer;
+            color: var(--text-light);
+            transition: color 0.2s;
+        }
+        
+        .admin-modal-close:hover {
+            color: var(--text-dark);
         }
 
         .admin-modal h2 {
             margin-top: 0;
             margin-bottom: 20px;
             color: var(--primary);
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gray-200);
         }
 
         .form-actions {
@@ -302,6 +349,8 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
             justify-content: flex-end;
             gap: 10px;
             margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--gray-200);
         }
         
         .admin-button-small {
@@ -314,10 +363,61 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
+            transition: background-color 0.2s;
         }
         
         .admin-button-small:hover {
             background-color: var(--primary-dark);
+        }
+        
+        .admin-button-danger {
+            background-color: #dc3545;
+        }
+        
+        .admin-button-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .admin-card {
+            margin-bottom: 20px;
+        }
+        
+        .admin-card-header {
+            background-color: var(--gray-100);
+            padding: 15px;
+            border-bottom: 1px solid var(--gray-200);
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+        
+        .admin-card-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-dark);
+        }
+        
+        .admin-card-header small {
+            display: block;
+            margin-top: 5px;
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+        
+        .admin-form {
+            background-color: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            padding: 0;
+        }
+        
+        .admin-form .form-row {
+            padding: 15px;
+            margin-bottom: 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .admin-form .admin-actions {
+            padding: 15px;
         }
     </style>
 </head>
@@ -361,120 +461,117 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
                 </a>
             </div>
             
-            <div class="admin-card">
+            <form method="post" class="admin-form">
                 <div class="admin-card-header">
                     <h3>Neuen Menüpunkt hinzufügen (<?php echo $activeMenuTitle; ?>)</h3>
                 </div>
-                <div class="admin-card-content">
-                    <form method="post" class="add-form">
-                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                        <input type="hidden" name="action" value="add_item">
-                        <input type="hidden" name="menu_type" value="<?php echo $activeMenu; ?>">
-                        
-                        <div class="form-row">
-                            <div class="form-column">
-                                <div class="form-group">
-                                    <label for="title" class="form-label">Titel</label>
-                                    <input type="text" id="title" name="title" class="form-control" required>
-                                </div>
-                            </div>
+                
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                <input type="hidden" name="action" value="add_item">
+                <input type="hidden" name="menu_type" value="<?php echo $activeMenu; ?>">
+                
+                <div class="form-row">
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label for="title" class="form-label">Titel</label>
+                            <input type="text" id="title" name="title" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label for="url" class="form-label">URL</label>
+                            <input type="text" id="url" name="url" class="form-control" required>
                             
-                            <div class="form-column">
-                                <div class="form-group">
-                                    <label for="url" class="form-label">URL</label>
-                                    <input type="text" id="url" name="url" class="form-control" required>
-                                    
-                                    <div class="quick-urls">
-                                        <small>Schnellauswahl:</small>
-                                        <?php foreach ($commonUrls as $commonUrl): ?>
-                                            <a href="#" class="quick-url-link" data-url="<?php echo htmlspecialchars($commonUrl['url']); ?>">
-                                                <?php echo htmlspecialchars($commonUrl['title']); ?>
-                                            </a>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-column">
-                                <div class="form-group">
-                                    <label class="form-label">Öffnen in</label>
-                                    <div class="form-check">
-                                        <input type="checkbox" id="target" name="target" value="_blank">
-                                        <label for="target">Neuem Tab öffnen</label>
-                                    </div>
-                                </div>
+                            <div class="quick-urls">
+                                <small>Schnellauswahl:</small>
+                                <?php foreach ($commonUrls as $commonUrl): ?>
+                                    <a href="#" class="quick-url-link" data-url="<?php echo htmlspecialchars($commonUrl['url']); ?>">
+                                        <?php echo htmlspecialchars($commonUrl['title']); ?>
+                                    </a>
+                                <?php endforeach; ?>
                             </div>
                         </div>
-                        
-                        <button type="submit" class="admin-button">
-                            <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
-                            Hinzufügen
-                        </button>
-                    </form>
+                    </div>
+                    
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label class="form-label">Öffnen in</label>
+                            <div class="form-check">
+                                <input type="checkbox" id="target" name="target" value="_blank">
+                                <label for="target">Neuem Tab öffnen</label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+                
+                <div class="admin-actions">
+                    <button type="submit" class="admin-button">
+                        <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
+                        Hinzufügen
+                    </button>
+                </div>
+            </form>
             
             <div class="admin-card">
                 <div class="admin-card-header">
                     <h3><?php echo $activeMenuTitle; ?> Einträge</h3>
                     <small>Zum Sortieren die Einträge mit der Maus ziehen</small>
                 </div>
-                <div class="admin-card-content">
-                    <div class="menu-list" id="menu-sortable">
-                        <?php 
-                        $menuItems = $activeMenu === 'main_menu' ? $mainMenu : $footerMenu;
-                        
-                        if (empty($menuItems)): 
-                        ?>
-                            <div class="empty-message">
-                                Keine Menüpunkte gefunden. 
-                                <?php if ($activeMenu === 'main_menu'): ?>
-                                    <a href="?menu=main&migrate=1" class="admin-button admin-button-small">
-                                        <i class="fas fa-magic"></i> 
-                                        Standard-Menü importieren
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        <?php else: ?>
-                            <?php foreach ($menuItems as $item): ?>
-                                <div class="menu-item" data-id="<?php echo htmlspecialchars($item['id']); ?>">
-                                    <div class="menu-item-title"><?php echo htmlspecialchars($item['title']); ?></div>
-                                    <div class="menu-item-url"><?php echo htmlspecialchars($item['url']); ?></div>
-                                    <?php if (isset($item['target']) && $item['target'] === '_blank'): ?>
-                                        <div class="menu-item-target">Neuer Tab</div>
-                                    <?php endif; ?>
-                                    <div class="menu-item-actions">
-                                        <button type="button" class="admin-button edit-menu-item" 
-                                                data-id="<?php echo htmlspecialchars($item['id']); ?>"
-                                                data-title="<?php echo htmlspecialchars($item['title']); ?>"
-                                                data-url="<?php echo htmlspecialchars($item['url']); ?>"
-                                                data-target="<?php echo isset($item['target']) ? htmlspecialchars($item['target']) : '_self'; ?>">
-                                            <i class="fas fa-edit"></i> Bearbeiten
-                                        </button>
-                                        
-                                        <form method="post" style="display:inline;" onsubmit="return confirm('Möchten Sie diesen Menüpunkt wirklich löschen?')">
-                                            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                                            <input type="hidden" name="action" value="delete_item">
-                                            <input type="hidden" name="menu_type" value="<?php echo $activeMenu; ?>">
-                                            <input type="hidden" name="menu_item_id" value="<?php echo htmlspecialchars($item['id']); ?>">
-                                            <button type="submit" class="admin-button admin-button-danger">
-                                                <i class="fas fa-trash-alt"></i> Löschen
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
+                <div class="menu-list" id="menu-sortable">
+                    <?php 
+                    $menuItems = $activeMenu === 'main_menu' ? $mainMenu : $footerMenu;
                     
-                    <!-- Formular zum Speichern der Sortierreihenfolge -->
-                    <form method="post" id="reorder-form">
-                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                        <input type="hidden" name="action" value="reorder_menu">
-                        <input type="hidden" name="menu_type" value="<?php echo $activeMenu; ?>">
-                        <input type="hidden" name="menu_order" id="menu-order" value="">
-                    </form>
+                    if (empty($menuItems)): 
+                    ?>
+                        <div class="empty-message">
+                            Keine Menüpunkte gefunden. 
+                            <?php if ($activeMenu === 'main_menu'): ?>
+                                <a href="?menu=main&migrate=1" class="admin-button admin-button-small">
+                                    <i class="fas fa-magic"></i> 
+                                    Standard-Menü importieren
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($menuItems as $item): ?>
+                            <div class="menu-item" data-id="<?php echo htmlspecialchars($item['id']); ?>">
+                                <div class="menu-item-title"><?php echo htmlspecialchars($item['title']); ?></div>
+                                <div class="menu-item-url"><?php echo htmlspecialchars($item['url']); ?></div>
+                                <?php if (isset($item['target']) && $item['target'] === '_blank'): ?>
+                                    <div class="menu-item-target">Neuer Tab</div>
+                                <?php endif; ?>
+                                <div class="menu-item-actions">
+                                    <button type="button" class="admin-button edit-menu-item" 
+                                            data-id="<?php echo htmlspecialchars($item['id']); ?>"
+                                            data-title="<?php echo htmlspecialchars($item['title']); ?>"
+                                            data-url="<?php echo htmlspecialchars($item['url']); ?>"
+                                            data-target="<?php echo isset($item['target']) ? htmlspecialchars($item['target']) : '_self'; ?>">
+                                        <i class="fas fa-edit"></i> Bearbeiten
+                                    </button>
+                                    
+                                    <form method="post" style="display:inline;" onsubmit="return confirm('Möchten Sie diesen Menüpunkt wirklich löschen?')">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                        <input type="hidden" name="action" value="delete_item">
+                                        <input type="hidden" name="menu_type" value="<?php echo $activeMenu; ?>">
+                                        <input type="hidden" name="menu_item_id" value="<?php echo htmlspecialchars($item['id']); ?>">
+                                        <button type="submit" class="admin-button admin-button-danger">
+                                            <i class="fas fa-trash-alt"></i> Löschen
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
+                
+                <!-- Formular zum Speichern der Sortierreihenfolge -->
+                <form method="post" id="reorder-form">
+                    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                    <input type="hidden" name="action" value="reorder_menu">
+                    <input type="hidden" name="menu_type" value="<?php echo $activeMenu; ?>">
+                    <input type="hidden" name="menu_order" id="menu-order" value="">
+                </form>
             </div>
             
             <!-- Modal für Bearbeitung -->
@@ -518,7 +615,7 @@ if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
                         
                         <div class="form-actions">
                             <button type="button" class="admin-button cancel-edit">Abbrechen</button>
-                            <button type="submit" class="admin-button admin-button-primary">Speichern</button>
+                            <button type="submit" class="admin-button">Speichern</button>
                         </div>
                     </form>
                 </div>

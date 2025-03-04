@@ -6,8 +6,11 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
 <aside class="admin-sidebar">
 
     <div class="admin-sidebar-header">
-        <h1 class="admin-brand">marques CMS</h1>
-        <div class="admin-user-info">
+        <h1 class="admin-brand">
+            <img src="../assets/images/logo-text-bg.jpg" alt="marques CMS" />
+            <!-- marques CMS -->
+        </h1>
+        <div class="admin-user-info admin-badge">
             Angemeldet als: <?php echo htmlspecialchars($user->getCurrentUsername()); ?>
         </div>
     </div>
