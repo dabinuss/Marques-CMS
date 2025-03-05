@@ -28,7 +28,8 @@ class Admin {
      */
     public function __construct() {
         $this->_user = new User();
-        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
+        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $this->_config = $configManager->load('system') ?: [];
     }
     
     /**

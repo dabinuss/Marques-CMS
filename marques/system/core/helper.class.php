@@ -10,6 +10,13 @@ class Helper {
      * @var array|null
      */
     private static ?array $config = null;
+    
+    /**
+     * ConfigManager-Instance
+     *
+     * @var ConfigManager|null
+     */
+    private static ?ConfigManager $configManager = null;
 
     /**
      * Lädt (oder gibt den bereits geladenen) Systemkonfiguration zurück.
@@ -18,8 +25,13 @@ class Helper {
      * @return array
      */
     public static function getConfig(bool $forceReload = false): array {
+        if (self::$configManager === null) {
+            self::$configManager = ConfigManager::getInstance();
+        }
+        
         if ($forceReload || self::$config === null) {
-            self::$config = require MARQUES_CONFIG_DIR . '/system.config.php';
+            self::$config = self::$configManager->load('system') ?: [];
+            
             // Im Frontend: "/admin" aus der Base‑URL entfernen
             if (!defined('IS_ADMIN') && isset(self::$config['base_url']) && strpos(self::$config['base_url'], '/admin') !== false) {
                 self::$config['base_url'] = preg_replace('|/admin$|', '', self::$config['base_url']);

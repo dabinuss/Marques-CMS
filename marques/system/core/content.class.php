@@ -19,6 +19,18 @@ class Content {
     private $_cache = [];
     
     /**
+     * @var ConfigManager 
+     */
+    private $_configManager;
+    
+    /**
+     * Konstruktor
+     */
+    public function __construct() {
+        $this->_configManager = ConfigManager::getInstance();
+    }
+    
+    /**
      * Holt eine Seite anhand des Pfads
      *
      * @param string $path Seitenpfad
@@ -100,8 +112,8 @@ class Content {
     private function getBlogPost($path, $params = []) {
         // Blog-Manager initialisieren
         $blogManager = new BlogManager();
-        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
-        $blogUrlFormat = $config['blog_url_format'] ?? 'date_slash';
+        $systemConfig = $this->_configManager->load('system') ?: [];
+        $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'date_slash';
         
         // Debug-Ausgabe für Fehlersuche
         error_log("getBlogPost() aufgerufen mit path: " . $path);

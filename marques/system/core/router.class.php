@@ -19,11 +19,19 @@ class Router {
     private $_routes;
     
     /**
+     * @var ConfigManager Instance des ConfigManager
+     */
+    private $_configManager;
+    
+    /**
      * Konstruktor
      */
     public function __construct() {
+        // ConfigManager-Instanz holen
+        $this->_configManager = ConfigManager::getInstance();
+        
         // Routen aus Konfiguration laden
-        $this->_routes = require MARQUES_CONFIG_DIR . '/routes.config.php';
+        $this->_routes = $this->_configManager->load('routes') ?: [];
     }
     
     /**
@@ -35,8 +43,10 @@ class Router {
     public function processRequest(): array {
         // Request-URI abrufen
         $requestUri = $this->getRequestUri();
-        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
-        $blogUrlFormat = $config['blog_url_format'] ?? 'date_slash';
+        
+        // System-Konfiguration laden
+        $systemConfig = $this->_configManager->load('system') ?: [];
+        $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'date_slash';
         
         // Standard-Routendaten
         $routeData = [
@@ -245,8 +255,8 @@ class Router {
     private function routeExists($path, $params = []) {
         // Konfiguration laden
         $requestUri = $this->getRequestUri();
-        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
-        $blogUrlFormat = $config['blog_url_format'] ?? 'date_slash';
+        $systemConfig = $this->_configManager->load('system') ?: [];
+        $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'date_slash';
 
         // Standard-Routendaten
         $routeData = [
@@ -254,8 +264,6 @@ class Router {
             'params' => [],
             'query' => $_GET
         ];
-
-        
         
         // Für Blog-Beiträge die tatsächliche Datei oder Daten prüfen
         if ($path === 'blog') {

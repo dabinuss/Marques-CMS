@@ -71,6 +71,7 @@ In the third phase, we plan to refine the CMS further and add additional feature
 | Development Phase | Feature                                                                  | Status          |
 |-------------------|--------------------------------------------------------------------------|-----------------|
 | **Phase 3**       | Navigation Management                                                    | ✅ Done         |
+| **Phase 3**       | Reworked Config Manager                                                  | ✅ Done         |
 | **Phase 3**       | CMS System Settings                                                      | 🔄 In Progress  |
 | **Phase 3**       | CMS System Settings: Configurable Blog URLs                              | ✅ Done         |
 | **Phase 3**       | Theme Manager / Custom Themes                                            | ✅ Done         |

@@ -16,7 +16,8 @@ define('IS_ADMIN', true);
 require_once MARQUES_ROOT_DIR . '/system/core/Bootstrap.inc.php';
 
 // Konfiguration laden
-$system_config = require MARQUES_CONFIG_DIR . '/system.config.php';
+$configManager = \Marques\Core\ConfigManager::getInstance();
+$system_config = $configManager->load('system') ?: [];
 
 // Admin-Klasse initialisieren
 $admin = new \Marques\Core\Admin();

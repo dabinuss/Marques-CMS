@@ -26,7 +26,14 @@ function marques_get_config($refresh = false) {
     
     // Config neu laden, wenn angefordert
     if ($refresh || $config === null) {
-        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
+        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $config = $configManager->load('system');
+        
+        if (!$config) {
+            // Fallback zu Standard-Einstellungen
+            $settingsManager = new \Marques\Core\SettingsManager();
+            $config = $settingsManager->getDefaultSettings();
+        }
         
         // Bei Bedarf base_url korrigieren
         if (!defined('IS_ADMIN') && isset($config['base_url']) && strpos($config['base_url'], '/admin') !== false) {
@@ -68,35 +75,6 @@ function marques_site_url($path = '') {
     return $baseUrl . $path;
 }
 
-/**
- * Gibt die Asset-URL zurück
- *
- * @param string $path Pfad zum Asset
- * @return string Die Asset-URL
- */
-/*
-function marques_theme_url($path) {
-    $config = marques_get_config();
-    $baseUrl = rtrim($config['base_url'] ?? '', '/');
-    
-    // Entferne /admin aus der base_url für Frontend-Assets
-    if (strpos($baseUrl, '/admin') !== false && !defined('IS_ADMIN')) {
-        $baseUrl = preg_replace('|/admin$|', '', $baseUrl);
-    }
-    
-    // Verwende den richtigen Assets-Pfad je nach Kontext
-    if (defined('IS_ADMIN')) {
-        // Im Admin-Bereich: Stelle sicher, dass /admin im Pfad ist
-        if (strpos($baseUrl, '/admin') === false) {
-            $baseUrl .= '/admin';
-        }
-        return $baseUrl . '/assets/' . ltrim($path, '/');
-    } else {
-        // Im Frontend: Verwende den /assets/-Pfad
-        return $baseUrl . '/assets/' . ltrim($path, '/');
-    }
-}
-*/
 /**
  * Gibt die URL zu einer Theme-Asset-Datei zurück
  */
@@ -169,7 +147,8 @@ function marques_create_slug(string $string): string {
  * @return void
  */
 function marques_debug($var, $die = false) {
-    $config = require MARQUES_CONFIG_DIR . '/system.config.php';
+    $configManager = \Marques\Core\ConfigManager::getInstance();
+    $config = $configManager->load('system') ?: [];
     
     if (($config['debug'] ?? false) === true) {
         echo '<pre>';
@@ -189,8 +168,9 @@ function marques_debug($var, $die = false) {
  * @return string Die formatierte Blog-URL
  */
 function marques_format_blog_url($post) {
-    // Konfiguration laden
-    $config = require MARQUES_CONFIG_DIR . '/system.config.php';
+    // Konfiguration laden mit ConfigManager
+    $configManager = \Marques\Core\ConfigManager::getInstance();
+    $config = $configManager->load('system') ?: [];
     $format = $config['blog_url_format'] ?? 'date_slash';
     
     // Datum und Slug extrahieren
@@ -234,6 +214,4 @@ function marques_format_blog_url($post) {
             // Standard-Format
             return marques_site_url("blog/{$year}/{$month}/{$day}/{$slug}");
     }
-
-
 }

@@ -27,7 +27,8 @@ $blogManager = new \Marques\Core\BlogManager();
 $blogManager->initCatalogFiles();
 
 // Konfiguration laden
-$system_config = require MARQUES_CONFIG_DIR . '/system.config.php';
+$configManager = \Marques\Core\ConfigManager::getInstance();
+$system_config = $configManager->load('system') ?: [];
 
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {
