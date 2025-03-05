@@ -135,7 +135,7 @@ class BlogManager {
         
         // Slug extrahieren (nach dem letzten "-")
         $pos = strrpos($id, "-");
-        $slug = substr($id, $pos + 1);
+        $slug = ($pos === false) ? $id : substr($id, $pos + 1);
         
         // Date extrahieren (Format: YYYY-MM-DD-slug)
         $dateParts = explode('-', $id);
@@ -408,7 +408,7 @@ class BlogManager {
                 $value = trim($matches[2]);
                 
                 // Anführungszeichen entfernen
-                if (preg_match('/^["\'](.*)["\'"]$/', $value, $stringMatches)) {
+                if (preg_match('/^["\'](.*)["\']$/', $value, $stringMatches)) {
                     $value = $stringMatches[1];
                 }
                 

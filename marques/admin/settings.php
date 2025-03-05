@@ -75,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'posts_per_page' => (int)($_POST['posts_per_page'] ?? 10),
                     'excerpt_length' => (int)($_POST['excerpt_length'] ?? 150),
                     'comments_enabled' => isset($_POST['comments_enabled']),
+                    'blog_url_format'   => $_POST['blog_url_format'] ?? 'date_slash',
                 ]);
                 break;
                 

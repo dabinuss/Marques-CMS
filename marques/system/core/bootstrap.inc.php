@@ -18,11 +18,11 @@ if (!defined('MARCES_ROOT_DIR')) {
 }
 
 // Konstanten definieren
-define('MARCES_VERSION', '0.1.0');
+define('MARCES_VERSION', '0.1.0'); // FALLBACK
 define('MARCES_SYSTEM_DIR', MARCES_ROOT_DIR . '/system');
 define('MARCES_CONFIG_DIR', MARCES_ROOT_DIR . '/config');
 define('MARCES_CONTENT_DIR', MARCES_ROOT_DIR . '/content');
-define('MARCES_TEMPLATE_DIR', MARCES_ROOT_DIR . '/templates');
+define('MARCES_TEMPLATE_DIR', MARCES_ROOT_DIR . '/templates'); /* DEPRECIATED */
 define('MARCES_CACHE_DIR', MARCES_SYSTEM_DIR . '/cache');
 define('MARCES_ADMIN_DIR', MARCES_ROOT_DIR . '/admin');
 define('MARCES_THEMES_DIR', MARCES_ROOT_DIR . '/themes');

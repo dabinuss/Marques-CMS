@@ -7,7 +7,7 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
 
     <div class="admin-sidebar-header">
         <h1 class="admin-brand">
-            <img src="assets/images/logo-text-bg.jpg" alt="marques CMS" />
+            <img src="<?php echo marques_site_url('assets/images/logo-text-bg.jpg'); ?>" alt="marques CMS" />
             <!-- marques CMS -->
         </h1>
         <div class="admin-user-info admin-badge">

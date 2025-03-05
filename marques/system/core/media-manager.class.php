@@ -44,7 +44,7 @@ class MediaManager {
                 
                 if (is_file($filePath)) {
                     $fileInfo = pathinfo($filePath);
-                    $filesize = $this->formatFilesize(filesize($filePath));
+                    $filesize = $this->formatFileSize(filesize($filePath));
                     $filetype = mime_content_type($filePath);
                     $dimensions = '';
                     

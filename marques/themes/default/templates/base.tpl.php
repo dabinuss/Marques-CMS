@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($title ?? ''); ?> - <?php echo htmlspecialchars($system_settings['site_name'] ?? 'marques CMS'); ?></title>
     <link rel="stylesheet" href="<?php echo $themeManager->getThemeAssetsUrl('css/main-style.css'); ?>">
+    <link rel="icon" type="image/x-icon" href="<?php echo $themeManager->getThemeAssetsUrl('images/favicon.svg'); ?>">
 </head>
 <body>
     <?php $this->includePartial('header'); ?>

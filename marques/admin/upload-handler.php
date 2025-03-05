@@ -47,7 +47,7 @@ if (!isset($_FILES['file']) || empty($_FILES['file']['name'])) {
 $file = $_FILES['file'];
 
 // Datei validieren
-$allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+$allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
 if (!in_array($file['type'], $allowedTypes)) {
     returnError('Ungültiger Dateityp. Erlaubt sind nur JPG, PNG, GIF und WEBP.');
 }
