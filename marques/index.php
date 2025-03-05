@@ -13,7 +13,7 @@
 define('MARQUES_ROOT_DIR', __DIR__);
 
 // Bootstrap laden
-require_once MARQUES_ROOT_DIR . '/system/core/bootstrap.inc.php';
+require_once MARQUES_ROOT_DIR . '/system/core/Bootstrap.inc.php';
 
 // Abhängigkeiten erstellen
 $router = new Marques\Core\Router();

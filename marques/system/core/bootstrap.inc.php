@@ -72,10 +72,10 @@ spl_autoload_register(function ($class) {
 });
 
 // Hilfsfunktionen laden
-require_once MARQUES_SYSTEM_DIR . '/core/utilities.inc.php';
+require_once MARQUES_SYSTEM_DIR . '/core/Utilities.inc.php';
 
 // Benutzerdefinierte Exceptions laden
-require_once MARQUES_SYSTEM_DIR . '/core/exceptions.inc.php';
+require_once MARQUES_SYSTEM_DIR . '/core/Exceptions.inc.php';
 
 // Container und Event-Manager initialisieren
 $container = new \Marques\Core\Container();
