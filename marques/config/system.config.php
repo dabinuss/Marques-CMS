@@ -53,4 +53,10 @@ return [
     
     // Admin-Einstellungen
     'admin_language' => 'de',
+
+    'security' => [
+        'max_login_attempts' => 6,
+        'login_attempt_window' => 600, // 10 Minuten
+        'login_block_duration' => 600  // 10 Minuten Sperrzeit
+    ]
 ];

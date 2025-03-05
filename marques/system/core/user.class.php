@@ -11,21 +11,16 @@
 namespace Marques\Core;
 
 class User {
-    /**
-     * @var array Benutzereinstellungen
-     */
     private $_config;
-    
-    /**
-     * @var array Aktive Benutzer-Session
-     */
     private $_session = null;
+    private $_loginAttemptsFile;
     
     /**
      * Konstruktor
      */
     public function __construct() {
         $this->_config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $this->_loginAttemptsFile = MARCES_ROOT_DIR . '/logs/login_attempts.json';
         $this->_initSession();
     }
     
@@ -36,6 +31,64 @@ class User {
         if (isset($_SESSION['marques_user']) && !empty($_SESSION['marques_user'])) {
             $this->_session = $_SESSION['marques_user'];
         }
+    }
+
+    private function _initLoginAttemptsLog() {
+        if (!file_exists($this->_loginAttemptsFile)) {
+            // Stellt sicher, dass das Verzeichnis existiert
+            $dir = dirname($this->_loginAttemptsFile);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            file_put_contents($this->_loginAttemptsFile, json_encode([]));
+        }
+    }
+    
+    private function _getLoginAttempts($ip) {
+        $this->_initLoginAttemptsLog();
+        
+        if (!file_exists($this->_loginAttemptsFile)) {
+            return [];
+        }
+        
+        $content = file_get_contents($this->_loginAttemptsFile);
+        if (empty($content)) {
+            return [];
+        }
+        
+        $attempts = json_decode($content, true);
+        if (!is_array($attempts)) {
+            return [];
+        }
+        
+        // Alte Einträge bereinigen
+        $attempts = array_filter($attempts, function($attempt) {
+            return isset($attempt['timestamp']) && $attempt['timestamp'] > (time() - 3600); // 1 Stunde
+        });
+        
+        return array_filter($attempts, function($attempt) use ($ip) {
+            return isset($attempt['ip']) && $attempt['ip'] === $ip;
+        });
+    }
+    
+    private function _logLoginAttempt($username, $success) {
+        $this->_initLoginAttemptsLog();
+        
+        $content = file_get_contents($this->_loginAttemptsFile);
+        $attempts = !empty($content) ? json_decode($content, true) : [];
+        
+        if (!is_array($attempts)) {
+            $attempts = [];
+        }
+        
+        $attempts[] = [
+            'ip' => $_SERVER['REMOTE_ADDR'],
+            'username' => $username,
+            'timestamp' => time(),
+            'success' => $success
+        ];
+        
+        file_put_contents($this->_loginAttemptsFile, json_encode($attempts));
     }
     
     /**
@@ -66,35 +119,88 @@ class User {
      * @return bool True bei erfolgreicher Anmeldung
      */
     public function login($username, $password) {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $loginAttempts = $this->_getLoginAttempts($ip);
+        
+        // Zu viele Fehlversuche prüfen
+        if (count($loginAttempts) >= 5) {
+            $failedAttempts = array_filter($loginAttempts, function($attempt) {
+                return $attempt['success'] === false;
+            });
+            
+            if (count($failedAttempts) >= 5) {
+                $timestamps = array_column($failedAttempts, 'timestamp');
+                if (!empty($timestamps)) {
+                    $lastFailedAttempt = max($timestamps);
+                    if ($lastFailedAttempt > (time() - 3600)) {
+                        error_log("Login blocked for IP $ip due to too many attempts");
+                        return false;
+                    }
+                }
+            }
+        }
+        
         $users = $this->_getUsers();
         
         if (!isset($users[$username])) {
-            error_log("Login fehlgeschlagen: Benutzer '$username' existiert nicht.");
+            $this->_logLoginAttempt($username, false);
+            error_log("Login failed: User '$username' does not exist");
             return false;
         }
         
         $user = $users[$username];
         
-        // Prüfen, ob das Passwort leer ist (Standardfall beim ersten Start)
-        if (empty($user['password'])) {
-            if ($username === 'admin' && $password === 'admin') {
-                // Erstes Login mit Standardpasswort
-                $user['password'] = $this->hashPassword('admin');
-                $users[$username] = $user;
-                $this->_saveUsers($users);
+        // DEBUG-Logging
+        error_log("Login attempt for user '$username'");
+        error_log("User data: " . json_encode($user));
+        
+        // Spezielle Behandlung für Admin bei ersten Login
+        if ($username === 'admin' && (empty($user['password']) || $user['first_login'] === true)) {
+            error_log("Admin first login case detected");
+            
+            // Bei Standard-Passwort
+            if ($password === 'admin') {
+                error_log("Admin using default password - login successful");
+                
+                // Erfolgreicher Login - Session setzen
+                $this->_session = [
+                    'username' => $username,
+                    'display_name' => $user['display_name'],
+                    'role' => $user['role'],
+                    'last_login' => time(),
+                    'initial_login' => true
+                ];
+                
+                $_SESSION['marques_user'] = $this->_session;
+                $this->_logLoginAttempt($username, true);
+                $this->_updateLastLogin($username);
+                
+                return true;
             } else {
-                error_log("Login fehlgeschlagen: Passwort für Benutzer '$username' ist leer.");
-                return false;
-            }
-        } else {
-            // Passwort verifizieren
-            if (!password_verify($password, $user['password'])) {
-                error_log("Login fehlgeschlagen: Falsches Passwort für Benutzer '$username'.");
+                error_log("Admin login failed: incorrect default password");
+                $this->_logLoginAttempt($username, false);
                 return false;
             }
         }
         
-        // Session setzen
+        // Normale Passwortprüfung für alle anderen Fälle
+        // Sicherstellen, dass wir einen gültigen Hash haben
+        if (empty($user['password'])) {
+            error_log("Login failed: Empty password hash for user '$username'");
+            $this->_logLoginAttempt($username, false);
+            return false;
+        }
+        
+        if (!password_verify($password, $user['password'])) {
+            error_log("Login failed: Invalid password for user '$username'");
+            $this->_logLoginAttempt($username, false);
+            return false;
+        }
+        
+        // Login erfolgreich
+        error_log("Login successful for user '$username'");
+        $this->_logLoginAttempt($username, true);
+        
         $this->_session = [
             'username' => $username,
             'display_name' => $user['display_name'],
@@ -103,8 +209,6 @@ class User {
         ];
         
         $_SESSION['marques_user'] = $this->_session;
-        
-        // Login-Zeit aktualisieren
         $this->_updateLastLogin($username);
         
         return true;
@@ -185,17 +289,40 @@ class User {
             return false;
         }
         
+        // Passwort hashen, wenn nicht leer
+        $hashedPassword = !empty($password) ? $this->hashPassword($password) : '';
+        
         // Benutzerdaten vorbereiten
         $users = $this->_getUsers();
         $users[$username] = [
-            'password' => $this->hashPassword($password),
+            'password' => $hashedPassword,
             'display_name' => $display_name,
             'role' => $role,
             'created' => time(),
             'last_login' => 0
         ];
         
+        if ($username === 'admin') {
+            $users[$username]['first_login'] = empty($password);
+        }
+        
         // Benutzer speichern
+        return $this->_saveUsers($users);
+    }
+
+    /**
+     * Vereinfachte Methode zum Erstellen des Admin-Accounts
+     */
+    public function setupAdminAccount($password) {
+        // Prüfen und Passwort hashen
+        $hashedPassword = $this->hashPassword($password);
+        
+        // Benutzerdaten aktualisieren
+        $users = $this->_getUsers();
+        $users['admin']['password'] = $hashedPassword;
+        $users['admin']['first_login'] = false;
+        
+        // Speichern
         return $this->_saveUsers($users);
     }
     
@@ -216,6 +343,11 @@ class User {
         // Passwort nur aktualisieren, wenn eines angegeben wurde
         if (isset($userData['password']) && !empty($userData['password'])) {
             $userData['password'] = $this->hashPassword($userData['password']);
+            
+            // Wenn Admin-Passwort geändert wird, first_login auf false setzen
+            if ($username === 'admin') {
+                $userData['first_login'] = false;
+            }
         } else {
             // Altes Passwort beibehalten
             unset($userData['password']);
@@ -242,6 +374,10 @@ class User {
         }
         
         $users[$username]['password'] = $this->hashPassword($new_password);
+        
+        if ($username === 'admin') {
+            $users[$username]['first_login'] = false;
+        }
         
         return $this->_saveUsers($users);
     }
@@ -341,14 +477,15 @@ class User {
         $userFile = MARCES_CONFIG_DIR . '/users.config.php';
         
         if (!file_exists($userFile)) {
-            // Standard-Admin erstellen
+            // Standard-Admin mit leerem Passwort erstellen
             $users = [
                 'admin' => [
-                    'password' => $this->hashPassword('admin'),
+                    'password' => '',  // Leeres Passwort für Standardzugang
                     'display_name' => 'Administrator',
                     'role' => 'admin',
                     'created' => time(),
-                    'last_login' => 0
+                    'last_login' => 0,
+                    'first_login' => true  // Flag für ersten Login
                 ]
             ];
             
@@ -358,11 +495,23 @@ class User {
         
         $users = require $userFile;
         
-        // Prüfen, ob Admin-Benutzer ein leeres Passwort hat
-        if (isset($users['admin']) && empty($users['admin']['password'])) {
-            // Admin-Passwort bleibt leer, wird beim ersten Login gesetzt
-            // $users['admin']['password'] = $this->hashPassword('admin');
-            // $this->_saveUsers($users);
+        // Sicherstellen, dass der Admin-Benutzer existiert
+        if (!isset($users['admin'])) {
+            $users['admin'] = [
+                'password' => '',
+                'display_name' => 'Administrator',
+                'role' => 'admin',
+                'created' => time(),
+                'last_login' => 0,
+                'first_login' => true
+            ];
+            $this->_saveUsers($users);
+        }
+        
+        // Sicherstellen, dass first_login Flag existiert
+        if (!isset($users['admin']['first_login'])) {
+            $users['admin']['first_login'] = empty($users['admin']['password']);
+            $this->_saveUsers($users);
         }
         
         return $users;
@@ -380,6 +529,7 @@ class User {
         $content = "<?php\n// marques CMS - Benutzerkonfiguration\n// NICHT DIREKT BEARBEITEN!\n\nreturn " . var_export($users, true) . ";\n";
         
         if (file_put_contents($userFile, $content) === false) {
+            error_log("Failed to write user file: $userFile");
             return false;
         }
         

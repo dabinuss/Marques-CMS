@@ -60,6 +60,19 @@ if ($edit_mode) {
     }
 }
 
+$initial_setup = isset($_GET['initial_setup']) && $_GET['initial_setup'] === 'true';
+
+// Bei initialem Setup zusätzliche Validierungen
+if ($initial_setup) {
+    // Initialisiere $password mit leerem String, falls nicht gesetzt
+    $password = $_POST['password'] ?? '';
+
+    // Passwort ist Pflicht
+    if (empty($password)) {
+        $error_message = 'Bitte setzen Sie ein neues Passwort für den Admin-Account.';
+    }
+}
+
 // Formular verarbeiten
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // CSRF-Token prüfen
@@ -70,6 +83,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $display_name = $_POST['display_name'] ?? '';
         $password = $_POST['password'] ?? '';
         $role = $_POST['role'] ?? 'editor';
+
+        if ($username === 'admin' && $initial_setup) {
+            if (empty($password)) {
+                $error_message = 'Bitte setzen Sie ein neues Passwort.';
+            } elseif (strlen($password) < 8) {
+                $error_message = 'Das Passwort muss mindestens 8 Zeichen lang sein.';
+            } else {
+                // Passwort aktualisieren und Session bereinigen
+                $user_data = [
+                    'password' => $password,
+                    'first_login' => false  // Erstes Login abgeschlossen
+                ];
+                
+                if ($user->updateUser($username, $user_data)) {
+                    // Session komplett zurücksetzen
+                    session_unset();
+                    session_destroy();
+                    
+                    $success_message = 'Passwort erfolgreich geändert. Bitte melden Sie sich mit dem neuen Passwort an.';
+                    
+                    // Weiterleitung zum Login
+                    header('Location: login.php');
+                    exit;
+                } else {
+                    $error_message = 'Fehler beim Aktualisieren des Passworts.';
+                }
+            }
+        }
         
         // Validieren der Rolle
         if (!array_key_exists($role, $available_roles)) {
@@ -162,6 +203,13 @@ $page_title = $edit_mode ? 'Benutzer bearbeiten' : 'Neuen Benutzer erstellen';
                 </div>
             <?php endif; ?>
             
+            <?php if ($initial_setup): ?>
+                <div class="admin-alert warning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Bitte ändern Sie das Standard-Passwort ihres Admin Accounts.
+                </div>
+            <?php endif; ?>
+
             <div class="admin-card">
                 <div class="admin-card-content">
                     <form method="post" action="">
