@@ -35,8 +35,11 @@ class SettingsManager {
      * Lädt die Systemeinstellungen
      */
     private function _loadSettings() {
-        if (file_exists($this->_config_file)) {
-            $this->_system_settings = require $this->_config_file;
+        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $config = $configManager->load('system');
+        
+        if ($config) {
+            $this->_system_settings = $config;
         } else {
             // Standard-Einstellungen, falls Datei nicht existiert
             $this->_system_settings = $this->getDefaultSettings();
@@ -200,16 +203,9 @@ class SettingsManager {
             }
         }
         
-        // Rest des Codes bleibt unverändert...
-        $content = "<?php\n/**\n * marques CMS - Systemkonfiguration\n * \n * Hauptkonfigurationsdatei des Systems.\n *\n * @package marques\n * @subpackage config\n */\n\n";
-        $content .= "// Direkten Zugriff verhindern\nif (!defined('MARQUES_ROOT_DIR')) {\n    exit('Direkter Zugriff ist nicht erlaubt.');\n}\n\n";
-        $content .= "return " . $this->_varExport($this->_system_settings, true) . ";\n";
-        
-        if (file_put_contents($this->_config_file, $content) === false) {
-            return false;
-        }
-        
-        return true;
+        // ConfigManager verwenden
+        $configManager = \Marques\Core\ConfigManager::getInstance();
+        return $configManager->save('system', $this->_system_settings);
     }
     
     /**

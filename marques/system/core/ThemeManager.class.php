@@ -7,11 +7,13 @@ class ThemeManager {
     private $themes = [];
     private $currentTheme = 'default';
     private $themesPath;
+    private $settingsManager;
     
     public function __construct() {
         $this->themesPath = MARQUES_ROOT_DIR . '/themes';
         $this->loadThemes();
-        $this->currentTheme = $this->getActiveTheme();
+        $this->settingsManager = new SettingsManager();
+        $this->currentTheme = $this->settingsManager->getSetting('active_theme', 'default');
     }
     
     private function loadThemes() {
@@ -38,17 +40,41 @@ class ThemeManager {
     }
     
     public function getActiveTheme(): string {
-        $settings = new SettingsManager();
-        return $settings->getSetting('active_theme', 'default');
+        return $this->settingsManager->getSetting('active_theme', 'default');
     }
     
     public function setActiveTheme(string $themeName): bool {
         if (!array_key_exists($themeName, $this->themes)) {
+            error_log("Theme '$themeName' nicht gefunden!");
             return false;
         }
         
-        $settings = new SettingsManager();
-        return $settings->setSetting('active_theme', $themeName);
+        // Direkt mit ConfigManager arbeiten
+        $configManager = ConfigManager::getInstance();
+        
+        // System-Konfiguration laden
+        $systemConfig = $configManager->load('system');
+        if (!$systemConfig) {
+            error_log("ThemeManager: Konnte System-Konfiguration nicht laden");
+            return false;
+        }
+        
+        // Theme aktualisieren
+        $systemConfig['active_theme'] = $themeName;
+        
+        // Konfiguration speichern
+        $result = $configManager->save('system', $systemConfig);
+        
+        if ($result) {
+            $this->currentTheme = $themeName;
+            // Auch den SettingsManager aktualisieren
+            $this->settingsManager->setSetting('active_theme', $themeName);
+            error_log("Theme erfolgreich auf '$themeName' geändert");
+        } else {
+            error_log("Fehler beim Ändern des Themes auf '$themeName'");
+        }
+        
+        return $result;
     }
     
     public function getThemePath(string $file = ''): string {
@@ -63,27 +89,22 @@ class ThemeManager {
         // Basispfad aus der Konfiguration holen
         $baseUrl = $config['base_url'] ?? '';
         
-        // Fallback-Implementierung für den Fall, dass base_url nicht verfügbar ist
+        // Fallback-Implementierung, falls base_url nicht verfügbar ist
         if (empty($baseUrl)) {
             $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . 
                     '://' . $_SERVER['HTTP_HOST'] .
                     dirname($_SERVER['SCRIPT_NAME']);
-            // Admin-Pfad aus der URL entfernen, falls vorhanden
             if (strpos($baseUrl, '/admin') !== false) {
                 $baseUrl = preg_replace('|/admin$|', '', $baseUrl);
             }
         }
         
-        // Theme-Asset-Struktur verwenden
         $assetPath = 'themes/' . $this->currentTheme . '/assets';
-        
-        // Pfad bereinigen (doppelte Slashes entfernen)
         $url = rtrim($baseUrl, '/') . '/' . $assetPath;
         if ($file) {
             $url .= '/' . ltrim($file, '/');
         }
         
-        // Debug-Ausgabe hinzufügen
         if (($config['debug'] ?? false) === true) {
             error_log("Theme Asset URL: {$url}");
         }

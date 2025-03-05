@@ -247,7 +247,6 @@ $time_formats = [
                                 <p class="form-hint">Öffentliche Telefonnummer für Kontakt.</p>
                             </div>
 
-                        <?php /*
                         <?php elseif ($active_tab === 'social'): ?>
                             <div class="form-group">
                                 <label for="social_facebook">Facebook</label>
@@ -293,7 +292,6 @@ $time_formats = [
                                 </div>
                                 <p class="form-hint">Vollständige URL zum YouTube-Kanal.</p>
                             </div>
-                        */ ?>
 
                         <?php elseif ($active_tab === 'content'): ?>
                             <div class="form-group">
@@ -311,19 +309,19 @@ $time_formats = [
                             <div class="form-group">
                                 <label for="blog_url_format">URL-Format:</label>
                                 <select name="blog_url_format" id="blog_url_format" class="form-control">
-                                    <option value="date_slash" <?php echo ($config['blog_url_format'] ?? '') === 'date_slash' ? 'selected' : ''; ?>>
+                                    <option value="date_slash" <?php echo ($current_settings['blog_url_format'] ?? '') === 'date_slash' ? 'selected' : ''; ?>>
                                         Standard (blog/YYYY/MM/DD/slug) - z.B. blog/2025/03/15/mein-beitrag
                                     </option>
-                                    <option value="date_dash" <?php echo ($config['blog_url_format'] ?? '') === 'date_dash' ? 'selected' : ''; ?>>
+                                    <option value="date_dash" <?php echo ($current_settings['blog_url_format'] ?? '') === 'date_dash' ? 'selected' : ''; ?>>
                                         Datum mit Bindestrich (blog/YYYY-MM-DD/slug) - z.B. blog/2025-03-15/mein-beitrag
                                     </option>
-                                    <option value="year_month" <?php echo ($config['blog_url_format'] ?? '') === 'year_month' ? 'selected' : ''; ?>>
+                                    <option value="year_month" <?php echo ($current_settings['blog_url_format'] ?? '') === 'year_month' ? 'selected' : ''; ?>>
                                         Jahr/Monat (blog/YYYY/MM/slug) - z.B. blog/2025/03/mein-beitrag
                                     </option>
-                                    <option value="numeric" <?php echo ($config['blog_url_format'] ?? '') === 'numeric' ? 'selected' : ''; ?>>
+                                    <option value="numeric" <?php echo ($current_settings['blog_url_format'] ?? '') === 'numeric' ? 'selected' : ''; ?>>
                                         ID-basiert (blog/ID) - z.B. blog/123
                                     </option>
-                                    <option value="post_name" <?php echo ($config['blog_url_format'] ?? '') === 'post_name' ? 'selected' : ''; ?>>
+                                    <option value="post_name" <?php echo ($current_settings['blog_url_format'] ?? '') === 'post_name' ? 'selected' : ''; ?>>
                                         Nur Slug (blog/slug) - z.B. blog/mein-beitrag
                                     </option>
                                 </select>
@@ -410,7 +408,7 @@ $time_formats = [
                                 <p class="form-hint">Diese Nachricht wird angezeigt, wenn der Wartungsmodus aktiv ist.</p>
                             </div>
                         
-                            <?php elseif ($active_tab === 'appearance'): 
+                        <?php elseif ($active_tab === 'appearance'): 
                                 // Theme Manager initialisieren
                                 $themeManager = new \Marques\Core\ThemeManager();
                                 $themes = $themeManager->getThemes();
