@@ -9,6 +9,10 @@
  * @version 0.1.0
  */
 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Basispfad definieren
 define('MARQUES_ROOT_DIR', __DIR__);
 
