@@ -2,116 +2,120 @@
 
 <img src="assets/logo-text-bg.jpg" alt="marques logo" width="400"/>
 
-Willkommen zum **Marques CMS** – einem modularen, flexiblen und dateibasierten (Flat File) Content-Management-System, das in mehreren Entwicklungsphasen entsteht. 🎉
+Welcome to **Marques CMS** – a modular, flexible, and file-based (Flat File) content management system developed in multiple stages. 🎉
 
-## Überblick
+## Overview
 
-Marques CMS ist darauf ausgelegt, die Basis für ein modernes, benutzerfreundliches CMS zu legen – und das ganz ohne herkömmliche Datenbank! Mit einer sauberen Architektur und einem modularen Aufbau wollen wir die Erstellung und Verwaltung von Inhalten so angenehm wie möglich gestalten. Die Entwicklung erfolgt in klar definierten Phasen, die jeweils wichtige Kernfunktionen und erweiterte Features hinzufügen.
+Marques CMS is designed to lay the foundation for a modern, user-friendly CMS—without using a traditional database! With a clean architecture and modular structure, we aim to make content creation and management as pleasant as possible. Development is carried out in clearly defined phases, each adding important core functionality and extended features.
 
-## Anforderungen
+## Requirements
 
-Marques benötigt keinerlei Datenbanken, Pakete oder Serverumgebungen. Es funktioniert auf einfachen Webhosting Services. Deshalb gibt es auch keinerlei Anforderungen.
-- **Keine Anforderungen** Außer Webspace
+Marques requires no databases, packages, or server environments. It works on simple web hosting services. Therefore, there are no specific requirements.
+- **No requirements** other than web space
 
 ## Installation
 
-Das CMS befindet sich noch in Entwicklung. Zum Testen das Projekt unter /marques/ einfach hochladen und im Browser öffnen. Unter /config/users.config.php/ kann man Nutzer anlegen sowie ändern. Beachte das Passwörter via PHP als Passwort Hash gespeichert werden müssen.
+The CMS is still under development. For testing, simply upload the project under `/marques/` and open it in your browser. In `/config/users.config.php/`, you can create and edit users. Note that passwords must be stored as PHP password hashes.
 
-## Entwicklungsphasen
+## Development Phases
 
-### Phase 1: Grundstruktur und Kern
+<details>
+<summary>
+### Phase 1: Basic Structure and Core | ✅ Done 
+</summary>
+<details>
 
-In dieser Phase wurden die Basisarchitektur und grundlegenden Funktionen implementiert:
+In this phase, the base architecture and fundamental features were implemented:
 
-- **Projektstruktur:** Einrichtung von Ordnern und Dateien
-- **Kernmodule:** 
-  - **Router:** Für die Verarbeitung von URLs
-  - **Content-Parser:** Für die Verarbeitung von Markdown-Inhalten
-  - **Template-Engine:** Zur Darstellung der Inhalte
-- **Konfigurationsdateien:** Erstellung und Verwaltung der Systemeinstellungen
-- **Templates und Partials:** Entwicklung wiederverwendbarer Template-Komponenten
-- **Assets:** Aufbau von CSS/JS-Ressourcen
-- **Beispielinhalte:** Erste statische Inhalte zur Demonstration
-- **Admin-Bereich:** Grundlegende Struktur für administrative Aufgaben
+- **Project Structure:** Setup of folders and files
+- **Core Modules:** 
+  - **Router:** For handling URLs
+  - **Content Parser:** For processing Markdown content
+  - **Template Engine:** For rendering content
+- **Configuration Files:** Creation and management of system settings
+- **Templates and Partials:** Development of reusable template components
+- **Assets:** Setup of CSS/JS resources
+- **Sample Content:** Initial static content for demonstration
+- **Admin Area:** Basic structure for administrative tasks
 
-### Phase 2: Plan und Komponenten
+### Phase 2: Planning and Components
 
-In dieser Phase kommen erweiterte Funktionalitäten hinzu, die Interaktivität und Sicherheit verbessern:
+In this phase, extended functionality was added to improve interactivity and security:
 
-- **Sichere Authentifizierung:** Login-System mit Passwort-Hashing, Session-Management & Zugriffskontrollen
-- **Admin-Dashboard:** Übersichtliche Startseite, Navigation zu allen Verwaltungsbereichen
-- **Content-Management:** Erstellen, Bearbeiten und Löschen von Seiten, Verwaltung von Blog-Beiträgen, Versionsmanagement für Inhalte
-- **TinyMCE-Integration:** WYSIWYG-Editor tinyMCE für einfache Inhaltserstellung, Markdown-Unterstützung
-- **Medienverwaltung:** Medien-Upload, Medienbibliothek, Integration in den Editor
+- **Secure Authentication:** Login system with password hashing, session management & access controls
+- **Admin Dashboard:** Clear start page, navigation to all administration areas
+- **Content Management:** Create, edit, and delete pages, manage blog posts, version management for content
+- **TinyMCE Integration:** TinyMCE WYSIWYG editor for easy content creation, Markdown support
+- **Media Management:** Media upload, media library, integration into the editor
 
-### Phase 3: Erweiterung
+### Phase 3: Extension
 
-In der dritten Phase planen wir, das CMS weiter zu verfeinern und zusätzliche Features zu integrieren:
+In the third phase, we plan to refine the CMS further and add additional features:
 
-- **Erweiterte Funktionen:** Tags, Kategorien, etc.
-- **Caching-System:** Verbesserung der Performance
-- **SEO-Funktionen:** Optimierung für Suchmaschinen
-- **Benutzerrollen und -berechtigungen:** Fein abgestimmte Zugriffskontrolle
-- **Navigationsverwaltung:** Verwalten von Links in der Navigation
+- **Extended Features:** Tags, categories, etc.
+- **Caching System:** Performance improvements
+- **SEO Functions:** Search engine optimization
+- **User Roles and Permissions:** Granular access control
+- **Navigation Management:** Manage links in the navigation
 
-### Phase 4: Optimierung
+### Phase 4: Optimization
 
-- **Fehlerbehebungen:** Große Fehlersuche
-- **Leistungsoptimierung:** Effizienteres Systemverhalten
+- **Bug Fixes:** Major error detection and resolution
+- **Performance Optimization:** More efficient system behavior
 
-## Feature-Übersicht
+## Feature Overview
 
-| Entwicklungsphase | Feature                                                         | Status            |
-|-------------------|-----------------------------------------------------------------|-------------------|
-| **Phase 3**       | Navigationsverwaltung                                               | ✅ Fertig     |
-| **Phase 3**       | Systemsettings des CMS                                              | 🔄 In Bearbeitung     |
-| **Phase 3**       | Systemsettings des CMS: Einstellbare Blog URLs                      | ✅ Fertig     |
-| **Phase 3**       | Theme-Manager / Custom Themes                                       | ✅ Fertig     |
-| **Phase 3**       | Caching-System                                                     | ❌ Noch nicht     |
-| **Phase 3**       | SEO-Funktionen                                                     | ❌ Noch nicht     |
-| **Phase 3**       | Benutzerrollen und -berechtigungen                                 | 🔄 In Bearbeitung     |
-| **Phase 4**       | Große Fehlersuche und Korrektur                                    | ❌ Noch nicht     |
-| **Phase 4**       | Leistungsoptimierung                                               | ❌ Noch nicht     |
-| **Abschluss V. 1.0**       | Potenzielles Installationsscript                                               | ❌ Noch nicht     |
+| Development Phase | Feature                                                                  | Status          |
+|-------------------|--------------------------------------------------------------------------|-----------------|
+| **Phase 3**       | Navigation Management                                                    | ✅ Done         |
+| **Phase 3**       | CMS System Settings                                                      | 🔄 In Progress  |
+| **Phase 3**       | CMS System Settings: Configurable Blog URLs                              | ✅ Done         |
+| **Phase 3**       | Theme Manager / Custom Themes                                            | ✅ Done         |
+| **Phase 3**       | Caching System                                                           | ❌ Not Yet      |
+| **Phase 3**       | SEO Functions                                                            | ❌ Not Yet      |
+| **Phase 3**       | User Roles and Permissions                                               | 🔄 In Progress  |
+| **Phase 4**       | Major Bug Hunting and Fixing                                             | ❌ Not Yet      |
+| **Phase 4**       | Performance Optimization                                                 | ❌ Not Yet      |
+| **Release V. 1.0** | Potential Installation Script                                           | ❌ Not Yet      |
 
-<details><summary>Abgeschlossene Entwicklungsphasen</summary>>
+<details><summary>Completed Development Phases</summary>
 
-| Entwicklungsphase | Feature                                                         | Status            |
-|-------------------|-----------------------------------------------------------------|-------------------|
-| **Phase 1**       | Projektstruktur: Einrichtung von Ordnern und Dateien              | ✅ Fertig         |
-| **Phase 1**       | Kernmodul: Router (URL-Verarbeitung)                              | ✅ Fertig         |
-| **Phase 1**       | Kernmodul: Content-Parser (Markdown-Verarbeitung)                 | ✅ Fertig         |
-| **Phase 1**       | Kernmodul: Template-Engine (Darstellung)                          | ✅ Fertig         |
-| **Phase 1**       | Konfigurationsdateien                                             | ✅ Fertig         |
-| **Phase 1**       | Templates und Partials                                            | ✅ Fertig         |
-| **Phase 1**       | CSS/JS-Assets                                                     | ✅ Fertig         |
-| **Phase 1**       | Beispielinhalte                                                   | ✅ Fertig         |
-| **Phase 1**       | Grundlegende Admin-Bereich-Struktur                               | ✅ Fertig         |
-| **Phase 2**       | Sichere Authentifizierung: Login-System mit Passwort-Hashing        | ✅ Fertig        |
-| **Phase 2**       | Sichere Authentifizierung: Session-Management                      | ✅ Fertig         |
-| **Phase 2**       | Sichere Authentifizierung: Zugriffskontrollen                      | ✅ Fertig |
-| **Phase 2**       | Admin-Dashboard: Übersichtliche Startseite                         | ✅ Fertig         |
-| **Phase 2**       | Admin-Dashboard: Navigation zu allen Verwaltungsbereichen          | ✅ Fertig         |
-| **Phase 2**       | Content-Management: Seiten erstellen, bearbeiten, löschen          | ✅ Fertig         |
-| **Phase 2**       | Content-Management: Blog-Beiträge verwalten                        | ✅ Fertig |
-| **Phase 2**       | Content-Management: Versionsmanagement für Inhalte                 | ✅ Fertig         |
-| **Phase 2**       | TinyMCE-Integration: WYSIWYG-Editor (TINYMCE)                      | ✅ Fertig         |
-| **Phase 2**       | TinyMCE-Integration: Markdown-Unterstützung                        | ✅ Fertig         |
-| **Phase 2**       | Medienverwaltung: Medien-Upload                                    | ✅ Fertig         |
-| **Phase 2**       | Medienverwaltung: Medienbibliothek                                 | ✅ Fertig         |
-| **Phase 2**       | Medienverwaltung: Integration in den Editor                        | ✅ Fertig         |
-| **Phase 2**       | Erweiterte Funktionen (z.B. Tags, Kategorien)                        | ✅ Fertig       |
+| Development Phase | Feature                                                                  | Status          |
+|-------------------|--------------------------------------------------------------------------|-----------------|
+| **Phase 1**       | Project Structure: Setup of folders and files                            | ✅ Done         |
+| **Phase 1**       | Core Module: Router (URL Handling)                                       | ✅ Done         |
+| **Phase 1**       | Core Module: Content Parser (Markdown Processing)                        | ✅ Done         |
+| **Phase 1**       | Core Module: Template Engine (Rendering)                                 | ✅ Done         |
+| **Phase 1**       | Configuration Files                                                      | ✅ Done         |
+| **Phase 1**       | Templates and Partials                                                   | ✅ Done         |
+| **Phase 1**       | CSS/JS Assets                                                            | ✅ Done         |
+| **Phase 1**       | Sample Content                                                           | ✅ Done         |
+| **Phase 1**       | Basic Admin Area Structure                                               | ✅ Done         |
+| **Phase 2**       | Secure Authentication: Login system with password hashing                | ✅ Done         |
+| **Phase 2**       | Secure Authentication: Session Management                                | ✅ Done         |
+| **Phase 2**       | Secure Authentication: Access Controls                                   | ✅ Done         |
+| **Phase 2**       | Admin Dashboard: Clear start page                                        | ✅ Done         |
+| **Phase 2**       | Admin Dashboard: Navigation to all administration areas                  | ✅ Done         |
+| **Phase 2**       | Content Management: Create, edit, delete pages                           | ✅ Done         |
+| **Phase 2**       | Content Management: Manage blog posts                                    | ✅ Done         |
+| **Phase 2**       | Content Management: Version management for content                       | ✅ Done         |
+| **Phase 2**       | TinyMCE Integration: WYSIWYG editor (TINYMCE)                            | ✅ Done         |
+| **Phase 2**       | TinyMCE Integration: Markdown support                                    | ✅ Done         |
+| **Phase 2**       | Media Management: Media upload                                           | ✅ Done         |
+| **Phase 2**       | Media Management: Media library                                          | ✅ Done         |
+| **Phase 2**       | Media Management: Integration into the editor                            | ✅ Done         |
+| **Phase 2**       | Extended Features (e.g., Tags, Categories)                               | ✅ Done         |
 
 </details>
 
-## Mitmachen und Feedback
+## Contribute and Feedback
 
-Wir freuen uns über Beiträge, Anregungen und konstruktives Feedback! Wenn du Ideen hast, wie wir Marques CMS noch besser machen können, oder wenn du einfach mal über die Technik plaudern möchtest – zögere nicht, dich einzubringen. 😊
+We welcome contributions, suggestions, and constructive feedback! If you have ideas on how to make Marques CMS even better, or if you just want to chat about the technology, don’t hesitate to get involved. 😊
 
-## Lizenz
+## License
 
-Dieses Projekt ist Open Source. Details zur Lizenz findest du in der [LICENSE](LICENSE)-Datei.
+This project is Open Source. For details, see the [LICENSE](LICENSE) file.
 
 ---
 
-Viel Spaß beim Erkunden und Mitentwickeln von Marques CMS! Was findest du besonders spannend an einem modularen und dateibasierten CMS? 🤔💬
+Have fun exploring and co-developing Marques CMS! What do you find most exciting about a modular, file-based CMS? 🤔💬
