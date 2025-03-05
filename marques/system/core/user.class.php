@@ -21,7 +21,8 @@ class User {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
+        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $this->_config = $configManager->load('system') ?: [];
         $this->_loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
         $this->_initSession();
     }
@@ -476,9 +477,10 @@ class User {
      * @return array Benutzerdaten
      */
     private function _getUsers() {
-        $userFile = MARQUES_CONFIG_DIR . '/users.config.php';
+        $configManager = ConfigManager::getInstance();
+        $users = $configManager->load('users');
         
-        if (!file_exists($userFile)) {
+        if (empty($users)) {
             // Standard-Admin mit leerem Passwort erstellen
             $users = [
                 'admin' => [
@@ -492,10 +494,7 @@ class User {
             ];
             
             $this->_saveUsers($users);
-            return $users;
         }
-        
-        $users = require $userFile;
         
         // Sicherstellen, dass der Admin-Benutzer existiert
         if (!isset($users['admin'])) {
@@ -526,15 +525,7 @@ class User {
      * @return bool True bei Erfolg
      */
     private function _saveUsers($users) {
-        $userFile = MARQUES_CONFIG_DIR . '/users.config.php';
-        
-        $content = "<?php\n// marques CMS - Benutzerkonfiguration\n// NICHT DIREKT BEARBEITEN!\n\nreturn " . var_export($users, true) . ";\n";
-        
-        if (file_put_contents($userFile, $content) === false) {
-            error_log("Failed to write user file: $userFile");
-            return false;
-        }
-        
-        return true;
+        $configManager = ConfigManager::getInstance();
+        return $configManager->save('users', $users);
     }
 }

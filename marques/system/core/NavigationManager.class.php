@@ -27,7 +27,8 @@ class NavigationManager {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
+        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $this->_config = $configManager->load('system') ?: [];
         $this->_configManager = ConfigManager::getInstance();
         $this->initNavigationFile();
     }

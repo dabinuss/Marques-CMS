@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * marques CMS - Configuration Manager Klasse
  * 
- * Verwaltet die Konfigurationsdateien des CMS einheitlich.
+ * Verwaltet die Konfigurationsdateien des CMS einheitlich als JSON-Dateien.
  *
  * @package marques
  * @subpackage core
@@ -25,6 +25,9 @@ class ConfigManager {
         if (!is_dir(MARQUES_CONFIG_DIR)) {
             mkdir(MARQUES_CONFIG_DIR, 0755, true);
         }
+        
+        // .htaccess-Datei erstellen, falls nicht vorhanden
+        $this->ensureHtaccessExists();
     }
     
     /**
@@ -57,6 +60,13 @@ class ConfigManager {
         
         $filePath = $this->getConfigPath($name);
         
+        // Fallback auf alte PHP-Konfigurationsdatei
+        $phpFilePath = MARQUES_CONFIG_DIR . '/' . $name . '.config.php';
+        if (!file_exists($filePath) && file_exists($phpFilePath)) {
+            // Automatische Migration durchführen
+            $this->migrateFromPhpToJson($name);
+        }
+        
         if (!file_exists($filePath)) {
             error_log("ConfigManager: Konfigurationsdatei nicht gefunden: " . $filePath);
             return null;
@@ -67,19 +77,13 @@ class ConfigManager {
             return null;
         }
         
-        // Je nach Dateityp laden
-        if (pathinfo($filePath, PATHINFO_EXTENSION) === 'php') {
-            // PHP-Konfigurationsdatei
-            $config = require $filePath;
-        } else {
-            // JSON-Konfigurationsdatei
-            $content = file_get_contents($filePath);
-            $config = json_decode($content, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                error_log("ConfigManager: Fehler beim Parsen der JSON-Konfiguration: " . json_last_error_msg());
-                return null;
-            }
+        // JSON-Konfigurationsdatei laden
+        $content = file_get_contents($filePath);
+        $config = json_decode($content, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("ConfigManager: Fehler beim Parsen der JSON-Konfiguration: " . json_last_error_msg());
+            return null;
         }
         
         // Im Cache speichern
@@ -102,22 +106,18 @@ class ConfigManager {
         // Dateipfad bestimmen
         $filePath = $this->getConfigPath($name);
         
-        // Sicherstellen, dass die Datei beschreibbar ist
-        if (!$this->ensureWritable($filePath)) {
-            error_log("ConfigManager: Kann Konfiguration nicht speichern - Datei nicht beschreibbar: " . $filePath);
-            return false;
+        // Verzeichnis erstellen, falls es nicht existiert
+        $dir = dirname($filePath);
+        if (!is_dir($dir)) {
+            if (!@mkdir($dir, 0755, true)) {
+                error_log("ConfigManager: Konnte Verzeichnis nicht erstellen: " . $dir);
+                return false;
+            }
         }
         
-        // Je nach Dateityp speichern
-        if (pathinfo($filePath, PATHINFO_EXTENSION) === 'php') {
-            // PHP-Konfigurationsdatei
-            $content = "<?php\n/**\n * marques CMS - " . ucfirst($name) . " Konfiguration\n * \n * Automatisch generierte Konfigurationsdatei.\n *\n * @package marques\n * @subpackage config\n */\n\n";
-            $content .= "// Direkten Zugriff verhindern\nif (!defined('MARQUES_ROOT_DIR')) {\n    exit('Direkter Zugriff ist nicht erlaubt.');\n}\n\n";
-            $content .= "return " . $this->varExport($data, true) . ";\n";
-        } else {
-            // JSON-Konfigurationsdatei
-            $content = json_encode($data, JSON_PRETTY_PRINT);
-        }
+        // Direkter Speicherversuch ohne Berechtigungsprüfung
+        // JSON-Konfigurationsdatei
+        $content = json_encode($data, JSON_PRETTY_PRINT);
         
         // Mit temporärem Backup-Modus arbeiten, um Datenverlust zu vermeiden
         $tempFile = $filePath . '.tmp';
@@ -155,6 +155,10 @@ class ConfigManager {
     public function get(string $name, string $key, $default = null) {
         $config = $this->load($name);
         
+        if ($config === null) {
+            return $default;
+        }
+        
         // Unterstützt dot-notation für verschachtelte Einstellungen
         if (strpos($key, '.') !== false) {
             $keys = explode('.', $key);
@@ -183,6 +187,10 @@ class ConfigManager {
      */
     public function set(string $name, string $key, $value): bool {
         $config = $this->load($name);
+        
+        if ($config === null) {
+            $config = [];
+        }
         
         // Unterstützt dot-notation für verschachtelte Einstellungen
         if (strpos($key, '.') !== false) {
@@ -214,6 +222,10 @@ class ConfigManager {
      */
     public function delete(string $name, string $key): bool {
         $config = $this->load($name);
+        
+        if ($config === null) {
+            return false;
+        }
         
         // Unterstützt dot-notation für verschachtelte Einstellungen
         if (strpos($key, '.') !== false) {
@@ -254,6 +266,7 @@ class ConfigManager {
         // Entferne Pfad und Erweiterung
         $name = basename($name);
         $name = preg_replace('/\.(json|php)$/', '', $name);
+        $name = preg_replace('/\.config$/', '', $name);
         
         return $name;
     }
@@ -265,155 +278,67 @@ class ConfigManager {
      * @return string Dateipfad
      */
     private function getConfigPath(string $name): string {
-        return MARQUES_CONFIG_DIR . '/' . $name . '.config.php';
+        return MARQUES_CONFIG_DIR . '/' . $name . '.config.json';
     }
     
     /**
-     * Formatierte Ausgabe von Variablen für Konfigurationsdateien
-     * Alternative zu var_export mit besserer Formatierung
-     *
-     * @param mixed $var Variable zum Exportieren
-     * @param bool $return Ob das Ergebnis zurückgegeben werden soll
-     * @param int $indent Einrückungsebene
-     * @return string|void Exportierte Variable
+     * Stellt sicher, dass eine .htaccess-Datei im Konfigurationsverzeichnis existiert
      */
-    private function varExport($var, bool $return = false, int $indent = 0) {
-        $indentStr = str_repeat('    ', $indent);
+    private function ensureHtaccessExists(): void {
+        $htaccessPath = MARQUES_CONFIG_DIR . '/.htaccess';
         
-        if (is_array($var)) {
-            $indexed = array_keys($var) === range(0, count($var) - 1);
-            $r = [];
+        if (!file_exists($htaccessPath)) {
+            $htaccessContent = "# Konfigurationsverzeichnis vor direktem Zugriff schützen\n";
+            $htaccessContent .= "Order deny,allow\n";
+            $htaccessContent .= "Deny from all\n";
+            $htaccessContent .= "\n";
+            $htaccessContent .= "# Zusätzlicher Schutz für alle Dateien im Verzeichnis\n";
+            $htaccessContent .= "<Files *>\n";
+            $htaccessContent .= "    Order deny,allow\n";
+            $htaccessContent .= "    Deny from all\n";
+            $htaccessContent .= "</Files>\n";
             
-            foreach ($var as $key => $value) {
-                $r[] = $indentStr . '    ' . 
-                       ($indexed ? '' : $this->varExport($key, true) . ' => ') . 
-                       $this->varExport($value, true, $indent + 1);
-            }
-            
-            $output = "[\n" . implode(",\n", $r) . "\n" . $indentStr . "]";
-            
-            if ($return) {
-                return $output;
-            } else {
-                echo $output;
-            }
-        } elseif (is_bool($var)) {
-            if ($return) {
-                return $var ? 'true' : 'false';
-            } else {
-                echo $var ? 'true' : 'false';
-            }
-        } elseif (is_null($var)) {
-            if ($return) {
-                return 'null';
-            } else {
-                echo 'null';
-            }
-        } elseif (is_string($var)) {
-            $var = str_replace("'", "\\'", $var);
-            if ($return) {
-                return "'" . $var . "'";
-            } else {
-                echo "'" . $var . "'";
-            }
-        } else {
-            if ($return) {
-                return var_export($var, true);
-            } else {
-                var_export($var);
-            }
+            file_put_contents($htaccessPath, $htaccessContent);
         }
     }
 
     /**
-     * Überprüft und korrigiert bei Bedarf die Dateiberechtigungen
-     * 
-     * @param string $filePath Pfad zur Konfigurationsdatei
-     * @param bool $createIfNotExists Datei erstellen, falls sie nicht existiert
-     * @return bool True wenn die Datei beschreibbar ist oder beschreibbar gemacht wurde
+     * Konvertiert eine PHP-Konfigurationsdatei zu JSON (Migration)
+     *
+     * @param string $name Name der Konfiguration
+     * @return bool Erfolg
      */
-    private function ensureWritable(string $filePath, bool $createIfNotExists = true): bool {
-        // Verzeichnis überprüfen und ggf. erstellen
-        $directory = dirname($filePath);
-        if (!is_dir($directory)) {
-            if (!@mkdir($directory, 0755, true)) {
-                error_log("ConfigManager: Konnte Verzeichnis nicht erstellen: " . $directory);
+    public function migrateFromPhpToJson(string $name): bool {
+        $name = $this->normalizeConfigName($name);
+        $oldPath = MARQUES_CONFIG_DIR . '/' . $name . '.config.php';
+        
+        if (!file_exists($oldPath)) {
+            error_log("ConfigManager: Keine PHP-Konfigurationsdatei zum Migrieren gefunden: " . $oldPath);
+            return false;
+        }
+        
+        try {
+            // PHP-Datei laden
+            $oldConfig = require $oldPath;
+            
+            if (!is_array($oldConfig)) {
+                error_log("ConfigManager: PHP-Konfigurationsdatei enthält kein Array: " . $oldPath);
                 return false;
             }
-        }
-        
-        // Wenn die Datei nicht existiert und erstellt werden soll
-        if (!file_exists($filePath) && $createIfNotExists) {
-            // Leere Datei erstellen
-            if (@file_put_contents($filePath, '') === false) {
-                error_log("ConfigManager: Konnte Datei nicht erstellen: " . $filePath);
-                return false;
+            
+            // Als JSON speichern
+            $result = $this->save($name, $oldConfig);
+            
+            if ($result) {
+                // Alte PHP-Datei umbenennen (als Backup)
+                rename($oldPath, $oldPath . '.bak');
+                error_log("ConfigManager: Erfolgreich migriert: " . $name);
             }
             
-            // Berechtigungen für neue Datei setzen
-            if (!@chmod($filePath, 0640)) {
-                error_log("ConfigManager: Konnte Berechtigungen für neue Datei nicht setzen: " . $filePath);
-                // Trotzdem weitermachen, möglicherweise sind die Standard-Berechtigungen ok
-            }
+            return $result;
+        } catch (\Exception $e) {
+            error_log("ConfigManager: Fehler bei der Migration von $name: " . $e->getMessage());
+            return false;
         }
-        
-        // Wenn die Datei existiert aber nicht beschreibbar ist
-        if (file_exists($filePath) && !is_writable($filePath)) {
-            error_log("ConfigManager-Debug: Datei existiert aber ist nicht beschreibbar: " . $filePath);
-            error_log("ConfigManager-Debug: Aktuelle Berechtigungen: " . substr(sprintf('%o', fileperms($filePath)), -4));
-            
-            // Versuchen die Berechtigungen zu ändern
-            $chmod_result = @chmod($filePath, 0640);
-            error_log("ConfigManager-Debug: chmod Ergebnis: " . ($chmod_result ? "Erfolg" : "Fehlgeschlagen"));
-            error_log("ConfigManager-Debug: Neue Berechtigungen: " . substr(sprintf('%o', fileperms($filePath)), -4));
-            
-            if (!$chmod_result) {
-                // Wenn chmod fehlschlägt, versuchen wir einen alternativen Ansatz
-                // Dateiinhalt lesen
-                $content = @file_get_contents($filePath);
-                if ($content === false) {
-                    error_log("ConfigManager: Konnte die nicht-beschreibbare Datei nicht lesen: " . $filePath);
-                    return false;
-                }
-                
-                // Temporäre Datei erstellen
-                $tempFile = $filePath . '.new';
-                if (@file_put_contents($tempFile, $content) === false) {
-                    error_log("ConfigManager: Konnte keine temporäre Datei erstellen: " . $tempFile);
-                    return false;
-                }
-                
-                // Berechtigungen für temporäre Datei setzen
-                if (!@chmod($tempFile, 0640)) {
-                    error_log("ConfigManager: Konnte Berechtigungen für temporäre Datei nicht setzen: " . $tempFile);
-                    // Trotzdem weitermachen
-                }
-                
-                // Versuchen, die alte Datei zu löschen
-                if (!@unlink($filePath)) {
-                    error_log("ConfigManager: Konnte die nicht-beschreibbare Datei nicht löschen: " . $filePath);
-                    @unlink($tempFile); // Temporäre Datei aufräumen
-                    return false;
-                }
-                
-                // Temporäre Datei umbenennen
-                if (!@rename($tempFile, $filePath)) {
-                    error_log("ConfigManager: Konnte temporäre Datei nicht umbenennen: " . $tempFile);
-                    return false;
-                }
-                
-                // Überprüfen, ob die neue Datei beschreibbar ist
-                if (!is_writable($filePath)) {
-                    error_log("ConfigManager: Neue Datei ist immer noch nicht beschreibbar: " . $filePath);
-                    return false;
-                }
-                
-                error_log("ConfigManager: Datei erfolgreich durch Kopieren neu erstellt mit Berechtigungen: " . 
-                        substr(sprintf('%o', fileperms($filePath)), -4));
-            }
-        }
-        
-        // Final prüfen, ob die Datei jetzt beschreibbar ist
-        return is_writable($filePath);
     }
 }

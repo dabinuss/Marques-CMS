@@ -28,7 +28,8 @@ class Template {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
+        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $this->_config = $configManager->load('system') ?: [];
 
         $themeManager = new ThemeManager();
         $this->templatePath = $themeManager->getThemePath('templates');

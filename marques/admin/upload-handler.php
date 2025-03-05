@@ -22,8 +22,11 @@ $admin->requireLogin();
 // Antwort-Header setzen
 header('Content-Type: application/json');
 
+// ConfigManager initialisieren
+$configManager = \Marques\Core\ConfigManager::getInstance();
+
 // Konfiguration laden
-$system_config = require MARQUES_CONFIG_DIR . '/system.config.php';
+$system_config = $configManager->load('system') ?: [];
 
 // Fehlerfunktion
 function returnError($message) {

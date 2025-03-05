@@ -81,7 +81,11 @@ require_once MARQUES_SYSTEM_DIR . '/core/Exceptions.inc.php';
 
 // Container und Event-Manager initialisieren
 $container = new \Marques\Core\Container();
-$container->register('config', require MARQUES_CONFIG_DIR . '/system.config.php');
+
+$configManager = \Marques\Core\ConfigManager::getInstance();
+$systemConfig = $configManager->load('system') ?: [];
+$container->register('config', $systemConfig);
+
 $container->register(\Marques\Core\EventManager::class, new \Marques\Core\EventManager());
 $container->register(\Marques\Core\Logger::class, new \Marques\Core\Logger());
 $container->register(\Marques\Core\SettingsManager::class);

@@ -19,15 +19,15 @@ class SettingsManager {
     private $_system_settings;
     
     /**
-     * @var string Pfad zur Konfigurationsdatei
+     * @var ConfigManager Instance des ConfigManager
      */
-    private $_config_file;
+    private $_configManager;
     
     /**
      * Konstruktor
      */
     public function __construct() {
-        $this->_config_file = MARQUES_CONFIG_DIR . '/system.config.php';
+        $this->_configManager = \Marques\Core\ConfigManager::getInstance();
         $this->_loadSettings();
     }
     
@@ -35,8 +35,7 @@ class SettingsManager {
      * Lädt die Systemeinstellungen
      */
     private function _loadSettings() {
-        $configManager = \Marques\Core\ConfigManager::getInstance();
-        $config = $configManager->load('system');
+        $config = $this->_configManager->load('system');
         
         if ($config) {
             $this->_system_settings = $config;
@@ -204,64 +203,6 @@ class SettingsManager {
         }
         
         // ConfigManager verwenden
-        $configManager = \Marques\Core\ConfigManager::getInstance();
-        return $configManager->save('system', $this->_system_settings);
-    }
-    
-    /**
-     * Formatierte Ausgabe von Variablen für Konfigurationsdateien
-     * Alternative zu var_export mit besserer Formatierung
-     *
-     * @param mixed $var Variable zum Exportieren
-     * @param bool $return Ob das Ergebnis zurückgegeben werden soll
-     * @param int $indent Einrückungsebene
-     * @return string|void Exportierte Variable
-     */
-    private function _varExport($var, $return = false, $indent = 0) {
-        $indentStr = str_repeat('    ', $indent);
-        
-        if (is_array($var)) {
-            $indexed = array_keys($var) === range(0, count($var) - 1);
-            $r = [];
-            
-            foreach ($var as $key => $value) {
-                $r[] = $indentStr . '    ' . 
-                       ($indexed ? '' : $this->_varExport($key, true) . ' => ') . 
-                       $this->_varExport($value, true, $indent + 1);
-            }
-            
-            $output = "[\n" . implode(",\n", $r) . "\n" . $indentStr . "]";
-            
-            if ($return) {
-                return $output;
-            } else {
-                echo $output;
-            }
-        } elseif (is_bool($var)) {
-            if ($return) {
-                return $var ? 'true' : 'false';
-            } else {
-                echo $var ? 'true' : 'false';
-            }
-        } elseif (is_null($var)) {
-            if ($return) {
-                return 'null';
-            } else {
-                echo 'null';
-            }
-        } elseif (is_string($var)) {
-            $var = str_replace("'", "\\'", $var);
-            if ($return) {
-                return "'" . $var . "'";
-            } else {
-                echo "'" . $var . "'";
-            }
-        } else {
-            if ($return) {
-                return var_export($var, true);
-            } else {
-                var_export($var);
-            }
-        }
+        return $this->_configManager->save('system', $this->_system_settings);
     }
 }

@@ -8,9 +8,11 @@ class ThemeManager {
     private $currentTheme = 'default';
     private $themesPath;
     private $settingsManager;
+    private $configManager;
     
     public function __construct() {
         $this->themesPath = MARQUES_ROOT_DIR . '/themes';
+        $this->configManager = ConfigManager::getInstance();
         $this->loadThemes();
         $this->settingsManager = new SettingsManager();
         $this->currentTheme = $this->settingsManager->getSetting('active_theme', 'default');
@@ -49,11 +51,8 @@ class ThemeManager {
             return false;
         }
         
-        // Direkt mit ConfigManager arbeiten
-        $configManager = ConfigManager::getInstance();
-        
         // System-Konfiguration laden
-        $systemConfig = $configManager->load('system');
+        $systemConfig = $this->configManager->load('system');
         if (!$systemConfig) {
             error_log("ThemeManager: Konnte System-Konfiguration nicht laden");
             return false;
@@ -63,7 +62,7 @@ class ThemeManager {
         $systemConfig['active_theme'] = $themeName;
         
         // Konfiguration speichern
-        $result = $configManager->save('system', $systemConfig);
+        $result = $this->configManager->save('system', $systemConfig);
         
         if ($result) {
             $this->currentTheme = $themeName;
@@ -84,10 +83,10 @@ class ThemeManager {
     
     public function getThemeAssetsUrl(string $file = ''): string {
         // Konfiguration laden
-        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
+        $systemConfig = $this->configManager->load('system') ?: [];
         
         // Basispfad aus der Konfiguration holen
-        $baseUrl = $config['base_url'] ?? '';
+        $baseUrl = $systemConfig['base_url'] ?? '';
         
         // Fallback-Implementierung, falls base_url nicht verfügbar ist
         if (empty($baseUrl)) {
@@ -105,7 +104,7 @@ class ThemeManager {
             $url .= '/' . ltrim($file, '/');
         }
         
-        if (($config['debug'] ?? false) === true) {
+        if (($systemConfig['debug'] ?? false) === true) {
             error_log("Theme Asset URL: {$url}");
         }
         

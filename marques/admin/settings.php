@@ -92,9 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'appearance':
-                $themeManager = new \Marques\Core\ThemeManager();
-                $newTheme = $_POST['active_theme'] ?? 'default';
-                $themeManager->setActiveTheme($newTheme);
+                $settings->setMultipleSettings([
+                    'active_theme' => $_POST['active_theme'] ?? '',
+                ]);
                 break;
 
             case 'seo':

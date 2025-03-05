@@ -10,7 +10,8 @@ class Application {
     private Router $router;
     private Template $template;
     private array $config;
-    private EventManager $eventManager;    
+    private EventManager $eventManager;
+    private ConfigManager $configManager;
     
     /**
      * Konstruktor mit vereinfachtem DI
@@ -19,7 +20,8 @@ class Application {
         $this->router = $router;
         $this->template = $template;
         $this->eventManager = $eventManager;
-        $this->config = require MARQUES_CONFIG_DIR . '/system.config.php';
+        $this->configManager = ConfigManager::getInstance();
+        $this->config = $this->configManager->load('system') ?: [];
     }
     
     /**
