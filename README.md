@@ -20,10 +20,7 @@ The CMS is still under development. For testing, simply upload the project under
 ## Development Phases
 
 <details>
-<summary>
-### Phase 1: Basic Structure and Core | ✅ Done 
-</summary>
-<details>
+<summary>### Phase 1: Basic Structure and Core | ✅ Done </summary>
 
 In this phase, the base architecture and fundamental features were implemented:
 
@@ -38,7 +35,11 @@ In this phase, the base architecture and fundamental features were implemented:
 - **Sample Content:** Initial static content for demonstration
 - **Admin Area:** Basic structure for administrative tasks
 
-### Phase 2: Planning and Components
+</details>
+
+<details>
+<summary>### Phase 2: Planning and Components | ✅ Done </summary>
+
 
 In this phase, extended functionality was added to improve interactivity and security:
 
@@ -47,6 +48,8 @@ In this phase, extended functionality was added to improve interactivity and sec
 - **Content Management:** Create, edit, and delete pages, manage blog posts, version management for content
 - **TinyMCE Integration:** TinyMCE WYSIWYG editor for easy content creation, Markdown support
 - **Media Management:** Media upload, media library, integration into the editor
+
+</details>
 
 ### Phase 3: Extension
 
