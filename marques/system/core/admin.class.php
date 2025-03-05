@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Admin Klasse
  * 
@@ -34,7 +36,7 @@ class Admin {
      *
      * @return bool True wenn Zugriff erlaubt
      */
-    public function checkAccess() {
+    public function checkAccess(): bool {
         return $this->_user->isLoggedIn();
     }
     
@@ -42,7 +44,7 @@ class Admin {
      * Stellt sicher, dass der Benutzer eingeloggt ist
      * Leitet zur Login-Seite weiter, wenn nicht
      */
-    public function requireLogin() {
+    public function requireLogin(): void {
         if (!$this->checkAccess()) {
             header('Location: login.php');
             exit;
@@ -55,7 +57,7 @@ class Admin {
      *
      * @return bool True wenn erfolgreich
      */
-    public function requireAdmin() {
+    public function requireAdmin(): bool {
         if (!$this->_user->isAdmin()) {
             echo "Zugriff verweigert: Administrator-Berechtigungen erforderlich";
             return false;
@@ -68,9 +70,9 @@ class Admin {
      *
      * @return array Statistiken
      */
-    public function getStatistics() {
+    public function getStatistics(): array {
         // Zähle Blog-Beiträge
-        $blogManager = new \Marques\Core\BlogManager();
+        $blogManager = new BlogManager();
         $blogPosts = $blogManager->getAllPosts();
         
         $stats = [
@@ -92,13 +94,13 @@ class Admin {
      * @param string $dir Verzeichnispfad
      * @return int Anzahl der Dateien
      */
-    private function _countFiles($dir) {
+    private function _countFiles($dir): int {
         if (!is_dir($dir)) {
             return 0;
         }
         
         $files = glob($dir . '/*.md');
-        return count($files);
+        return is_array($files) ? count($files) : 0;
     }
 
     /**

@@ -21,6 +21,6 @@
     
     <?php $this->includePartial('footer'); ?>
     
-    <script src="<?php echo $themeManager->getThemeAssetsUrl('js/script.js'); ?>"></script>
+    <script src="<?php echo $themeManager->getThemeAssetsUrl('js/main.js'); ?>"></script>
 </body>
 </html>

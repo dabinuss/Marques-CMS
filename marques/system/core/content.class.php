@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Content Klasse
  * 
@@ -23,9 +25,8 @@ class Content {
      * @return array Seitendaten
      * @throws NotFoundException Wenn die Seite nicht gefunden wird
      */
-    public function getPage($path) {
-        // Pfad validieren
-        if (empty($path) || !is_string($path)) {
+    public function getPage(string $path): array {
+        if (empty($path)) {
             throw new \InvalidArgumentException("Ungültiger Seitenpfad");
         }
         

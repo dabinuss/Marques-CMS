@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - User Klasse
  * 
@@ -97,7 +99,7 @@ class User {
      * @param string $username Benutzername
      * @return bool True wenn der Benutzer existiert
      */
-    public function exists($username) {
+    public function exists(string $username): bool {
         $users = $this->_getUsers();
         return isset($users[$username]);
     }
@@ -107,7 +109,7 @@ class User {
      *
      * @return bool True wenn eingeloggt
      */
-    public function isLoggedIn() {
+    public function isLoggedIn(): bool {
         return $this->_session !== null;
     }
     
@@ -118,7 +120,7 @@ class User {
      * @param string $password Passwort
      * @return bool True bei erfolgreicher Anmeldung
      */
-    public function login($username, $password) {
+    public function login(string $username, string $password): bool {
         $ip = $_SERVER['REMOTE_ADDR'];
         $loginAttempts = $this->_getLoginAttempts($ip);
         
@@ -219,7 +221,7 @@ class User {
      *
      * @return void
      */
-    public function logout() {
+    public function logout(): void {
         $this->_session = null;
         unset($_SESSION['marques_user']);
     }

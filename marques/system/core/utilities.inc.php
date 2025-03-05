@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Hilfsfunktionen
  * 
@@ -113,7 +115,7 @@ function marques_theme_url($path = '') {
  * @param string $format Datumsformat (Standard: Systemkonfiguration)
  * @return string Formatiertes Datum
  */
-function marques_format_date($date, $format = null) {
+function marques_format_date(string $date, string $format = 'Y-m-d'): string {
     $config = marques_get_config();
     
     if ($format === null) {
@@ -144,7 +146,7 @@ function marques_escape_html($string) {
  * @param string $string String, der in einen Slug umgewandelt werden soll
  * @return string Slug
  */
-function marques_create_slug($string) {
+function marques_create_slug(string $string): string {
     // Nicht-lateinische Zeichen transliterieren
     if (function_exists('transliterator_transliterate')) {
         $string = transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $string);

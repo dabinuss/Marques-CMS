@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Configuration Manager Klasse
  * 
@@ -11,15 +13,9 @@
 namespace Marques\Core;
 
 class ConfigManager {
-    /**
-     * @var ConfigManager Einzige Instanz der Klasse (Singleton)
-     */
-    private static $_instance = null;
-    
-    /**
-     * @var array Zwischengespeicherte Konfigurationen
-     */
-    private $_cache = [];
+
+    private static ?ConfigManager $_instance = null;
+    private array $_cache = [];
     
     /**
      * Privater Konstruktor (Singleton-Pattern)
@@ -36,7 +32,7 @@ class ConfigManager {
      *
      * @return ConfigManager
      */
-    public static function getInstance() {
+    public static function getInstance(): ConfigManager {
         if (self::$_instance === null) {
             self::$_instance = new self();
         }
@@ -50,7 +46,7 @@ class ConfigManager {
      * @param bool $forceReload Erzwingt das Neuladen aus der Datei
      * @return array Konfigurationsdaten
      */
-    public function load($name, $forceReload = false) {
+    public function load(string $name, bool $forceReload = false): array {
         // Normalisiere den Namen
         $name = $this->normalizeConfigName($name);
         
@@ -90,7 +86,7 @@ class ConfigManager {
      * @param array $data Zu speichernde Konfigurationsdaten
      * @return bool Erfolg
      */
-    public function save($name, $data) {
+    public function save(string $name, array $data): bool {
         // Normalisiere den Namen
         $name = $this->normalizeConfigName($name);
         
@@ -132,7 +128,7 @@ class ConfigManager {
      * @param mixed $default Standardwert, falls nicht gefunden
      * @return mixed Konfigurationswert
      */
-    public function get($name, $key, $default = null) {
+    public function get(string $name, string $key, $default = null) {
         $config = $this->load($name);
         
         // Unterstützt dot-notation für verschachtelte Einstellungen
@@ -161,7 +157,7 @@ class ConfigManager {
      * @param mixed $value Zu setzender Wert
      * @return bool Erfolg
      */
-    public function set($name, $key, $value) {
+    public function set(string $name, string $key, $value): bool {
         $config = $this->load($name);
         
         // Unterstützt dot-notation für verschachtelte Einstellungen
@@ -192,7 +188,7 @@ class ConfigManager {
      * @param string $key Schlüssel des zu löschenden Werts
      * @return bool Erfolg
      */
-    public function delete($name, $key) {
+    public function delete(string $name, string $key): bool {
         $config = $this->load($name);
         
         // Unterstützt dot-notation für verschachtelte Einstellungen
@@ -263,7 +259,7 @@ class ConfigManager {
      * @param int $indent Einrückungsebene
      * @return string|void Exportierte Variable
      */
-    private function varExport($var, $return = false, $indent = 0) {
+    private function varExport($var, bool $return = false, int $indent = 0) {
         $indentStr = str_repeat('    ', $indent);
         
         if (is_array($var)) {

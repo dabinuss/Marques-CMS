@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Blog Manager Klasse
  * 
@@ -31,7 +33,7 @@ class BlogManager {
      * @param string $category Optionale Kategorie-Filterung
      * @return array Blog-Beiträge mit Metadaten
      */
-    public function getAllPosts($limit = 0, $offset = 0, $category = '') {
+    public function getAllPosts(int $limit = 0, int $offset = 0, string $category = ''): array {
         $posts = [];
         $blogDir = MARQUES_CONTENT_DIR . '/blog';
         
@@ -70,14 +72,12 @@ class BlogManager {
             
             // Slug extrahieren (nach dem letzten "-")
             $pos = strrpos($filename, "-");
-            $slug = substr($filename, $pos + 1);
+            $slug = $pos === false ? $filename : substr($filename, $pos + 1);
+
             
             // Date extrahieren (Format: YYYY-MM-DD-slug)
             $dateParts = explode('-', $filename);
-            $date = '';
-            if (count($dateParts) >= 3) {
-                $date = $dateParts[0] . '-' . $dateParts[1] . '-' . $dateParts[2];
-            }
+            $date = (count($dateParts) >= 3) ? $dateParts[0] . '-' . $dateParts[1] . '-' . $dateParts[2] : '';
             
             $posts[] = [
                 'id' => $filename,

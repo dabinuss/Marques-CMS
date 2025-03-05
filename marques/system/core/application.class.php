@@ -1,14 +1,16 @@
 <?php
+declare(strict_types=1);
+
 namespace Marques\Core;
 
 /**
  * Hauptanwendungsklasse
  */
 class Application {
-    private $router;
-    private $template;
-    private $config;
-    private $eventManager;
+    private Router $router;
+    private Template $template;
+    private array $config;
+    private EventManager $eventManager;    
     
     /**
      * Konstruktor mit vereinfachtem DI
@@ -23,7 +25,7 @@ class Application {
     /**
      * Führt die Anwendung aus
      */
-    public function run() {
+    public function run(): void {
         try {
             // Event vor der Anfrageverarbeitung
             $this->eventManager->trigger('before_request');
@@ -57,7 +59,7 @@ class Application {
     /**
      * Behandelt Anwendungsfehler
      */
-    private function handleError(\Exception $e) {
+    private function handleError(\Exception $e): void {
         // Event vor der Fehlerbehandlung
         $this->eventManager->trigger('before_error_handle', ['exception' => $e]);
         

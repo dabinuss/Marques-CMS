@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Template Klasse
  * 
@@ -48,7 +50,7 @@ class Template {
      * @return void
      * @throws \Exception Wenn das Template nicht gefunden wird
      */
-    public function render($data) {
+    public function render(array $data): void {
         // Template-Namen abrufen
         $templateName = $data['template'] ?? 'page';
         

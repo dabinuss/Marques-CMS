@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Marques\Core;
 
 /**
@@ -17,7 +19,7 @@ class Logger {
     /**
      * Protokolliert eine Nachricht
      */
-    public function log($level, $message, array $context = []) {
+    public function log(string $level, string $message, array $context = []): void {
         $date = new \DateTime();
         $logFile = $this->logDir . '/' . $date->format('Y-m-d') . '.log';
         $timestamp = $date->format('Y-m-d H:i:s');
@@ -31,14 +33,14 @@ class Logger {
     /**
      * Protokolliert einen Fehler
      */
-    public function error($message, array $context = []) {
+    public function error(string $message, array $context = []): void {
         $this->log('ERROR', $message, $context);
-    }
+    }    
     
     /**
      * Protokolliert eine Info-Nachricht
      */
-    public function info($message, array $context = []) {
+    public function info(string $message, array $context = []): void {
         $this->log('INFO', $message, $context);
-    }
+    }    
 }

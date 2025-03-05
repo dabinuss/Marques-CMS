@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Version Manager Klasse
  * 
@@ -61,7 +63,7 @@ class VersionManager {
      * @param string $username Benutzername des Editors
      * @return bool|string False bei Fehler, sonst Versions-ID
      */
-    public function createVersion($contentType, $id, $content, $username = 'system') {
+    public function createVersion(string $contentType, string $id, string $content, string $username = 'system'): string|bool {
         if (!in_array($contentType, ['pages', 'blog', 'media'])) {
             return false;
         }
@@ -114,7 +116,7 @@ class VersionManager {
      * @param string $id ID/Slug des Inhalts
      * @return array Versions-Metadaten, sortiert nach Datum (neuste zuerst)
      */
-    public function getVersions($contentType, $id) {
+    public function getVersions(string $contentType, string $id): array {
         $versionDir = $this->_versionsDir . '/' . $contentType . '/' . $id;
         $versions = [];
         
@@ -148,7 +150,7 @@ class VersionManager {
      * @param string $versionId Versions-ID
      * @return string|false Inhalt der Version oder false bei Fehler
      */
-    public function getVersionContent($contentType, $id, $versionId) {
+    public function getVersionContent(string $contentType, string $id, string $versionId): string|false {
         $contentFile = $this->_versionsDir . '/' . $contentType . '/' . $id . '/' . $versionId . '.content';
         
         if (!file_exists($contentFile)) {
@@ -167,7 +169,7 @@ class VersionManager {
      * @param string $username Benutzername für die neue Version
      * @return bool Erfolg der Wiederherstellung
      */
-    public function restoreVersion($contentType, $id, $versionId, $username = 'system') {
+    public function restoreVersion(string $contentType, string $id, string $versionId, string $username = 'system'): bool {
         // Inhalt der Version abrufen
         $content = $this->getVersionContent($contentType, $id, $versionId);
         
@@ -205,7 +207,7 @@ class VersionManager {
      * @param string $versionId Versions-ID
      * @return bool Erfolg der Löschung
      */
-    public function deleteVersion($contentType, $id, $versionId) {
+    public function deleteVersion(string $contentType, string $id, string $versionId): bool {
         $metadataFile = $this->_versionsDir . '/' . $contentType . '/' . $id . '/' . $versionId . '.json';
         $contentFile = $this->_versionsDir . '/' . $contentType . '/' . $id . '/' . $versionId . '.content';
         
@@ -274,7 +276,7 @@ class VersionManager {
      * @param string $newContent Neuerer Inhalt
      * @return array Array mit Unterschieden
      */
-    public function createDiff($oldContent, $newContent) {
+    public function createDiff(string $oldContent, string $newContent): array {
         // Einfache Zeilen-basierte Diff-Implementierung
         $oldLines = explode("\n", $oldContent);
         $newLines = explode("\n", $newContent);

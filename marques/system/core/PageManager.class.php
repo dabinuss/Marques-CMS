@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Page Manager Klasse
  * 
@@ -28,7 +30,7 @@ class PageManager {
      *
      * @return array Seiten mit Metadaten
      */
-    public function getAllPages() {
+    public function getAllPages(): array {
         $pages = [];
         $pagesDir = MARQUES_CONTENT_DIR . '/pages';
         
@@ -66,7 +68,7 @@ class PageManager {
      * @param string $id Seiten-ID (Dateiname ohne .md)
      * @return array|null Seite mit Metadaten und Inhalt
      */
-    public function getPage($id) {
+    public function getPage(string $id): ?array {
         // Sicherheitscheck
         if (strpos($id, '/') !== false || strpos($id, '\\') !== false) {
             return null;
@@ -113,7 +115,7 @@ class PageManager {
      * @param array $pageData Seiten-Daten
      * @return bool True bei Erfolg
      */
-    public function savePage($pageData) {
+    public function savePage(array $pageData): bool {
         if (empty($pageData['id'])) {
             // Neue Seite - ID aus Titel generieren
             $pageData['id'] = $this->generateSlug($pageData['title']);
@@ -178,7 +180,7 @@ class PageManager {
      * @param string $id Seiten-ID
      * @return bool True bei Erfolg
      */
-    public function deletePage($id) {
+    public function deletePage(string $id): bool {
         // Sicherheitscheck
         if (strpos($id, '/') !== false || strpos($id, '\\') !== false) {
             return false;

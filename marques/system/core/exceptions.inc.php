@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Benutzerdefinierte Exceptions
  * 
@@ -16,7 +18,7 @@ namespace Marques\Core;
  * Wird geworfen, wenn eine angeforderte Ressource nicht gefunden wird.
  */
 class NotFoundException extends \Exception {
-    public function __construct($message = "Die angeforderte Ressource wurde nicht gefunden.", $code = 404, \Throwable $previous = null) {
+    public function __construct(string $message = "Die angeforderte Ressource wurde nicht gefunden.", int $code = 404, ?\Throwable $previous = null) {
         parent::__construct($message, $code, $previous);
     }
 }

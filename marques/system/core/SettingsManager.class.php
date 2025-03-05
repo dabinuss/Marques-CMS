@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Settings Manager Klasse
  * 
@@ -126,7 +128,7 @@ class SettingsManager {
      * @param mixed $default Standardwert, falls Einstellung nicht existiert
      * @return mixed Einstellungswert
      */
-    public function getSetting($key, $default = null) {
+    public function getSetting(string $key, $default = null) {
         // Unterstützt auch dot-notation für verschachtelte Einstellungen
         if (strpos($key, '.') !== false) {
             $keys = explode('.', $key);
@@ -151,7 +153,7 @@ class SettingsManager {
      * @param string $key Einstellungsschlüssel
      * @param mixed $value Einstellungswert
      */
-    public function setSetting($key, $value) {
+    public function setSetting(string $key, $value): void {
         // Unterstützt auch dot-notation für verschachtelte Einstellungen
         if (strpos($key, '.') !== false) {
             $keys = explode('.', $key);
@@ -187,7 +189,7 @@ class SettingsManager {
      *
      * @return bool True bei Erfolg
      */
-    public function saveSettings() {
+    public function saveSettings(): bool {
         // Bereite die base_url vor
         if (isset($this->_system_settings['base_url'])) {
             $baseUrl = rtrim($this->_system_settings['base_url'], '/');

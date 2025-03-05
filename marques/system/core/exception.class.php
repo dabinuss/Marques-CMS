@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Marques\Core;
 
 /**
@@ -7,7 +9,7 @@ namespace Marques\Core;
 class Exception extends \Exception {
     protected $context = [];
     
-    public function __construct($message = "", $code = 0, $previous = null, array $context = []) {
+    public function __construct(string $message = "", int $code = 0, ?\Throwable $previous = null) {
         parent::__construct($message, $code, $previous);
         $this->context = $context;
     }

@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Marques\Core;
 
 class ThemeManager {
@@ -31,16 +33,16 @@ class ThemeManager {
         }
     }
     
-    public function getThemes() {
+    public function getThemes(): array {
         return $this->themes;
     }
     
-    public function getActiveTheme() {
+    public function getActiveTheme(): string {
         $settings = new SettingsManager();
         return $settings->getSetting('active_theme', 'default');
     }
     
-    public function setActiveTheme($themeName) {
+    public function setActiveTheme(string $themeName): bool {
         if (!array_key_exists($themeName, $this->themes)) {
             return false;
         }
@@ -49,12 +51,12 @@ class ThemeManager {
         return $settings->setSetting('active_theme', $themeName);
     }
     
-    public function getThemePath($file = '') {
+    public function getThemePath(string $file = ''): string {
         $basePath = $this->themesPath . '/' . $this->currentTheme;
         return $file ? $basePath . '/' . $file : $basePath;
     }
     
-    public function getThemeAssetsUrl($file = '') {
+    public function getThemeAssetsUrl(string $file = ''): string {
         // Konfiguration laden
         $config = require MARQUES_CONFIG_DIR . '/system.config.php';
         

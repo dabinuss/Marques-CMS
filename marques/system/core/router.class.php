@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Router Klasse
  * 
@@ -30,7 +32,7 @@ class Router {
      * @return array Routeninformationen einschließlich Pfad, Parameter usw.
      * @throws NotFoundException Wenn die Route nicht gefunden wird
      */
-    public function processRequest() {
+    public function processRequest(): array {
         // Request-URI abrufen
         $requestUri = $this->getRequestUri();
         $config = require MARQUES_CONFIG_DIR . '/system.config.php';
@@ -343,7 +345,7 @@ class Router {
      *
      * @return string Normalisierte Request-URI
      */
-    private function getRequestUri() {
+    private function getRequestUri(): string {
         $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
         
         // Basispfad abschneiden, falls nötig

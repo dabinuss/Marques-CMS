@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Media Manager Klasse
  * 
@@ -28,7 +30,7 @@ class MediaManager {
      * 
      * @return array Liste aller Medien
      */
-    public function getAllMedia() {
+    public function getAllMedia(): array {
         $mediaDir = MARQUES_ROOT_DIR . '/assets/media';
         $media = [];
         
@@ -81,7 +83,7 @@ class MediaManager {
      * @param string $filename Der Dateiname der zu löschenden Datei
      * @return bool Erfolgsstatus
      */
-    public function deleteMedia($filename) {
+    public function deleteMedia(string $filename): bool {
         $filePath = MARQUES_ROOT_DIR . '/assets/media/' . $filename;
         
         // Prüfen, ob die Datei existiert

@@ -1,17 +1,19 @@
 <?php
+declare(strict_types=1);
+
 namespace Marques\Core;
 
 /**
  * Einfacher Dependency Injection Container
  */
 class Container {
-    private $services = [];
-    private $instances = [];
+    private array $services = [];
+    private array $instances = [];    
     
     /**
      * Registriert einen Service
      */
-    public function register($id, $concrete = null) {
+    public function register(string $id, $concrete = null): self {
         $this->services[$id] = $concrete ?: $id;
         return $this;
     }
@@ -19,7 +21,7 @@ class Container {
     /**
      * Holt einen Service
      */
-    public function get($id) {
+    public function get(string $id) {
         if (!isset($this->services[$id])) {
             throw new \Exception("Service '$id' nicht gefunden");
         }
@@ -42,7 +44,7 @@ class Container {
     /**
      * Prüft, ob ein Service existiert
      */
-    public function has($id) {
+    public function has(string $id): bool {
         return isset($this->services[$id]);
     }
 }

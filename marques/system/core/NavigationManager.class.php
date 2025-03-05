@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Navigation Manager Klasse
  * 
@@ -52,7 +54,7 @@ class NavigationManager {
      * 
      * @return array Navigationsdaten
      */
-    public function getNavigation() {
+    public function getNavigation(): array {
         $navigation = $this->_configManager->load('navigation', true); // true für Force-Reload
         
         // Sicherstellen, dass die Grundstruktur vorhanden ist
@@ -115,7 +117,7 @@ class NavigationManager {
      * @param array $menuItem Menüelement
      * @return bool Erfolg
      */
-    public function addMenuItem($menuType, $menuItem) {
+    public function addMenuItem(string $menuType, array $menuItem): bool {
         $navigation = $this->getNavigation();
         
         if (!isset($menuItem['id'])) {
@@ -134,7 +136,7 @@ class NavigationManager {
      * @param array $menuItem Neue Daten für das Menüelement
      * @return bool Erfolg
      */
-    public function updateMenuItem($menuType, $menuItemId, $menuItem) {
+    public function updateMenuItem(string $menuType, string $menuItemId, array $menuItem): bool {
         $navigation = $this->getNavigation();
         
         foreach ($navigation[$menuType] as $key => $item) {
@@ -156,7 +158,7 @@ class NavigationManager {
      * @param string $menuItemId ID des zu löschenden Menüelements
      * @return bool Erfolg
      */
-    public function deleteMenuItem($menuType, $menuItemId) {
+    public function deleteMenuItem(string $menuType, string $menuItemId): bool {
         $navigation = $this->getNavigation();
         
         foreach ($navigation[$menuType] as $key => $item) {
@@ -178,7 +180,7 @@ class NavigationManager {
      * @param array $order Array mit Menüpunkt-IDs in der gewünschten Reihenfolge
      * @return bool Erfolg
      */
-    public function reorderMenu($menuType, $order) {
+    public function reorderMenu(string $menuType, array $order): bool {
         $navigation = $this->getNavigation();
         $currentMenu = $navigation[$menuType];
         $newMenu = [];
@@ -208,7 +210,7 @@ class NavigationManager {
      * @param array $options Optionen für die Ausgabe
      * @return string HTML des Hauptmenüs
      */
-    public function renderMainMenu($options = []) {
+    public function renderMainMenu(array $options = []): string {
         $mainMenu = $this->getMenu('main_menu');
         
         // Deine bestehende Menüstruktur
@@ -250,7 +252,7 @@ class NavigationManager {
      * @param array $options Optionen für die Ausgabe
      * @return string HTML des Footermenüs
      */
-    public function renderFooterMenu($options = []) {
+    public function renderFooterMenu(array $options = []): string {
         $footerMenu = $this->getMenu('footer_menu');
         
         // Für Footer-Menü könnten wir ähnliche Klassen verwenden oder anpassen
