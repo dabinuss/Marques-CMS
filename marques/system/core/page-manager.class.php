@@ -20,7 +20,7 @@ class PageManager {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
     }
     
     /**
@@ -30,7 +30,7 @@ class PageManager {
      */
     public function getAllPages() {
         $pages = [];
-        $pagesDir = MARCES_CONTENT_DIR . '/pages';
+        $pagesDir = MARQUES_CONTENT_DIR . '/pages';
         
         if (!is_dir($pagesDir)) {
             return $pages;
@@ -72,7 +72,7 @@ class PageManager {
             return null;
         }
         
-        $file = MARCES_CONTENT_DIR . '/pages/' . $id . '.md';
+        $file = MARQUES_CONTENT_DIR . '/pages/' . $id . '.md';
         
         if (!file_exists($file)) {
             return null;
@@ -124,7 +124,7 @@ class PageManager {
             return false;
         }
         
-        $file = MARCES_CONTENT_DIR . '/pages/' . $pageData['id'] . '.md';
+        $file = MARQUES_CONTENT_DIR . '/pages/' . $pageData['id'] . '.md';
         
         // Wenn Datei existiert, zuvor eine Version erstellen
         if (file_exists($file)) {
@@ -184,14 +184,14 @@ class PageManager {
             return false;
         }
         
-        $file = MARCES_CONTENT_DIR . '/pages/' . $id . '.md';
+        $file = MARQUES_CONTENT_DIR . '/pages/' . $id . '.md';
         
         if (!file_exists($file)) {
             return false;
         }
         
         // Optional: Sicherungskopie erstellen
-        $backupDir = MARCES_CONTENT_DIR . '/versions/pages';
+        $backupDir = MARQUES_CONTENT_DIR . '/versions/pages';
         if (!is_dir($backupDir)) {
             mkdir($backupDir, 0755, true);
         }

@@ -75,7 +75,7 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
             <i class="fas fa-sign-out-alt"></i> Abmelden
         </a>
         <div class="admin-version">
-            marques CMS v<?php echo MARCES_VERSION; ?>
+            marques CMS v<?php echo MARQUES_VERSION; ?>
         </div>
     </div>
 

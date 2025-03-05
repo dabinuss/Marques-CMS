@@ -10,11 +10,16 @@
  */
 
 // Basispfad definieren
-define('MARCES_ROOT_DIR', __DIR__);
+define('MARQUES_ROOT_DIR', __DIR__);
 
 // Bootstrap laden
-require_once MARCES_ROOT_DIR . '/system/core/bootstrap.inc.php';
+require_once MARQUES_ROOT_DIR . '/system/core/bootstrap.inc.php';
+
+// Abhängigkeiten erstellen
+$router = new Marques\Core\Router();
+$template = new Marques\Core\Template();
+$eventManager = new Marques\Core\EventManager();
 
 // Anwendung initialisieren
-$app = new Marques\Core\Application();
+$app = new Marques\Core\Application($router, $template, $eventManager);
 $app->run();

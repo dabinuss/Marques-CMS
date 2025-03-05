@@ -25,7 +25,7 @@ class SettingsManager {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config_file = MARCES_CONFIG_DIR . '/system.config.php';
+        $this->_config_file = MARQUES_CONFIG_DIR . '/system.config.php';
         $this->_loadSettings();
     }
     
@@ -100,7 +100,7 @@ class SettingsManager {
             // Systemeinstellungen
             'debug' => false,
             'cache_enabled' => true,
-            'version' => MARCES_VERSION,
+            'version' => MARQUES_VERSION,
             'maintenance_mode' => false,
             'maintenance_message' => 'Die Website wird aktuell gewartet. Bitte versuchen Sie es später erneut.',
             
@@ -200,7 +200,7 @@ class SettingsManager {
         
         // Rest des Codes bleibt unverändert...
         $content = "<?php\n/**\n * marques CMS - Systemkonfiguration\n * \n * Hauptkonfigurationsdatei des Systems.\n *\n * @package marques\n * @subpackage config\n */\n\n";
-        $content .= "// Direkten Zugriff verhindern\nif (!defined('MARCES_ROOT_DIR')) {\n    exit('Direkter Zugriff ist nicht erlaubt.');\n}\n\n";
+        $content .= "// Direkten Zugriff verhindern\nif (!defined('MARQUES_ROOT_DIR')) {\n    exit('Direkter Zugriff ist nicht erlaubt.');\n}\n\n";
         $content .= "return " . $this->_varExport($this->_system_settings, true) . ";\n";
         
         if (file_put_contents($this->_config_file, $content) === false) {

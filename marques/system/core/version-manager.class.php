@@ -27,7 +27,7 @@ class VersionManager {
      * @param int $maxVersions Maximale Anzahl von Versionen (Standard: 10)
      */
     public function __construct($maxVersions = 10) {
-        $this->_versionsDir = MARCES_ROOT_DIR . '/content/versions';
+        $this->_versionsDir = MARQUES_ROOT_DIR . '/content/versions';
         $this->_maxVersions = $maxVersions;
         
         // Verzeichnisstruktur sicherstellen
@@ -253,15 +253,15 @@ class VersionManager {
     private function getContentPath($contentType, $id) {
         switch ($contentType) {
             case 'pages':
-                return MARCES_CONTENT_DIR . '/pages/' . $id . '.md';
+                return MARQUES_CONTENT_DIR . '/pages/' . $id . '.md';
             case 'blog':
                 // Hier müsstest du die korrekte Pfadlogik für Blog-Beiträge implementieren
                 // z.B. Suche nach Dateien, die mit dem ID/Slug enden
-                $files = glob(MARCES_CONTENT_DIR . '/blog/*-' . $id . '.md');
+                $files = glob(MARQUES_CONTENT_DIR . '/blog/*-' . $id . '.md');
                 return !empty($files) ? $files[0] : false;
             case 'media':
                 // Für Medien müsstest du einen angemessenen Pfad zurückgeben
-                return MARCES_ROOT_DIR . '/assets/media/' . $id;
+                return MARQUES_ROOT_DIR . '/assets/media/' . $id;
             default:
                 return false;
         }

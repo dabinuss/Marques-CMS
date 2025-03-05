@@ -9,13 +9,13 @@
  */
 
 // Basispfad definieren
-define('MARCES_ROOT_DIR', dirname(__DIR__));
+define('MARQUES_ROOT_DIR', dirname(__DIR__));
 
 // Bootstrap laden
-require_once MARCES_ROOT_DIR . '/system/core/bootstrap.inc.php';
+require_once MARQUES_ROOT_DIR . '/system/core/bootstrap.inc.php';
 
 // Konfiguration laden
-$system_config = require MARCES_CONFIG_DIR . '/system.config.php';
+$system_config = require MARQUES_CONFIG_DIR . '/system.config.php';
 
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Überprüfen, ob Admin-Standardpasswort-Meldung angezeigt werden soll
 $showAdminDefaultPassword = false;
-$users = require MARCES_CONFIG_DIR . '/users.config.php';
+$users = require MARQUES_CONFIG_DIR . '/users.config.php';
 
 // Prüfen ob Admin-Account mit leerem/Standard-Passwort existiert
 if (isset($users['admin'])) {
@@ -139,7 +139,7 @@ if (isset($users['admin'])) {
         </form>
         
         <div class="login-footer">
-            <p>marques CMS v<?php echo MARCES_VERSION; ?></p>
+            <p>marques CMS v<?php echo MARQUES_VERSION; ?></p>
         </div>
     </div>
 </body>

@@ -9,11 +9,11 @@
  */
 
 // Basispfad definieren
-define('MARCES_ROOT_DIR', dirname(__DIR__));
+define('MARQUES_ROOT_DIR', dirname(__DIR__));
 define('IS_ADMIN', true);
 
 // Bootstrap laden
-require_once MARCES_ROOT_DIR . '/system/core/bootstrap.inc.php';
+require_once MARQUES_ROOT_DIR . '/system/core/bootstrap.inc.php';
 
 // Admin-Klasse initialisieren
 $admin = new \Marques\Core\Admin();
@@ -29,7 +29,7 @@ $blogManager = new \Marques\Core\BlogManager();
 $versionManager = new \Marques\Core\VersionManager();
 
 // Konfiguration laden
-$system_config = require MARCES_CONFIG_DIR . '/system.config.php';
+$system_config = require MARQUES_CONFIG_DIR . '/system.config.php';
 
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {
@@ -117,7 +117,7 @@ if (isset($_GET['version']) && !empty($_GET['version'])) {
         }
         
         // Diff zur aktuellen Version erstellen
-        $current_content = file_get_contents(MARCES_CONTENT_DIR . '/blog/' . $post_id . '.md');
+        $current_content = file_get_contents(MARQUES_CONTENT_DIR . '/blog/' . $post_id . '.md');
         $diff = $versionManager->createDiff($version_content, $current_content);
     }
 }

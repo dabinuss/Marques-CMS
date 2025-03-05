@@ -26,8 +26,8 @@ class ConfigManager {
      */
     private function __construct() {
         // Stellen sicher, dass das Konfigurationsverzeichnis existiert
-        if (!is_dir(MARCES_CONFIG_DIR)) {
-            mkdir(MARCES_CONFIG_DIR, 0755, true);
+        if (!is_dir(MARQUES_CONFIG_DIR)) {
+            mkdir(MARQUES_CONFIG_DIR, 0755, true);
         }
     }
     
@@ -247,10 +247,10 @@ class ConfigManager {
     private function getConfigPath($name) {
         if (in_array($name, ['system', 'routes', 'users'])) {
             // System-Konfigurationen als PHP-Dateien
-            return MARCES_CONFIG_DIR . '/' . $name . '.config.php';
+            return MARQUES_CONFIG_DIR . '/' . $name . '.config.php';
         } else {
             // Andere Konfigurationen als JSON-Dateien
-            return MARCES_CONFIG_DIR . '/' . $name . '.json';
+            return MARQUES_CONFIG_DIR . '/' . $name . '.json';
         }
     }
     

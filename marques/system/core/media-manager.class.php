@@ -20,7 +20,7 @@ class MediaManager {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
     }
     
     /**
@@ -29,7 +29,7 @@ class MediaManager {
      * @return array Liste aller Medien
      */
     public function getAllMedia() {
-        $mediaDir = MARCES_ROOT_DIR . '/assets/media';
+        $mediaDir = MARQUES_ROOT_DIR . '/assets/media';
         $media = [];
         
         if (is_dir($mediaDir)) {
@@ -82,7 +82,7 @@ class MediaManager {
      * @return bool Erfolgsstatus
      */
     public function deleteMedia($filename) {
-        $filePath = MARCES_ROOT_DIR . '/assets/media/' . $filename;
+        $filePath = MARQUES_ROOT_DIR . '/assets/media/' . $filename;
         
         // Prüfen, ob die Datei existiert
         if (!file_exists($filePath)) {
@@ -140,8 +140,8 @@ class MediaManager {
         
         // Durchsuche die content-Verzeichnisse nach Verweisen auf das Medium
         $contentDirs = [
-            MARCES_ROOT_DIR . '/content/pages',
-            MARCES_ROOT_DIR . '/content/blog'
+            MARQUES_ROOT_DIR . '/content/pages',
+            MARQUES_ROOT_DIR . '/content/blog'
         ];
         
         foreach ($contentDirs as $dir) {
@@ -279,7 +279,7 @@ class MediaManager {
             return false;
         }
         
-        $uploadDir = MARCES_ROOT_DIR . '/assets/media';
+        $uploadDir = MARQUES_ROOT_DIR . '/assets/media';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }

@@ -26,7 +26,7 @@ class Admin {
      */
     public function __construct() {
         $this->_user = new User();
-        $this->_config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
     }
     
     /**
@@ -74,13 +74,13 @@ class Admin {
         $blogPosts = $blogManager->getAllPosts();
         
         $stats = [
-            'pages' => $this->_countFiles(MARCES_CONTENT_DIR . '/pages'),
+            'pages' => $this->_countFiles(MARQUES_CONTENT_DIR . '/pages'),
             'blog_posts' => count($blogPosts),
             'media_files' => $this->_countMediaFiles(),
             'categories' => count($blogManager->getCategories()),
             'disk_usage' => $this->_getDiskUsage(),
             'php_version' => PHP_VERSION,
-            'marques_version' => MARCES_VERSION
+            'marques_version' => MARQUES_VERSION
         ];
         
         return $stats;
@@ -107,7 +107,7 @@ class Admin {
      * @return int Anzahl der Mediendateien
      */
     private function _countMediaFiles() {
-        $mediaDir = MARCES_ROOT_DIR . '/assets/media';
+        $mediaDir = MARQUES_ROOT_DIR . '/assets/media';
         
         if (!is_dir($mediaDir)) {
             return 0;
@@ -150,7 +150,7 @@ class Admin {
         };
         
         // Hauptverzeichnisse durchlaufen
-        $getSize(MARCES_CONTENT_DIR);
+        $getSize(MARQUES_CONTENT_DIR);
         
         // Größe formatieren
         if ($totalSize < 1024) {

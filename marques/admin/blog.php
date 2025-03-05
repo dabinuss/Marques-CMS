@@ -9,11 +9,11 @@
  */
 
 // Basispfad definieren
-define('MARCES_ROOT_DIR', dirname(__DIR__));
+define('MARQUES_ROOT_DIR', dirname(__DIR__));
 define('IS_ADMIN', true);
 
 // Bootstrap laden
-require_once MARCES_ROOT_DIR . '/system/core/bootstrap.inc.php';
+require_once MARQUES_ROOT_DIR . '/system/core/bootstrap.inc.php';
 
 // Admin-Klasse initialisieren
 $admin = new \Marques\Core\Admin();
@@ -26,7 +26,7 @@ $user = new \Marques\Core\User();
 $blogManager = new \Marques\Core\BlogManager();
 
 // Konfiguration laden
-$system_config = require MARCES_CONFIG_DIR . '/system.config.php';
+$system_config = require MARQUES_CONFIG_DIR . '/system.config.php';
 
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {

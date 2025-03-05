@@ -20,7 +20,7 @@ class BlogManager {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
     }
     
     /**
@@ -33,7 +33,7 @@ class BlogManager {
      */
     public function getAllPosts($limit = 0, $offset = 0, $category = '') {
         $posts = [];
-        $blogDir = MARCES_CONTENT_DIR . '/blog';
+        $blogDir = MARQUES_CONTENT_DIR . '/blog';
         
         if (!is_dir($blogDir)) {
             if (!mkdir($blogDir, 0755, true)) {
@@ -110,7 +110,7 @@ class BlogManager {
             return null;
         }
         
-        $file = MARCES_CONTENT_DIR . '/blog/' . $id . '.md';
+        $file = MARQUES_CONTENT_DIR . '/blog/' . $id . '.md';
         
         if (!file_exists($file)) {
             return null;
@@ -173,7 +173,7 @@ class BlogManager {
         $currentUsername = isset($_SESSION['marques_user']) ? $_SESSION['marques_user']['username'] : 'system';
         
         // Verzeichnis erstellen, falls nicht vorhanden
-        $blogDir = MARCES_CONTENT_DIR . '/blog';
+        $blogDir = MARQUES_CONTENT_DIR . '/blog';
         if (!is_dir($blogDir)) {
             if (!mkdir($blogDir, 0755, true)) {
                 return false;
@@ -202,7 +202,7 @@ class BlogManager {
         $oldFile = null;
         
         if ($isUpdate) {
-            $oldFile = MARCES_CONTENT_DIR . '/blog/' . $postData['id'] . '.md';
+            $oldFile = MARQUES_CONTENT_DIR . '/blog/' . $postData['id'] . '.md';
             
             // Versions-Backup erstellen, wenn Datei existiert
             if (file_exists($oldFile)) {
@@ -216,7 +216,7 @@ class BlogManager {
         }
         
         // Neue Datei-Pfad
-        $file = MARCES_CONTENT_DIR . '/blog/' . $newId . '.md';
+        $file = MARQUES_CONTENT_DIR . '/blog/' . $newId . '.md';
         
         // Frontmatter vorbereiten
         $frontmatter = [
@@ -286,7 +286,7 @@ class BlogManager {
             return false;
         }
         
-        $file = MARCES_CONTENT_DIR . '/blog/' . $id . '.md';
+        $file = MARQUES_CONTENT_DIR . '/blog/' . $id . '.md';
         
         if (!file_exists($file)) {
             return false;
@@ -502,7 +502,7 @@ class BlogManager {
      * @return array|null Der Blog-Beitrag oder null, wenn nicht gefunden
      */
     public function getPostByPattern($pattern) {
-        $files = glob(MARCES_CONTENT_DIR . '/blog/' . $pattern . '.md');
+        $files = glob(MARQUES_CONTENT_DIR . '/blog/' . $pattern . '.md');
         if (!empty($files)) {
             // Ersten gefundenen Post verwenden
             $fileInfo = pathinfo($files[0]);
@@ -519,7 +519,7 @@ class BlogManager {
      * @return array|null Der Blog-Beitrag oder null, wenn nicht gefunden
      */
     public function getPostBySlug($slug) {
-        $files = glob(MARCES_CONTENT_DIR . '/blog/*-' . $slug . '.md');
+        $files = glob(MARQUES_CONTENT_DIR . '/blog/*-' . $slug . '.md');
         if (!empty($files)) {
             // Ersten gefundenen Post verwenden
             $fileInfo = pathinfo($files[0]);

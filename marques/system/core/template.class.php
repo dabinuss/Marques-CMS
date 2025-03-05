@@ -26,7 +26,7 @@ class Template {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
 
         $themeManager = new ThemeManager();
         $this->templatePath = $themeManager->getThemePath('templates');
@@ -61,7 +61,7 @@ class Template {
         $templateFile = $this->templatePath . '/' . $templateName . '.tpl.php';
         if (!file_exists($templateFile)) {
             // Fallback auf Standard-Template-Verzeichnis
-            $templateFile = MARCES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
+            $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
             if (!file_exists($templateFile)) {
                 throw new \Exception("Template nicht gefunden: " . $templateName);
             }
@@ -71,7 +71,7 @@ class Template {
         $baseTemplateFile = $this->templatePath . '/base.tpl.php';
         if (!file_exists($baseTemplateFile)) {
             // Fallback auf Standard-Basis-Template
-            $baseTemplateFile = MARCES_TEMPLATE_DIR . '/base.tpl.php';
+            $baseTemplateFile = MARQUES_TEMPLATE_DIR . '/base.tpl.php';
             if (!file_exists($baseTemplateFile)) {
                 throw new \Exception("Basis-Template nicht gefunden");
             }
@@ -158,7 +158,7 @@ class Template {
         $partialFile = $this->templatePath . '/partials/' . $partialName . '.tpl.php';
         if (!file_exists($partialFile)) {
             // Fallback auf Standard-Template-Verzeichnis
-            $partialFile = MARCES_TEMPLATE_DIR . '/partials/' . $partialName . '.tpl.php';
+            $partialFile = MARQUES_TEMPLATE_DIR . '/partials/' . $partialName . '.tpl.php';
             if (file_exists($partialFile)) {
                 include $partialFile;
             } else {
@@ -195,7 +195,7 @@ class Template {
         }
         
         // Fallback auf Standard-Template-Verzeichnis
-        $templateFile = MARCES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
+        $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
         return file_exists($templateFile);
     }
 }

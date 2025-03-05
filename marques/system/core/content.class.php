@@ -50,7 +50,7 @@ class Content {
         }
         
         // Reguläre Seite
-        $filePath = MARCES_CONTENT_DIR . '/pages/' . $path . '.md';
+        $filePath = MARQUES_CONTENT_DIR . '/pages/' . $path . '.md';
         
         // Prüfen, ob Datei existiert
         if (!file_exists($filePath)) {
@@ -99,7 +99,7 @@ class Content {
     private function getBlogPost($path, $params = []) {
         // Blog-Manager initialisieren
         $blogManager = new BlogManager();
-        $config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
         $blogUrlFormat = $config['blog_url_format'] ?? 'date_slash';
         
         // Debug-Ausgabe für Fehlersuche

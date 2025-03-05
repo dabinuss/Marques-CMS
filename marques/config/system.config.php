@@ -9,7 +9,7 @@
  */
 
 // Direkten Zugriff verhindern
-if (!defined('MARCES_ROOT_DIR')) {
+if (!defined('MARQUES_ROOT_DIR')) {
     exit('Direkter Zugriff ist nicht erlaubt.');
 }
 
@@ -49,7 +49,7 @@ return [
     
     // Theme-Einstellungen
     'active_theme' => 'default', // Standard-Theme
-    'themes_path' => MARCES_THEMES_DIR, // Pfad zum Themes-Verzeichnis
+    'themes_path' => MARQUES_THEMES_DIR, // Pfad zum Themes-Verzeichnis
     
     // Admin-Einstellungen
     'admin_language' => 'de',

@@ -9,7 +9,7 @@
  */
 
 // Direkten Zugriff verhindern
-if (!defined('MARCES_ROOT_DIR')) {
+if (!defined('MARQUES_ROOT_DIR')) {
     exit('Direkter Zugriff ist nicht erlaubt.');
 }
 
@@ -24,7 +24,7 @@ function marques_get_config($refresh = false) {
     
     // Config neu laden, wenn angefordert
     if ($refresh || $config === null) {
-        $config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
         
         // Bei Bedarf base_url korrigieren
         if (!defined('IS_ADMIN') && isset($config['base_url']) && strpos($config['base_url'], '/admin') !== false) {
@@ -167,7 +167,7 @@ function marques_create_slug($string) {
  * @return void
  */
 function marques_debug($var, $die = false) {
-    $config = require MARCES_CONFIG_DIR . '/system.config.php';
+    $config = require MARQUES_CONFIG_DIR . '/system.config.php';
     
     if (($config['debug'] ?? false) === true) {
         echo '<pre>';
@@ -188,7 +188,7 @@ function marques_debug($var, $die = false) {
  */
 function marques_format_blog_url($post) {
     // Konfiguration laden
-    $config = require MARCES_CONFIG_DIR . '/system.config.php';
+    $config = require MARQUES_CONFIG_DIR . '/system.config.php';
     $format = $config['blog_url_format'] ?? 'date_slash';
     
     // Datum und Slug extrahieren

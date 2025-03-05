@@ -13,74 +13,86 @@
 session_start();
 
 // Direkten Zugriff verhindern
-if (!defined('MARCES_ROOT_DIR')) {
+if (!defined('MARQUES_ROOT_DIR')) {
     exit('Direkter Zugriff ist nicht erlaubt.');
 }
 
 // Konstanten definieren
-define('MARCES_VERSION', '0.1.0'); // FALLBACK
-define('MARCES_SYSTEM_DIR', MARCES_ROOT_DIR . '/system');
-define('MARCES_CONFIG_DIR', MARCES_ROOT_DIR . '/config');
-define('MARCES_CONTENT_DIR', MARCES_ROOT_DIR . '/content');
-define('MARCES_TEMPLATE_DIR', MARCES_ROOT_DIR . '/templates'); /* DEPRECIATED */
-define('MARCES_CACHE_DIR', MARCES_SYSTEM_DIR . '/cache');
-define('MARCES_ADMIN_DIR', MARCES_ROOT_DIR . '/admin');
-define('MARCES_THEMES_DIR', MARCES_ROOT_DIR . '/themes');
+define('MARQUES_VERSION', '0.1.0'); // FALLBACK
+define('MARQUES_SYSTEM_DIR', MARQUES_ROOT_DIR . '/system');
+define('MARQUES_CONFIG_DIR', MARQUES_ROOT_DIR . '/config');
+define('MARQUES_CONTENT_DIR', MARQUES_ROOT_DIR . '/content');
+define('MARQUES_TEMPLATE_DIR', MARQUES_ROOT_DIR . '/templates'); /* DEPRECIATED */
+define('MARQUES_CACHE_DIR', MARQUES_SYSTEM_DIR . '/cache');
+define('MARQUES_ADMIN_DIR', MARQUES_ROOT_DIR . '/admin');
+define('MARQUES_THEMES_DIR', MARQUES_ROOT_DIR . '/themes');
 
 // Temporäre Fehleranzeige für die Entwicklung
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Autoloading für Klassen einrichten
+// PSR-4 konformes Autoloading
 spl_autoload_register(function ($class) {
-    // Namespace in Verzeichnisstruktur umwandeln
-    $prefix = 'Marques\\';
-    $base_dir = MARCES_SYSTEM_DIR . '/';
-    
-    // Prüfen, ob die Klasse das Präfix verwendet
-    $len = strlen($prefix);
-    if (strncmp($prefix, $class, $len) !== 0) {
+    // Prüfen, ob die Klasse im Marques-Namespace ist
+    if (strpos($class, 'Marques\\') !== 0) {
         return;
     }
     
-    // Relativen Klassennamen holen
-    $relative_class = substr($class, $len);
+    // Namespace in Dateipfad umwandeln
+    $relativeClass = substr($class, 8); // 'Marques\' entfernen
     
-    // Namespace-Separatoren in Verzeichnisseparatoren umwandeln
-    $file = $base_dir . str_replace('\\', '/', strtolower($relative_class)) . '.class.php';
+    // Klassennamen ohne Namespace extrahieren (z.B. 'Core\BlogManager' -> 'BlogManager')
+    $parts = explode('\\', $relativeClass);
+    $className = array_pop($parts);
     
-    // Wenn die Datei nicht existiert, versuche es mit dem kebab-case-Format
-    if (!file_exists($file)) {
-        $parts = explode('\\', $relative_class);
-        $class_name = array_pop($parts);
-        $directory = strtolower(implode('/', $parts));
-        
-        // PascalCase in kebab-case umwandeln
-        $file_name = strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $class_name));
-        
-        // Vollständigen Dateipfad erstellen
-        $file = $base_dir . $directory . '/' . $file_name . '.class.php';
-    }
+    // Namespace-Pfad in Kleinbuchstaben (z.B. 'Core\BlogManager' -> 'core/')
+    $namespacePath = strtolower(implode('/', $parts));
     
-    // Prüfen, ob die Datei existiert
-    if (file_exists($file)) {
-        require_once $file;
+    // Primär: PascalCase mit .class.php (neue Namenskonvention)
+    $path1 = MARQUES_SYSTEM_DIR . '/' . $namespacePath . '/' . $className . '.class.php';
+    
+    // Fallback 1: Kleinbuchstaben mit .class.php (alte Konvention)
+    $path2 = MARQUES_SYSTEM_DIR . '/' . $namespacePath . '/' . strtolower($className) . '.class.php';
+    
+    // Fallback 2: kebab-case mit .class.php (alte Konvention)
+    $kebabClassName = preg_replace('/(?<!^)[A-Z]/', '-$0', $className);
+    $kebabClassName = strtolower($kebabClassName);
+    $path3 = MARQUES_SYSTEM_DIR . '/' . $namespacePath . '/' . $kebabClassName . '.class.php';
+    
+    // Fallback 3: PascalCase mit .php (zukünftige Konvention)
+    $path4 = MARQUES_SYSTEM_DIR . '/' . $namespacePath . '/' . $className . '.php';
+    
+    // Datei laden, wenn eine der Varianten existiert
+    foreach ([$path1, $path2, $path3, $path4] as $path) {
+        if (file_exists($path)) {
+            require_once $path;
+            return;
+        }
     }
 });
 
 // Hilfsfunktionen laden
-require_once MARCES_SYSTEM_DIR . '/core/utilities.inc.php';
+require_once MARQUES_SYSTEM_DIR . '/core/utilities.inc.php';
 
 // Benutzerdefinierte Exceptions laden
-require_once MARCES_SYSTEM_DIR . '/core/exceptions.inc.php';
+require_once MARQUES_SYSTEM_DIR . '/core/exceptions.inc.php';
 
-// Konfiguration laden
-$system_config = require MARCES_CONFIG_DIR . '/system.config.php';
+// Container und Event-Manager initialisieren
+$container = new \Marques\Core\Container();
+$container->register('config', require MARQUES_CONFIG_DIR . '/system.config.php');
+$container->register(\Marques\Core\EventManager::class, new \Marques\Core\EventManager());
+$container->register(\Marques\Core\Logger::class, new \Marques\Core\Logger());
+$container->register(\Marques\Core\SettingsManager::class);
+$container->register(\Marques\Core\User::class);
 
-// JETZT den SettingsManager verwenden, nachdem Autoloading eingerichtet ist
-$settings = new \Marques\Core\SettingsManager();
+// Global verfügbar machen
+$GLOBALS['container'] = $container;
+$GLOBALS['events'] = $container->get(\Marques\Core\EventManager::class);
 
-// Fehlerberichterstattung einrichten basierend auf Debug-Einstellung
+// Systemeinstellungen laden
+$settings = $container->get(\Marques\Core\SettingsManager::class);
+
+// Fehlerberichterstattung einrichten
 if ($settings->getSetting('debug', false)) {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
@@ -190,7 +202,7 @@ if (!defined('IS_ADMIN') && !preg_match('/(bot|crawler|spider|slurp|bingbot|goog
 
 // Hilfsfunktionen für das Theme-System
 function marques_init_default_theme() {
-    $defaultThemePath = MARCES_THEMES_DIR . '/default';
+    $defaultThemePath = MARQUES_THEMES_DIR . '/default';
     
     if (!is_dir($defaultThemePath)) {
         // Verzeichnisse erstellen
@@ -210,17 +222,17 @@ function marques_init_default_theme() {
         );
         
         // Kopiere die bestehenden Templates ins neue Theme-Verzeichnis
-        if (is_dir(MARCES_TEMPLATE_DIR)) {
-            $templateFiles = glob(MARCES_TEMPLATE_DIR . '/*.tpl.php');
+        if (is_dir(MARQUES_TEMPLATE_DIR)) {
+            $templateFiles = glob(MARQUES_TEMPLATE_DIR . '/*.tpl.php');
             foreach ($templateFiles as $templateFile) {
                 $fileName = basename($templateFile);
                 copy($templateFile, $defaultThemePath . '/templates/' . $fileName);
             }
             
             // Partials-Verzeichnis
-            if (is_dir(MARCES_TEMPLATE_DIR . '/partials')) {
+            if (is_dir(MARQUES_TEMPLATE_DIR . '/partials')) {
                 mkdir($defaultThemePath . '/templates/partials', 0755, true);
-                $partialFiles = glob(MARCES_TEMPLATE_DIR . '/partials/*.tpl.php');
+                $partialFiles = glob(MARQUES_TEMPLATE_DIR . '/partials/*.tpl.php');
                 foreach ($partialFiles as $partialFile) {
                     $fileName = basename($partialFile);
                     copy($partialFile, $defaultThemePath . '/templates/partials/' . $fileName);
@@ -229,9 +241,9 @@ function marques_init_default_theme() {
         }
         
         // Kopiere die bestehenden Assets ins neue Theme-Verzeichnis
-        if (is_dir(MARCES_ROOT_DIR . '/assets')) {
+        if (is_dir(MARQUES_ROOT_DIR . '/assets')) {
             // CSS-Dateien
-            $cssFiles = glob(MARCES_ROOT_DIR . '/assets/css/*.css');
+            $cssFiles = glob(MARQUES_ROOT_DIR . '/assets/css/*.css');
             if (!empty($cssFiles)) {
                 mkdir($defaultThemePath . '/assets/css', 0755, true);
                 foreach ($cssFiles as $cssFile) {
@@ -241,7 +253,7 @@ function marques_init_default_theme() {
             }
             
             // JavaScript-Dateien
-            $jsFiles = glob(MARCES_ROOT_DIR . '/assets/js/*.js');
+            $jsFiles = glob(MARQUES_ROOT_DIR . '/assets/js/*.js');
             if (!empty($jsFiles)) {
                 mkdir($defaultThemePath . '/assets/js', 0755, true);
                 foreach ($jsFiles as $jsFile) {
@@ -251,7 +263,7 @@ function marques_init_default_theme() {
             }
             
             // Bilder
-            $imgFiles = glob(MARCES_ROOT_DIR . '/assets/images/*.*');
+            $imgFiles = glob(MARQUES_ROOT_DIR . '/assets/images/*.*');
             if (!empty($imgFiles)) {
                 mkdir($defaultThemePath . '/assets/images', 0755, true);
                 foreach ($imgFiles as $imgFile) {

@@ -1,6 +1,6 @@
 <?php
 // Navigationslinks
-$config = require MARCES_CONFIG_DIR . '/system.config.php';
+$config = require MARQUES_CONFIG_DIR . '/system.config.php';
 
 // BlogManager initialisieren
 $blogManager = new \Marques\Core\BlogManager();

@@ -19,8 +19,8 @@ class User {
      * Konstruktor
      */
     public function __construct() {
-        $this->_config = require MARCES_CONFIG_DIR . '/system.config.php';
-        $this->_loginAttemptsFile = MARCES_ROOT_DIR . '/logs/login_attempts.json';
+        $this->_config = require MARQUES_CONFIG_DIR . '/system.config.php';
+        $this->_loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
         $this->_initSession();
     }
     
@@ -474,7 +474,7 @@ class User {
      * @return array Benutzerdaten
      */
     private function _getUsers() {
-        $userFile = MARCES_CONFIG_DIR . '/users.config.php';
+        $userFile = MARQUES_CONFIG_DIR . '/users.config.php';
         
         if (!file_exists($userFile)) {
             // Standard-Admin mit leerem Passwort erstellen
@@ -524,7 +524,7 @@ class User {
      * @return bool True bei Erfolg
      */
     private function _saveUsers($users) {
-        $userFile = MARCES_CONFIG_DIR . '/users.config.php';
+        $userFile = MARQUES_CONFIG_DIR . '/users.config.php';
         
         $content = "<?php\n// marques CMS - Benutzerkonfiguration\n// NICHT DIREKT BEARBEITEN!\n\nreturn " . var_export($users, true) . ";\n";
         

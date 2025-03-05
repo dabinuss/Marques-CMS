@@ -9,7 +9,7 @@
  */
 
 // Direkten Zugriff verhindern
-if (!defined('MARCES_ROOT_DIR')) {
+if (!defined('MARQUES_ROOT_DIR')) {
     exit('Direkter Zugriff ist nicht erlaubt.');
 }
 

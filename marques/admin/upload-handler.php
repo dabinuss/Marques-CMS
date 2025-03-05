@@ -9,11 +9,11 @@
  */
 
 // Basispfad definieren
-define('MARCES_ROOT_DIR', dirname(__DIR__));
+define('MARQUES_ROOT_DIR', dirname(__DIR__));
 define('IS_ADMIN', true);
 
 // Bootstrap laden
-require_once MARCES_ROOT_DIR . '/system/core/bootstrap.inc.php';
+require_once MARQUES_ROOT_DIR . '/system/core/bootstrap.inc.php';
 
 // Admin-Klasse initialisieren
 $admin = new \Marques\Core\Admin();
@@ -23,7 +23,7 @@ $admin->requireLogin();
 header('Content-Type: application/json');
 
 // Konfiguration laden
-$system_config = require MARCES_CONFIG_DIR . '/system.config.php';
+$system_config = require MARQUES_CONFIG_DIR . '/system.config.php';
 
 // Fehlerfunktion
 function returnError($message) {
@@ -32,7 +32,7 @@ function returnError($message) {
 }
 
 // Upload-Verzeichnis erstellen, falls nicht vorhanden
-$uploadDir = MARCES_ROOT_DIR . '/assets/media';
+$uploadDir = MARQUES_ROOT_DIR . '/assets/media';
 if (!is_dir($uploadDir)) {
     if (!mkdir($uploadDir, 0755, true)) {
         returnError('Upload-Verzeichnis konnte nicht erstellt werden.');

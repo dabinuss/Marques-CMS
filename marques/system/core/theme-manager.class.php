@@ -7,7 +7,7 @@ class ThemeManager {
     private $themesPath;
     
     public function __construct() {
-        $this->themesPath = MARCES_ROOT_DIR . '/themes';
+        $this->themesPath = MARQUES_ROOT_DIR . '/themes';
         $this->loadThemes();
         $this->currentTheme = $this->getActiveTheme();
     }
@@ -56,7 +56,7 @@ class ThemeManager {
     
     public function getThemeAssetsUrl($file = '') {
         // Konfiguration laden
-        $config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
         
         // Basispfad aus der Konfiguration holen
         $baseUrl = $config['base_url'] ?? '';

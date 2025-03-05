@@ -21,7 +21,7 @@ class Router {
      */
     public function __construct() {
         // Routen aus Konfiguration laden
-        $this->_routes = require MARCES_CONFIG_DIR . '/routes.config.php';
+        $this->_routes = require MARQUES_CONFIG_DIR . '/routes.config.php';
     }
     
     /**
@@ -33,7 +33,7 @@ class Router {
     public function processRequest() {
         // Request-URI abrufen
         $requestUri = $this->getRequestUri();
-        $config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
         $blogUrlFormat = $config['blog_url_format'] ?? 'date_slash';
         
         // Standard-Routendaten
@@ -243,7 +243,7 @@ class Router {
     private function routeExists($path, $params = []) {
         // Konfiguration laden
         $requestUri = $this->getRequestUri();
-        $config = require MARCES_CONFIG_DIR . '/system.config.php';
+        $config = require MARQUES_CONFIG_DIR . '/system.config.php';
         $blogUrlFormat = $config['blog_url_format'] ?? 'date_slash';
 
         // Standard-Routendaten
@@ -264,7 +264,7 @@ class Router {
                 case 'date_slash':
                 case 'date_dash':
                     if (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
-                        $blogFile = MARCES_CONTENT_DIR . '/blog/' . 
+                        $blogFile = MARQUES_CONTENT_DIR . '/blog/' . 
                                     $params['year'] . '-' . 
                                     $params['month'] . '-' . 
                                     $params['day'] . '-' . 
@@ -276,7 +276,7 @@ class Router {
                 case 'year_month':
                     if (isset($params['year'], $params['month'], $params['slug'])) {
                         // Suche nach Dateien, die mit dem Muster YYYY-MM-* beginnen
-                        $pattern = MARCES_CONTENT_DIR . '/blog/' . 
+                        $pattern = MARQUES_CONTENT_DIR . '/blog/' . 
                                 $params['year'] . '-' . 
                                 $params['month'] . '-*-' . 
                                 $params['slug'] . '.md';
@@ -290,7 +290,7 @@ class Router {
                         // Numerische ID: Suche nach Blog-Einträgen durch ID
                         return $blogManager->postExistsById($params['id']);
                     } elseif (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
-                        $blogFile = MARCES_CONTENT_DIR . '/blog/' . 
+                        $blogFile = MARQUES_CONTENT_DIR . '/blog/' . 
                                     $params['year'] . '-' . 
                                     $params['month'] . '-' . 
                                     $params['day'] . '-' . 
@@ -302,7 +302,7 @@ class Router {
                 case 'post_name':
                     if (isset($params['slug'])) {
                         // Nur Slug: Suche nach allen Dateien, die mit diesem Slug enden
-                        $pattern = MARCES_CONTENT_DIR . '/blog/*-' . $params['slug'] . '.md';
+                        $pattern = MARQUES_CONTENT_DIR . '/blog/*-' . $params['slug'] . '.md';
                         $files = glob($pattern);
                         return !empty($files);
                     }
@@ -311,7 +311,7 @@ class Router {
                 default:
                     // Standard: date_slash Format
                     if (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
-                        $blogFile = MARCES_CONTENT_DIR . '/blog/' . 
+                        $blogFile = MARQUES_CONTENT_DIR . '/blog/' . 
                                     $params['year'] . '-' . 
                                     $params['month'] . '-' . 
                                     $params['day'] . '-' . 
@@ -329,7 +329,7 @@ class Router {
         }
         
         // Reguläre Seiten: prüfen, ob Datei existiert
-        $contentFile = MARCES_CONTENT_DIR . '/pages/' . $path . '.md';
+        $contentFile = MARQUES_CONTENT_DIR . '/pages/' . $path . '.md';
         if (file_exists($contentFile)) {
             return true;
         }
