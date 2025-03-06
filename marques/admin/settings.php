@@ -325,10 +325,7 @@ $time_formats = [
                                         Nur Slug (blog/slug) - z.B. blog/mein-beitrag
                                     </option>
                                 </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <p class="text-warning">
+                                <p class="text-warning form-help">
                                     <strong>Wichtig:</strong> Das Ändern dieses Formats kann dazu führen, dass bestehende Links auf Ihre Blog-Beiträge nicht mehr funktionieren. Stellen Sie sicher, dass Sie Redirects einrichten, wenn Sie dieses Format für eine bestehende Website ändern.
                                 </p>
                             </div>
