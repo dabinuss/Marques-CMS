@@ -55,73 +55,59 @@ class Template {
         // Template-Namen abrufen
         $templateName = $data['template'] ?? 'page';
         
-        // Prüfen und sicherstellen, dass vorhandene Dateien korrekt sind
         if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $templateName)) {
             throw new \Exception("Ungültiger Template-Name: " . htmlspecialchars($templateName));
         }
         
-        // Prüfen, ob Template im Theme existiert
+        // Template-Dateipfade ermitteln
         $templateFile = $this->templatePath . '/' . $templateName . '.tpl.php';
         if (!file_exists($templateFile)) {
-            // Fallback auf Standard-Template-Verzeichnis
             $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
             if (!file_exists($templateFile)) {
                 throw new \Exception("Template nicht gefunden: " . $templateName);
             }
         }
         
-        // Prüfen, ob Basis-Template im Theme existiert
         $baseTemplateFile = $this->templatePath . '/base.tpl.php';
         if (!file_exists($baseTemplateFile)) {
-            // Fallback auf Standard-Basis-Template
             $baseTemplateFile = MARQUES_TEMPLATE_DIR . '/base.tpl.php';
             if (!file_exists($baseTemplateFile)) {
                 throw new \Exception("Basis-Template nicht gefunden");
             }
         }
     
-        // Systemeinstellungen holen und anpassen
-        $settings_manager = new \Marques\Core\SettingsManager();
-        $system_settings = $settings_manager->getAllSettings();
+        // Systemeinstellungen holen und ggf. anpassen
+        $settingsManager = new \Marques\Core\SettingsManager();
+        $system_settings = $settingsManager->getAllSettings();
         
-        // Base URL korrigieren
         if (defined('IS_ADMIN')) {
-            // Im Admin-Bereich
             if (strpos($system_settings['base_url'], '/admin') === false) {
                 $system_settings['base_url'] = rtrim($system_settings['base_url'], '/') . '/admin';
             }
         } else {
-            // Im Frontend
             if (strpos($system_settings['base_url'], '/admin') !== false) {
                 $system_settings['base_url'] = preg_replace('|/admin$|', '', $system_settings['base_url']);
             }
         }
-
-        // Theme-Manager der View zur Verfügung stellen
+    
+        // Theme-Manager instanziieren und in die Daten übernehmen
         $themeManager = new ThemeManager();
         $data['themeManager'] = $themeManager;
-
-        // Template-Datei für base.tpl.php verfügbar machen
         $data['templateFile'] = $templateFile;
-        
-        // Aktualisierte Systemeinstellungen zu den Daten hinzufügen
         $data['system_settings'] = $system_settings;
+        $data['templateName'] = $templateName;
+        // Zusätzlich kannst du auch Konfigurationen bereitstellen
+        $data['config'] = $this->_config;
         
-        $data = array_merge(['templateName' => $templateName], $data);
-        extract($data);
+        // Erstelle ein TemplateContext-Objekt, das alle Daten kapselt
+        $tpl = new TemplateVars($data);
         
-        foreach ($data as $key => $value) {
-            if (in_array($key, ['title', 'content', 'description', 'templateName', 'path', 'featured_image', 'date_created', 'date_modified'])) {
-                ${$key} = $value;
-            }
-        }
-        
-        $config = $this->_config;
-        
+        // Jetzt kannst du in deinem Template nur noch auf $tpl zugreifen
         ob_start();
         include $baseTemplateFile;
         echo ob_get_clean();
     }
+    
     
     /**
      * Bindet ein Partial-Template ein

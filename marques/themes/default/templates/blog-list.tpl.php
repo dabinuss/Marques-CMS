@@ -1,44 +1,43 @@
+<?php declare(strict_types=1); ?>
 <?php
-// Navigationslinks
-$config = require MARQUES_CONFIG_DIR . '/system.config.php';
+// Falls noch nicht vorhanden, initialisieren wir die nötigen Werte:
+$tpl->config = $tpl->config ?? require MARQUES_CONFIG_DIR . '/system.config.php';
+$tpl->blogManager = $tpl->blogManager ?? new \Marques\Core\BlogManager();
 
-// BlogManager initialisieren
-$blogManager = new \Marques\Core\BlogManager();
-
-// URL-Parameter
-$category = isset($_GET['category']) ? $_GET['category'] : '';
-$tag = isset($_GET['tag']) ? $_GET['tag'] : '';
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$perPage = $config['posts_per_page'] ?? 10;
+// URL-Parameter übernehmen
+$tpl->category = $_GET['category'] ?? '';
+$tpl->tag      = $_GET['tag'] ?? '';
+$tpl->page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$tpl->perPage  = $tpl->config['posts_per_page'] ?? 10;
 
 // Blog-Beiträge abrufen
-$offset = ($page - 1) * $perPage;
-$posts = $blogManager->getAllPosts($perPage, $offset, $category);
+$offset = ($tpl->page - 1) * $tpl->perPage;
+$tpl->posts = $tpl->blogManager->getAllPosts($tpl->perPage, $offset, $tpl->category);
 
 // Titel anpassen
-$pageTitle = 'Blog';
-if (!empty($category)) {
-    $pageTitle .= ' - Kategorie: ' . htmlspecialchars($category);
-} elseif (!empty($tag)) {
-    $pageTitle .= ' - Tag: ' . htmlspecialchars($tag);
+$tpl->pageTitle = 'Blog';
+if (!empty($tpl->category)) {
+    $tpl->pageTitle .= ' - Kategorie: ' . htmlspecialchars($tpl->category);
+} elseif (!empty($tpl->tag)) {
+    $tpl->pageTitle .= ' - Tag: ' . htmlspecialchars($tpl->tag);
 }
 
 // Alle Kategorien abrufen
-$categories = $blogManager->getCategories();
+$tpl->categories = $tpl->blogManager->getCategories();
 ?>
 
 <div class="blog-container">
     <div class="blog-header">
-        <h1 class="blog-title"><?php echo $pageTitle; ?></h1>
+        <h1 class="blog-title"><?php echo $tpl->pageTitle; ?></h1>
     </div>
     
     <div class="blog-main">
-        <?php if (empty($posts)): ?>
+        <?php if (empty($tpl->posts)): ?>
             <div class="blog-no-posts">
                 <p>Keine Blog-Beiträge gefunden.</p>
             </div>
         <?php else: ?>
-            <?php foreach ($posts as $post): ?>
+            <?php foreach ($tpl->posts as $post): ?>
                 <article class="blog-post-summary">
                     <header>
                         <h2 class="post-title">
@@ -88,14 +87,14 @@ $categories = $blogManager->getCategories();
             
             <!-- Paginierung -->
             <div class="blog-pagination">
-                <?php if ($page > 1): ?>
-                    <a href="<?php echo marques_site_url('blog?page=' . ($page - 1) . (!empty($category) ? '&category=' . urlencode($category) : '') . (!empty($tag) ? '&tag=' . urlencode($tag) : '')); ?>" class="pagination-prev marques-button marques-button--outline">
+                <?php if ($tpl->page > 1): ?>
+                    <a href="<?php echo marques_site_url('blog?page=' . ($tpl->page - 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-prev marques-button marques-button--outline">
                         &laquo; Vorherige
                     </a>
                 <?php endif; ?>
                 
-                <?php if (count($posts) === $perPage): ?>
-                    <a href="<?php echo marques_site_url('blog?page=' . ($page + 1) . (!empty($category) ? '&category=' . urlencode($category) : '') . (!empty($tag) ? '&tag=' . urlencode($tag) : '')); ?>" class="pagination-next marques-button marques-button--outline">
+                <?php if (count($tpl->posts) === $tpl->perPage): ?>
+                    <a href="<?php echo marques_site_url('blog?page=' . ($tpl->page + 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-next marques-button marques-button--outline">
                         Nächste &raquo;
                     </a>
                 <?php endif; ?>
@@ -106,11 +105,11 @@ $categories = $blogManager->getCategories();
     <aside class="blog-sidebar">
         <div class="sidebar-section categories-section">
             <h3 class="sidebar-title">Kategorien</h3>
-            <?php if (empty($categories)): ?>
+            <?php if (empty($tpl->categories)): ?>
                 <p>Keine Kategorien vorhanden.</p>
             <?php else: ?>
                 <ul class="categories-list">
-                    <?php foreach ($categories as $cat => $count): ?>
+                    <?php foreach ($tpl->categories as $cat => $count): ?>
                         <li>
                             <a href="<?php echo marques_site_url('blog?category=' . urlencode($cat)); ?>">
                                 <?php echo htmlspecialchars($cat); ?> (<?php echo $count; ?>)
