@@ -681,6 +681,7 @@ a:hover {
 .form-group input[type="text"],
 .form-group input[type="password"],
 .form-group input[type="email"],
+.form-group input[type="number"],
 .form-group select,
 .form-group textarea {
     width: 100%;
@@ -759,7 +760,11 @@ textarea {
 }
 
 .checkbox-label input[type="checkbox"] {
-    margin-right: 0.5rem;
+    margin: 0.5rem;
+    width: 1.2em;
+    height: 1.2em;
+    position: relative;
+    top: 2px;
 }
 
 /* Icon inputs */

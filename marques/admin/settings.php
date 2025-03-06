@@ -194,17 +194,17 @@ $time_formats = [
                     <a href="?tab=general" class="admin-tab <?php echo $active_tab === 'general' ? 'active' : ''; ?>">
                         <i class="fas fa-cog"></i> Allgemein
                     </a>
-                    <a href="?tab=social" class="admin-tab <?php echo $active_tab === 'social' ? 'active' : ''; ?>">
-                        <i class="fas fa-share-alt"></i> Social Media
+                    <a href="?tab=system" class="admin-tab <?php echo $active_tab === 'system' ? 'active' : ''; ?>">
+                        <i class="fas fa-server"></i> System
                     </a>
                     <a href="?tab=content" class="admin-tab <?php echo $active_tab === 'content' ? 'active' : ''; ?>">
                         <i class="fas fa-file-alt"></i> Inhalt
                     </a>
-                    <a href="?tab=system" class="admin-tab <?php echo $active_tab === 'system' ? 'active' : ''; ?>">
-                        <i class="fas fa-server"></i> System
-                    </a>
                     <a href="?tab=appearance" class="admin-tab <?php echo $active_tab === 'appearance' ? 'active' : ''; ?>">
                         <i class="fas fa-paint-brush"></i> Design
+                    </a>
+                    <a href="?tab=social" class="admin-tab <?php echo $active_tab === 'social' ? 'active' : ''; ?>">
+                        <i class="fas fa-share-alt"></i> Social Media
                     </a>
                     <a href="?tab=seo" class="admin-tab <?php echo $active_tab === 'seo' ? 'active' : ''; ?>">
                         <i class="fas fa-search"></i> SEO
