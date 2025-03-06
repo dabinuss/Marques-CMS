@@ -14,8 +14,14 @@ $systemConfig = $configManager->load('system') ?: [];
             <img src="<?php echo marques_site_url('assets/images/logo-text-bg.jpg'); ?>" alt="marques CMS" />
             <!-- marques CMS -->
         </h1>
-        <div class="admin-user-info admin-badge">
-            Angemeldet als: <?php echo htmlspecialchars($user->getCurrentUsername()); ?>
+        <div class="admin-actions sidebar">
+            <p class="admin-button">
+                Angemeldet als: <?php echo htmlspecialchars($user->getCurrentUsername()); ?>
+            </p>
+            <a href="../" class="admin-button" target="_blank">
+                <span class="admin-button-icon"><i class="fas fa-external-link-alt"></i></span>
+                Website ansehen
+            </a>
         </div>
     </div>
 

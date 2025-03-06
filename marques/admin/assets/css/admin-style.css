@@ -274,6 +274,23 @@ a:hover {
     flex-wrap: wrap;
 }
 
+.admin-actions.sidebar {
+    justify-content: center;
+    gap: 5px 10px;
+    font-size:0.9em;
+}
+.admin-actions.sidebar .admin-button {
+    width:100%;
+    margin:0 10px;
+}
+.admin-actions.sidebar .admin-button:hover {
+    transform: none;
+}
+.admin-actions.sidebar .admin-button:first-child {
+    cursor: unset;
+    background-color: transparent;
+}
+
 .admin-button {
     padding: 8px 15px;
     background-color: var(--primary);

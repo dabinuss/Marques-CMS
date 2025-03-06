@@ -75,7 +75,7 @@ class Template {
                 throw new \Exception("Basis-Template nicht gefunden");
             }
         }
-    
+        
         // Systemeinstellungen holen und ggf. anpassen
         $settingsManager = new \Marques\Core\SettingsManager();
         $system_settings = $settingsManager->getAllSettings();
@@ -89,24 +89,34 @@ class Template {
                 $system_settings['base_url'] = preg_replace('|/admin$|', '', $system_settings['base_url']);
             }
         }
-    
+        
         // Theme-Manager instanziieren und in die Daten übernehmen
         $themeManager = new ThemeManager();
         $data['themeManager'] = $themeManager;
         $data['templateFile'] = $templateFile;
         $data['system_settings'] = $system_settings;
         $data['templateName'] = $templateName;
-        // Zusätzlich kannst du auch Konfigurationen bereitstellen
         $data['config'] = $this->_config;
         
-        // Erstelle ein TemplateContext-Objekt, das alle Daten kapselt
+        // Erstelle ein TemplateVars-Objekt, das alle Daten kapselt
         $tpl = new TemplateVars($data);
         
-        // Jetzt kannst du in deinem Template nur noch auf $tpl zugreifen
-        ob_start();
-        include $baseTemplateFile;
-        echo ob_get_clean();
-    }
+        // Caching: Erzeuge einen eindeutigen Cache-Schlüssel (ggf. erweiterbar um weitere Parameter)
+        $cacheKey = 'template_' . $tpl->templateName;
+        $cacheManager = \Marques\Core\CacheManager::getInstance();
+        $cachedOutput = $cacheManager->get($cacheKey);
+        
+        if ($cachedOutput !== null) {
+            echo $cachedOutput;
+        } else {
+            ob_start();
+            include $baseTemplateFile;
+            $output = ob_get_clean();
+            // Cache speichern, z. B. mit einer TTL von 1 Stunde und der Gruppe "templates"
+            $cacheManager->set($cacheKey, $output, 3600, ['templates']);
+            echo $output;
+        }
+    }    
     
     
     /**
