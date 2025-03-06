@@ -11,7 +11,9 @@ $systemConfig = $configManager->load('system') ?: [];
 
     <div class="admin-sidebar-header">
         <h1 class="admin-brand">
-            <img src="<?php echo marques_site_url('assets/images/logo-text-bg.jpg'); ?>" alt="marques CMS" />
+            <a href="index.php">
+                <img src="<?php echo marques_site_url('assets/images/logo-text-bg.jpg'); ?>" alt="marques CMS" />
+            </a>
             <!-- marques CMS -->
         </h1>
         <div class="admin-actions sidebar">
