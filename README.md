@@ -72,10 +72,10 @@ In the third phase, we plan to refine the CMS further and add additional feature
 |-------------------|--------------------------------------------------------------------------|-----------------|
 | **Phase 3**       | Navigation Management                                                    | ✅ Done         |
 | **Phase 3**       | Reworked Config Manager                                                  | ✅ Done         |
-| **Phase 3**       | CMS System Settings                                                      | 🔄 In Progress  |
+| **Phase 3**       | CMS System Settings                                                      | ✅ Done         |
 | **Phase 3**       | CMS System Settings: Configurable Blog URLs                              | ✅ Done         |
 | **Phase 3**       | Theme Manager / Custom Themes                                            | ✅ Done         |
-| **Phase 3**       | Caching System                                                           | ❌ Not Yet      |
+| **Phase 3**       | Caching System                                                           | ✅ Done         |
 | **Phase 3**       | SEO Functions                                                            | ❌ Not Yet      |
 | **Phase 3**       | User Roles and Permissions                                               | 🔄 In Progress  |
 | **Phase 4**       | Major Bug Hunting and Fixing                                             | ❌ Not Yet      |
