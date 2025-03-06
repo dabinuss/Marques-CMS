@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Admin-Panel
  * 
@@ -64,18 +66,18 @@ $csrf_token = $_SESSION['csrf_token'];
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
 $allowed_pages = ['dashboard', 'pages', 'blog', 'media', 'users', 'settings', 'statistics'];
 
-if (!in_array($page, $allowed_pages)) {
+if (!in_array($page, $allowed_pages, true)) {
     $page = 'dashboard';
 }
 
 // Seitentitel bestimmen
 $page_titles = [
-    'dashboard' => 'Dashboard',
-    'pages' => 'Seiten verwalten',
-    'blog' => 'Blog verwalten',
-    'media' => 'Medienbibliothek',
-    'users' => 'Benutzer verwalten',
-    'settings' => 'Einstellungen',
+    'dashboard'  => 'Dashboard',
+    'pages'      => 'Seiten verwalten',
+    'blog'       => 'Blog verwalten',
+    'media'      => 'Medienbibliothek',
+    'users'      => 'Benutzer verwalten',
+    'settings'   => 'Einstellungen',
     'statistics' => 'Zugriffsstatistiken'
 ];
 
@@ -88,11 +90,11 @@ $recentActivity = [];
 foreach ($pages as $index => $pageInfo) {
     if (isset($pageInfo['date_modified']) && !empty($pageInfo['date_modified'])) {
         $recentActivity[] = [
-            'type' => 'page',
+            'type'  => 'page',
             'title' => $pageInfo['title'],
-            'date' => $pageInfo['date_modified'],
-            'url' => 'page-edit.php?id=' . $pageInfo['id'],
-            'icon' => 'file-alt'
+            'date'  => $pageInfo['date_modified'],
+            'url'   => 'page-edit.php?id=' . $pageInfo['id'],
+            'icon'  => 'file-alt'
         ];
     }
 }
@@ -100,11 +102,11 @@ foreach ($pages as $index => $pageInfo) {
 // Letzte Blog-Beiträge
 foreach ($recentPosts as $post) {
     $recentActivity[] = [
-        'type' => 'post',
+        'type'  => 'post',
         'title' => $post['title'],
-        'date' => $post['date_modified'] ?? $post['date_created'] ?? $post['date'],
-        'url' => 'blog-edit.php?id=' . $post['id'],
-        'icon' => 'blog'
+        'date'  => $post['date_modified'] ?? $post['date_created'] ?? $post['date'],
+        'url'   => 'blog-edit.php?id=' . $post['id'],
+        'icon'  => 'blog'
     ];
 }
 
@@ -118,13 +120,13 @@ $recentActivity = array_slice($recentActivity, 0, 10);
 
 // Systemzustand prüfen
 $systemHealth = [
-    'debug_mode' => $system_config['debug'] ?? false,
+    'debug_mode'       => $system_config['debug'] ?? false,
     'maintenance_mode' => $system_config['maintenance_mode'] ?? false,
-    'cache_enabled' => $system_config['cache_enabled'] ?? false,
-    'write_permissions' => [
+    'cache_enabled'    => $system_config['cache_enabled'] ?? false,
+    'write_permissions'=> [
         'content' => is_writable(MARQUES_CONTENT_DIR),
-        'config' => is_writable(MARQUES_CONFIG_DIR),
-        'assets' => is_writable(MARQUES_ROOT_DIR . '/assets/media')
+        'config'  => is_writable(MARQUES_CONFIG_DIR),
+        'assets'  => is_writable(MARQUES_ROOT_DIR . '/assets/media')
     ]
 ];
 
@@ -133,17 +135,17 @@ $systemHealth = [
  */
 function loadSiteStatistics() {
     $stats = [
-        'total_visits' => 0,
-        'visits_today' => 0,
-        'visits_yesterday' => 0,
-        'visits_this_week' => 0,
-        'visits_this_month' => 0,
-        'top_pages' => [],
-        'top_referrers' => [],
-        'browser_stats' => [],
-        'device_stats' => [],
-        'hourly_stats' => array_fill(0, 24, 0),
-        'daily_stats' => []
+        'total_visits'    => 0,
+        'visits_today'    => 0,
+        'visits_yesterday'=> 0,
+        'visits_this_week'=> 0,
+        'visits_this_month'=> 0,
+        'top_pages'       => [],
+        'top_referrers'   => [],
+        'browser_stats'   => [],
+        'device_stats'    => [],
+        'hourly_stats'    => array_fill(0, 24, 0),
+        'daily_stats'     => []
     ];
     
     $statsDir = MARQUES_ROOT_DIR . '/logs/stats';
@@ -291,6 +293,34 @@ function detectDevice($userAgent) {
     }
 }
 
+// ------------------------------
+// Cache-Informationen ermitteln
+// ------------------------------
+$cacheManager = \Marques\Core\CacheManager::getInstance();
+$cacheEnabled = $system_config['cache_enabled'] ?? false;
+
+// Angenommen, MARQUES_CACHE_DIR ist definiert:
+$cacheFiles = glob(MARQUES_CACHE_DIR . '/*.cache');
+$numCached = $cacheFiles ? count($cacheFiles) : 0;
+$cacheSize = 0;
+if ($cacheFiles) {
+    foreach ($cacheFiles as $file) {
+        $cacheSize += filesize($file);
+    }
+}
+function formatBytes($bytes, $precision = 2) {
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $bytes = max($bytes, 0);
+    $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+    $pow = min($pow, count($units) - 1);
+    $bytes /= pow(1024, $pow);
+    return round($bytes, $precision) . ' ' . $units[$pow];
+}
+$cacheSizeFormatted = formatBytes($cacheSize);
+
+// ------------------------------
+// HTML-Ausgabe
+// ------------------------------
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $system_config['admin_language'] ?? 'de'; ?>">
@@ -398,6 +428,23 @@ function detectDevice($userAgent) {
                                         <span>Einstellungen</span>
                                     </a>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Neuer Bereich: Cache-Informationen -->
+                <div class="admin-dashboard-row">
+                    <div class="admin-dashboard-column">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-database"></i> Cache-Informationen</h3>
+                            </div>
+                            <div class="admin-card-content">
+                                <p><strong>Caching aktiviert:</strong> <?php echo $cacheEnabled ? 'Ja' : 'Nein'; ?></p>
+                                <p><strong>Anzahl Cache-Dateien:</strong> <?php echo $numCached; ?></p>
+                                <p><strong>Cache-Größe:</strong> <?php echo $cacheSizeFormatted; ?></p>
+                                <a href="clear-cache.php" class="admin-button-small">Cache leeren</a>
                             </div>
                         </div>
                     </div>

@@ -12,11 +12,16 @@ class CacheManager {
 
     /**
      * Liefert die Singleton-Instanz des CacheManagers.
-     * Falls $enabled nicht übergeben wird, wird es aus den Systemeinstellungen geladen.
+     * Falls $enabled nicht explizit übergeben wird, wird der Wert aus den Systemeinstellungen geladen.
+     *
+     * @param string|null $cacheDir
+     * @param bool|null $enabled
+     * @return CacheManager
      */
     public static function getInstance(?string $cacheDir = null, ?bool $enabled = null): CacheManager {
         if (self::$instance === null) {
             if ($enabled === null) {
+                // Lade die Systemeinstellungen über den SettingsManager
                 $settingsManager = new SettingsManager();
                 $system_settings = $settingsManager->getAllSettings();
                 $enabled = $system_settings['cache_enabled'] ?? true;
@@ -26,6 +31,13 @@ class CacheManager {
         return self::$instance;
     }
 
+    /**
+     * Konstruktor.
+     *
+     * @param string|null $cacheDir Pfad zum Cache-Verzeichnis
+     * @param bool $enabled Ob Caching aktiviert ist
+     * @throws ConfigurationException Falls das Cache-Verzeichnis nicht erstellt werden kann.
+     */
     public function __construct(?string $cacheDir = null, bool $enabled = true) {
         if ($cacheDir === null) {
             $cacheDir = defined('MARQUES_CACHE_DIR') ? MARQUES_CACHE_DIR : __DIR__ . '/cache';
@@ -38,10 +50,22 @@ class CacheManager {
         $this->enabled = $enabled;
     }
 
+    /**
+     * Erzeugt einen Dateinamen für einen Cache-Schlüssel.
+     *
+     * @param string $key
+     * @return string
+     */
     protected function getCacheFilePath(string $key): string {
         return $this->cacheDir . '/' . md5($key) . '.cache';
     }
 
+    /**
+     * Liefert den gecachten Inhalt oder null, falls er nicht existiert oder abgelaufen ist.
+     *
+     * @param string $key
+     * @return string|null
+     */
     public function get(string $key): ?string {
         if (!$this->enabled) {
             return null;
@@ -69,10 +93,37 @@ class CacheManager {
         return $data['content'];
     }
 
-    public function set(string $key, string $content, int $ttl = 3600, array $groups = []): void {
+    /**
+     * Speichert den Inhalt im Cache.
+     *
+     * Automatische Anpassung: Falls keine TTL übergeben wurde, wird basierend auf dem Schlüssel ein Standardwert verwendet:
+     * - Schlüssel beginnend mit "template_": TTL 3600 Sekunden, Gruppe "templates"
+     * - Schlüssel beginnend mit "asset_": TTL 86400 Sekunden, Gruppe "assets"
+     * - Ansonsten: TTL 3600 Sekunden
+     *
+     * @param string $key Schlüssel für den Cacheeintrag.
+     * @param string $content Inhalt, der gecached werden soll.
+     * @param int|null $ttl Time-to-live in Sekunden.
+     * @param array $groups Gruppen, denen der Cacheeintrag zugeordnet wird.
+     * @throws ConfigurationException Wenn die Cache-Datei nicht geöffnet oder gesperrt werden kann.
+     */
+    public function set(string $key, string $content, ?int $ttl = null, array $groups = []): void {
         if (!$this->enabled) {
             return;
         }
+        // Automatische Anpassung der TTL und Gruppen basierend auf dem Schlüssel
+        if ($ttl === null) {
+            if (strpos($key, 'template_') === 0) {
+                $ttl = 3600; // 1 Stunde für Templates
+                $groups[] = 'templates';
+            } elseif (strpos($key, 'asset_') === 0) {
+                $ttl = 86400; // 24 Stunden für Assets
+                $groups[] = 'assets';
+            } else {
+                $ttl = 3600; // Standard-TTL
+            }
+        }
+        
         $file = $this->getCacheFilePath($key);
         $data = [
             'expire'  => time() + $ttl,
@@ -100,6 +151,11 @@ class CacheManager {
         }
     }
 
+    /**
+     * Löscht einen Cache-Eintrag.
+     *
+     * @param string $key
+     */
     public function delete(string $key): void {
         $file = $this->getCacheFilePath($key);
         if (file_exists($file)) {
@@ -108,6 +164,9 @@ class CacheManager {
         unset($this->memoryCache[$key]);
     }
 
+    /**
+     * Löscht alle Cache-Einträge.
+     */
     public function clear(): void {
         $files = glob($this->cacheDir . '/*.cache');
         if ($files !== false) {
@@ -118,6 +177,11 @@ class CacheManager {
         $this->memoryCache = [];
     }
 
+    /**
+     * Löscht alle Cache-Einträge, die zu einer bestimmten Gruppe gehören.
+     *
+     * @param string $group
+     */
     public function clearGroup(string $group): void {
         $files = glob($this->cacheDir . '/*.cache');
         if ($files !== false) {
@@ -130,6 +194,13 @@ class CacheManager {
         }
     }
 
+    /**
+     * Generiert eine Cache-busted URL für statische Assets.
+     * Hängt einen Query-Parameter "v" mit der Dateimtime an, um sicherzustellen, dass immer die aktuellste Version geladen wird.
+     *
+     * @param string $url Pfad oder URL zur Datei (relativ oder absolut)
+     * @return string
+     */
     public function bustUrl(string $url): string {
         $parts = parse_url($url);
         $path = $parts['path'] ?? $url;
