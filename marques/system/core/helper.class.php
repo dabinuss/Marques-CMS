@@ -179,4 +179,39 @@ class Helper {
                 return self::getSiteUrl("blog/{$year}/{$month}/{$day}/{$slug}");
         }
     }
+
+    /**
+     * Generiert die URL für einen Blogbeitrag basierend auf den Systemeinstellungen.
+     *
+     * @param array $post Post-Daten (muss 'id', 'slug' und 'date' enthalten)
+     * @return string Generierte URL (z. B. "../blog/000-25C" oder "../blog/2025/03/15/mein-beitrag")
+     */
+    public static function generateBlogUrl(array $post): string {
+        $configManager = ConfigManager::getInstance();
+        $systemSettings = $configManager->load('system') ?: [];
+        $blogUrlFormat = $systemSettings['blog_url_format'] ?? 'internal';
+        
+        // Prüfe den Timestamp; falls ungültig, verwende den aktuellen Zeitpunkt
+        $timestamp = strtotime($post['date']);
+        if ($timestamp === false) {
+            $timestamp = time();
+        }
+        
+        if ($blogUrlFormat === 'internal') {
+            return '../blog/' . urlencode($post['id']);
+        } elseif ($blogUrlFormat === 'post_name') {
+            return '../blog/' . urlencode($post['slug']);
+        } elseif ($blogUrlFormat === 'year_month') {
+            $year = date('Y', $timestamp);
+            $month = date('m', $timestamp);
+            return "../blog/{$year}/{$month}/" . urlencode($post['slug']);
+        } elseif ($blogUrlFormat === 'date_slash') {
+            $year = date('Y', $timestamp);
+            $month = date('m', $timestamp);
+            $day = date('d', $timestamp);
+            return "../blog/{$year}/{$month}/{$day}/" . urlencode($post['slug']);
+        }
+        // Fallback
+        return '../blog/' . urlencode($post['id']);
+    }
 }

@@ -212,7 +212,11 @@ class PageManager {
      * @param string $content Dateiinhalt
      * @return array Frontmatter-Daten
      */
-    private function extractFrontmatter($content) {
+    private function extractFrontmatter($content): array {
+        if (!is_string($content) || trim($content) === '') {
+            return [];
+        }
+        
         $parts = preg_split('/[\r\n]*---[\r\n]+/', $content, 3);
         
         if (count($parts) !== 3) {
@@ -222,25 +226,18 @@ class PageManager {
         $frontmatter = $parts[1];
         $metadata = [];
         
-        // YAML-Parser
         $lines = explode("\n", $frontmatter);
-        
         foreach ($lines as $line) {
             $line = trim($line);
-            
             if (empty($line)) {
                 continue;
             }
-            
             if (preg_match('/^([^:]+):\s*(.*)$/', $line, $matches)) {
                 $key = trim($matches[1]);
                 $value = trim($matches[2]);
-                
-                // Anführungszeichen entfernen
-                if (preg_match('/^["\'](.*)["\'"]$/', $value, $stringMatches)) {
+                if (preg_match('/^["\'](.*)["\']$/', $value, $stringMatches)) {
                     $value = $stringMatches[1];
                 }
-                
                 $metadata[$key] = $value;
             }
         }

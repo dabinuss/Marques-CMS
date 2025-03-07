@@ -208,10 +208,10 @@ arsort($tags);
                     <h3>Neuen Tag hinzufügen</h3>
                 </div>
                 <div class="admin-card-content">
-                    <form method="post" class="add-form">
+                    <form method="post" class="add-form form-group">
                         <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                         <input type="hidden" name="action" value="add">
-                        <input type="text" name="tag_name" placeholder="Tagname" required>
+                        <input type="text" name="tag_name form-control" placeholder="Tagname" required>
                         <button type="submit" class="admin-button">
                             <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
                             Hinzufügen
@@ -235,18 +235,18 @@ arsort($tags);
                                     <div class="tag-count"><?php echo $count; ?> Beiträge</div>
                                     <div class="tag-actions">
                                         <!-- Bearbeitungsformular -->
-                                        <form method="post" style="display:inline;">
+                                        <form method="post" style="display:inline;" class="form-group">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                             <input type="hidden" name="action" value="rename">
                                             <input type="hidden" name="old_name" value="<?php echo htmlspecialchars($name); ?>">
-                                            <input type="text" name="new_name" value="<?php echo htmlspecialchars($name); ?>" required>
+                                            <input type="text" name="new_name form-control" value="<?php echo htmlspecialchars($name); ?>" required>
                                             <button type="submit" class="admin-button">
                                                 <i class="fas fa-save"></i> Umbenennen
                                             </button>
                                         </form>
                                         
                                         <!-- Löschformular -->
-                                        <form method="post" style="display:inline;" onsubmit="return confirm('Wirklich löschen? Der Tag wird aus allen zugehörigen Beiträgen entfernt.')">
+                                        <form method="post" style="display:inline;" class="form-group" onsubmit="return confirm('Wirklich löschen? Der Tag wird aus allen zugehörigen Beiträgen entfernt.')">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="tag_name" value="<?php echo htmlspecialchars($name); ?>">

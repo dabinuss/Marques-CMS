@@ -29,6 +29,9 @@ $blogManager = new \Marques\Core\BlogManager();
 $configManager = \Marques\Core\ConfigManager::getInstance();
 $system_config = $configManager->load('system') ?: [];
 
+require_once MARQUES_ROOT_DIR . '/system/core/Helper.class.php';
+use Marques\Core\Helper;
+
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -234,8 +237,13 @@ $tags_json = json_encode(array_keys($all_tags));
                         <span class="admin-button-icon"><i class="fas fa-arrow-left"></i></span>
                         Zurück zur Übersicht
                     </a>
-                    <?php if ($editing): ?>
-                    <a href="../blog/<?php echo htmlspecialchars($post['date'] . '/' . $post['slug']); ?>" class="admin-button" target="_blank">
+                    <?php 
+                    if ($editing): 
+                    
+                        // Erzeuge die URL für den aktuellen Beitrag:
+                        $blogUrl = Helper::generateBlogUrl($post);
+                    ?>
+                    <a href="<?php echo htmlspecialchars($blogUrl); ?>" class="admin-button" target="_blank">
                         <span class="admin-button-icon"><i class="fas fa-eye"></i></span>
                         Beitrag ansehen
                     </a>
@@ -255,7 +263,7 @@ $tags_json = json_encode(array_keys($all_tags));
                 </div>
             <?php endif; ?>
             
-            <form method="post" class="admin-form">
+            <form method="post" class="admin-form ">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($post['id']); ?>">
                 

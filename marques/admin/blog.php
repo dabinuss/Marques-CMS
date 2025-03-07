@@ -29,6 +29,10 @@ $blogManager = new \Marques\Core\BlogManager();
 $configManager = \Marques\Core\ConfigManager::getInstance();
 $system_config = $configManager->load('system') ?: [];
 
+// get Blog Entry URL
+require_once MARQUES_ROOT_DIR . '/system/core/Helper.class.php';
+use Marques\Core\Helper;
+
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -219,7 +223,12 @@ $categories = $blogManager->getCategories();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($posts as $post): ?>
+                        <?php 
+                        foreach ($posts as $post): 
+
+                            // Erzeuge die URL für den aktuellen Beitrag:
+                            $blogUrl = Helper::generateBlogUrl($post);
+                        ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($post['title']); ?></td>
                                 <td><?php echo htmlspecialchars($post['date']); ?></td>
@@ -237,7 +246,7 @@ $categories = $blogManager->getCategories();
                                     </span>
                                 </td>
                                 <td class="admin-table-actions">
-                                    <a href="../blog/<?php echo htmlspecialchars($post['date'] . '/' . $post['slug']); ?>" target="_blank" class="admin-table-action" title="Ansehen">
+                                    <a href="<?php echo htmlspecialchars($blogUrl); ?>" target="_blank" class="admin-table-action" title="Ansehen">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     <a href="blog-edit.php?id=<?php echo htmlspecialchars($post['id']); ?>" class="admin-table-action" title="Bearbeiten">

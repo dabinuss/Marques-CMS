@@ -221,10 +221,10 @@ arsort($categories);
                     <h3>Neue Kategorie hinzufügen</h3>
                 </div>
                 <div class="admin-card-content">
-                    <form method="post" class="add-form">
+                    <form method="post" class="add-form form-group">
                         <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                         <input type="hidden" name="action" value="add">
-                        <input type="text" name="category_name" placeholder="Kategoriename" required>
+                        <input type="text" name="category_name form-control" placeholder="Kategoriename" required>
                         <button type="submit" class="admin-button">
                             <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
                             Hinzufügen
@@ -248,18 +248,18 @@ arsort($categories);
                                     <div class="category-count"><?php echo $count; ?> Beiträge</div>
                                     <div class="category-actions">
                                         <!-- Bearbeitungsformular -->
-                                        <form method="post" style="display:inline;">
+                                        <form method="post" style="display:inline;" class="form-group">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                             <input type="hidden" name="action" value="rename">
                                             <input type="hidden" name="old_name" value="<?php echo htmlspecialchars($name); ?>">
-                                            <input type="text" name="new_name" value="<?php echo htmlspecialchars($name); ?>" required>
+                                            <input type="text" name="new_name form-control" value="<?php echo htmlspecialchars($name); ?>" required>
                                             <button type="submit" class="admin-button">
                                                 <i class="fas fa-save"></i> Umbenennen
                                             </button>
                                         </form>
                                         
                                         <!-- Löschformular -->
-                                        <form method="post" style="display:inline;" onsubmit="return confirm('Wirklich löschen? Die Kategorie wird aus allen zugehörigen Beiträgen entfernt.')">
+                                        <form method="post" style="display:inline;" class="form-group" onsubmit="return confirm('Wirklich löschen? Die Kategorie wird aus allen zugehörigen Beiträgen entfernt.')">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="category_name" value="<?php echo htmlspecialchars($name); ?>">

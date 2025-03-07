@@ -47,7 +47,7 @@ $pages = $pageManager->getAllPages();
 $mediaManager = new \Marques\Core\MediaManager();
 $mediaFiles = $mediaManager->getAllMedia();
 
-$themeManager = new ThemeManager();
+$themeManager = new \Marques\Core\ThemeManager();
 $templatePath = $themeManager->getThemePath('assets');
 
 // Prüfen, ob das Zugriffsstatistik-Log-Verzeichnis existiert und erstellen, falls nicht

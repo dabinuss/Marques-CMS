@@ -41,203 +41,109 @@ class Router {
      * @throws NotFoundException Wenn die Route nicht gefunden wird
      */
     public function processRequest(): array {
-        // Request-URI abrufen
         $requestUri = $this->getRequestUri();
-        
-        // System-Konfiguration laden
         $systemConfig = $this->_configManager->load('system') ?: [];
         $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'date_slash';
         
-        // Standard-Routendaten
+        // Standardroute
         $routeData = [
-            'path' => 'home', // Standardpfad
+            'path' => 'home',
             'params' => [],
             'query' => $_GET
         ];
         
-        // Wenn die URI nicht leer ist oder nur '/', verarbeiten
         if ($requestUri !== '' && $requestUri !== '/') {
-            // Query-String entfernen
             $path = parse_url($requestUri, PHP_URL_PATH);
-            
-            // Führende und nachfolgende Schrägstriche entfernen
             $path = trim($path, '/');
-
-            // WICHTIG: Theme-Asset-Pfade ignorieren
+            
+            // Asset-Pfade ausschließen
             if (strpos($path, 'themes/') === 0 || strpos($path, 'assets/') === 0) {
-                // Dies ist wahrscheinlich ein Asset-Pfad, wir sollten 404 zurückgeben,
-                // aber das wird durch den Webserver behandelt, nicht durch unser Routing
                 throw new NotFoundException("Statischer Asset-Pfad: " . htmlspecialchars($path));
             }
             
-            // Pfadvalidierung - nur alphanumerische Zeichen, Bindestriche, Unterstriche und Schrägstriche erlauben
             if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $path)) {
                 throw new NotFoundException("Ungültiger Pfad: " . htmlspecialchars($path));
             }
             
-            // Je nach konfiguriertem Format unterschiedliche Muster prüfen
             $isBlogPost = false;
-            
             switch ($blogUrlFormat) {
+                case 'internal':
+                    // Erwartete URL: blog/{id} (z.B. blog/000-25C)
+                    if (preg_match('/^blog\/([0-9]{3}-[0-9]{2}[A-L])$/', $path, $matches)) {
+                        $routeData['path'] = 'blog';
+                        $routeData['params'] = ['id' => $matches[1]];
+                        // Hier könnte optional das URL-Mapping geladen werden, um z.B. Redirects vorzunehmen
+                        $isBlogPost = true;
+                    }
+                    break;
+                    
                 case 'date_slash':
-                    // Format: blog/YYYY/MM/DD/slug
+                    // Erwartet: blog/YYYY/MM/DD/slug
                     if (preg_match('/^blog\/(\d{4})\/(\d{2})\/(\d{2})\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
                         $routeData['path'] = 'blog';
                         $routeData['params'] = [
-                            'year' => $matches[1],
+                            'year'  => $matches[1],
                             'month' => $matches[2],
-                            'day' => $matches[3],
-                            'slug' => $matches[4]
+                            'day'   => $matches[3],
+                            'slug'  => $matches[4]
                         ];
-                        
-                        // Validiere Datum
                         if (!checkdate((int)$matches[2], (int)$matches[3], (int)$matches[1])) {
                             throw new NotFoundException("Ungültiges Datum im Blog-Pfad");
                         }
-                        
-                        $isBlogPost = true;
-                    }
-                    break;
-                    
-                case 'date_dash':
-                    // Format: blog/YYYY-MM-DD/slug
-                    if (preg_match('/^blog\/(\d{4})-(\d{2})-(\d{2})\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
-                        $routeData['path'] = 'blog';
-                        $routeData['params'] = [
-                            'year' => $matches[1],
-                            'month' => $matches[2],
-                            'day' => $matches[3],
-                            'slug' => $matches[4]
-                        ];
-                        
-                        // Validiere Datum
-                        if (!checkdate((int)$matches[2], (int)$matches[3], (int)$matches[1])) {
-                            throw new NotFoundException("Ungültiges Datum im Blog-Pfad");
-                        }
-                        
-                        $isBlogPost = true;
-                    }
-                    break;
-                    
-                case 'year_month':
-                    // Format: blog/YYYY/MM/slug
-                    if (preg_match('/^blog\/(\d{4})\/(\d{2})\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
-                        $routeData['path'] = 'blog';
-                        $routeData['params'] = [
-                            'year' => $matches[1],
-                            'month' => $matches[2],
-                            'slug' => $matches[3]
-                        ];
-                        
-                        // Prüfe nur Jahr und Monat
-                        if ($matches[1] < 2000 || $matches[1] > 2100 || $matches[2] < 1 || $matches[2] > 12) {
-                            throw new NotFoundException("Ungültiger Zeitraum im Blog-Pfad");
-                        }
-                        
-                        $isBlogPost = true;
-                    }
-                    break;
-                    
-                case 'numeric':
-                    // Format: blog/ID oder blog/YYYYMMDD-slug
-                    if (preg_match('/^blog\/(\d+)$/', $path, $matches)) {
-                        // Numerische ID
-                        $routeData['path'] = 'blog';
-                        $routeData['params'] = [
-                            'id' => $matches[1]
-                        ];
-                        
-                        $isBlogPost = true;
-                    } elseif (preg_match('/^blog\/(\d{8})-([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
-                        // YYYYMMDD-slug Format
-                        $dateStr = $matches[1];
-                        $year = substr($dateStr, 0, 4);
-                        $month = substr($dateStr, 4, 2);
-                        $day = substr($dateStr, 6, 2);
-                        
-                        $routeData['path'] = 'blog';
-                        $routeData['params'] = [
-                            'year' => $year,
-                            'month' => $month,
-                            'day' => $day,
-                            'slug' => $matches[2]
-                        ];
-                        
-                        // Validiere Datum
-                        if (!checkdate((int)$month, (int)$day, (int)$year)) {
-                            throw new NotFoundException("Ungültiges Datum im Blog-Pfad");
-                        }
-                        
                         $isBlogPost = true;
                     }
                     break;
                     
                 case 'post_name':
-                    // Format: blog/slug
-                    if (preg_match('/^blog\/([a-zA-Z0-9\-_]+)$/', $path, $matches) && $matches[1] !== 'category' && !is_numeric($matches[1])) {
+                    // Erwartet: blog/slug
+                    if (preg_match('/^blog\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
+                        $routeData['path'] = 'blog';
+                        $routeData['params'] = ['slug' => $matches[1]];
+                        $isBlogPost = true;
+                    }
+                    break;
+                    
+                case 'year_month':
+                    // Erwartet: blog/YYYY/MM/slug
+                    if (preg_match('/^blog\/(\d{4})\/(\d{2})\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
                         $routeData['path'] = 'blog';
                         $routeData['params'] = [
-                            'slug' => $matches[1]
+                            'year'  => $matches[1],
+                            'month' => $matches[2],
+                            'slug'  => $matches[3]
                         ];
-                        
                         $isBlogPost = true;
                     }
                     break;
                     
                 default:
-                    // Standard: date_slash Format
-                    if (preg_match('/^blog\/(\d{4})\/(\d{2})\/(\d{2})\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
+                    // Fallback: Versuche internal
+                    if (preg_match('/^blog\/([0-9]{3}-[0-9]{2}[A-L])$/', $path, $matches)) {
                         $routeData['path'] = 'blog';
-                        $routeData['params'] = [
-                            'year' => $matches[1],
-                            'month' => $matches[2],
-                            'day' => $matches[3],
-                            'slug' => $matches[4]
-                        ];
-                        
-                        // Validiere Datum
-                        if (!checkdate((int)$matches[2], (int)$matches[3], (int)$matches[1])) {
-                            throw new NotFoundException("Ungültiges Datum im Blog-Pfad");
-                        }
-                        
+                        $routeData['params'] = ['id' => $matches[1]];
                         $isBlogPost = true;
                     }
             }
             
-            // Wenn kein Blog-Beitrag erkannt wurde, überprüfe andere Blog-bezogene Routen
+            // Alternative Blog-bezogene Routen (Kategorie, Archiv)
             if (!$isBlogPost) {
-                // Auf Blog-Kategorie prüfen
                 if (preg_match('/^blog\/category\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
                     $routeData['path'] = 'blog-category';
-                    $routeData['params'] = [
-                        'category' => $matches[1]
-                    ];
-                }
-                // Auf Blog-Archiv prüfen
-                elseif (preg_match('/^blog\/(\d{4})\/(\d{2})$/', $path, $matches)) {
+                    $routeData['params'] = ['category' => $matches[1]];
+                } elseif (preg_match('/^blog\/(\d{4})\/(\d{2})$/', $path, $matches)) {
                     $routeData['path'] = 'blog-archive';
-                    $routeData['params'] = [
-                        'year' => $matches[1],
-                        'month' => $matches[2]
-                    ];
-                    
-                    // Validiere Jahr und Monat
+                    $routeData['params'] = ['year' => $matches[1], 'month' => $matches[2]];
                     if ($matches[1] < 2000 || $matches[1] > 2100 || $matches[2] < 1 || $matches[2] > 12) {
                         throw new NotFoundException("Ungültiger Zeitraum im Blog-Archiv");
                     }
-                }
-                // Auf Blog-Index prüfen
-                elseif ($path === 'blog') {
+                } elseif ($path === 'blog') {
                     $routeData['path'] = 'blog-index';
-                }
-                // Ansonsten ist es eine reguläre Seite
-                else {
+                } else {
                     $routeData['path'] = $path;
                 }
             }
         }
         
-        // Prüfen, ob die Route existiert
         if (!$this->routeExists($routeData['path'], $routeData['params'] ?? [])) {
             throw new NotFoundException("Seite nicht gefunden: " . $routeData['path']);
         }
@@ -252,99 +158,56 @@ class Router {
      * @param array $params Optional: Route-Parameter
      * @return bool True, wenn die Route existiert
      */
-    private function routeExists($path, $params = []) {
-        // Konfiguration laden
-        $requestUri = $this->getRequestUri();
-        $systemConfig = $this->_configManager->load('system') ?: [];
-        $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'date_slash';
-
-        // Standard-Routendaten
-        $routeData = [
-            'path' => 'home', // Standardpfad
-            'params' => [],
-            'query' => $_GET
-        ];
-        
-        // Für Blog-Beiträge die tatsächliche Datei oder Daten prüfen
+    private function routeExists($path, $params = []): bool {
         if ($path === 'blog') {
-            $blogManager = new \Marques\Core\BlogManager();
-            
-            // Prüfen, welche Parameter vorhanden sind, abhängig vom Format
+            $blogManager = new BlogManager();
+            $systemConfig = $this->_configManager->load('system') ?: [];
+            $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'internal';
             switch ($blogUrlFormat) {
-                case 'date_slash':
-                case 'date_dash':
-                    if (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
-                        $blogFile = MARQUES_CONTENT_DIR . '/blog/' . 
-                                    $params['year'] . '-' . 
-                                    $params['month'] . '-' . 
-                                    $params['day'] . '-' . 
-                                    $params['slug'] . '.md';
-                        return file_exists($blogFile);
-                    }
-                    break;
-                    
-                case 'year_month':
-                    if (isset($params['year'], $params['month'], $params['slug'])) {
-                        // Suche nach Dateien, die mit dem Muster YYYY-MM-* beginnen
-                        $pattern = MARQUES_CONTENT_DIR . '/blog/' . 
-                                $params['year'] . '-' . 
-                                $params['month'] . '-*-' . 
-                                $params['slug'] . '.md';
-                        $files = glob($pattern);
-                        return !empty($files);
-                    }
-                    break;
-                    
-                case 'numeric':
+                case 'internal':
                     if (isset($params['id'])) {
-                        // Numerische ID: Suche nach Blog-Einträgen durch ID
                         return $blogManager->postExistsById($params['id']);
-                    } elseif (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
-                        $blogFile = MARQUES_CONTENT_DIR . '/blog/' . 
-                                    $params['year'] . '-' . 
-                                    $params['month'] . '-' . 
-                                    $params['day'] . '-' . 
-                                    $params['slug'] . '.md';
+                    }
+                    break;
+                case 'date_slash':
+                    if (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
+                        $blogFile = MARQUES_CONTENT_DIR . '/blog/' .
+                                    $params['year'] . '/' .
+                                    $params['month'] . '/' .
+                                    $params['year'] . '-' . $params['month'] . '-' . $params['day'] . '-' . $params['slug'] . '.md';
                         return file_exists($blogFile);
                     }
                     break;
-                    
                 case 'post_name':
                     if (isset($params['slug'])) {
-                        // Nur Slug: Suche nach allen Dateien, die mit diesem Slug enden
-                        $pattern = MARQUES_CONTENT_DIR . '/blog/*-' . $params['slug'] . '.md';
-                        $files = glob($pattern);
+                        $files = glob(MARQUES_CONTENT_DIR . '/blog/*/*/*-' . $params['slug'] . '.md');
                         return !empty($files);
                     }
                     break;
-                    
+                case 'year_month':
+                    if (isset($params['year'], $params['month'], $params['slug'])) {
+                        $files = glob(MARQUES_CONTENT_DIR . '/blog/' .
+                                     $params['year'] . '/' .
+                                     $params['month'] . '/*-' . $params['slug'] . '.md');
+                        return !empty($files);
+                    }
+                    break;
                 default:
-                    // Standard: date_slash Format
-                    if (isset($params['year'], $params['month'], $params['day'], $params['slug'])) {
-                        $blogFile = MARQUES_CONTENT_DIR . '/blog/' . 
-                                    $params['year'] . '-' . 
-                                    $params['month'] . '-' . 
-                                    $params['day'] . '-' . 
-                                    $params['slug'] . '.md';
-                        return file_exists($blogFile);
+                    if (isset($params['id'])) {
+                        return $blogManager->postExistsById($params['id']);
                     }
             }
-            
             return false;
         }
         
-        // Für Blog-Kategorien und -Archive zunächst die vordefinierten Routen prüfen
         if (in_array($path, ['blog-category', 'blog-archive', 'blog-index'])) {
             return isset($this->_routes['patterns'][$path]) || isset($this->_routes['paths'][$path]);
         }
         
-        // Reguläre Seiten: prüfen, ob Datei existiert
         $contentFile = MARQUES_CONTENT_DIR . '/pages/' . $path . '.md';
         if (file_exists($contentFile)) {
             return true;
         }
-        
-        // Vordefinierte Routen prüfen
         return isset($this->_routes['paths'][$path]);
     }
     
@@ -355,13 +218,30 @@ class Router {
      */
     private function getRequestUri(): string {
         $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
-        
-        // Basispfad abschneiden, falls nötig
         $basePath = dirname($_SERVER['SCRIPT_NAME']);
         if ($basePath !== '/' && strpos($requestUri, $basePath) === 0) {
             $requestUri = substr($requestUri, strlen($basePath));
         }
-        
         return $requestUri;
+    }
+
+    /**
+     * Lädt das URL-Mapping.
+     * Hier wird die Datei "urlmapping.config.json" aus dem Konfigurationsverzeichnis verwendet.
+     *
+     * @return array
+     */
+    public function loadUrlMapping(): array {
+        return $this->_configManager->loadUrlMapping();
+    }
+    
+    /**
+     * Aktualisiert das URL-Mapping.
+     *
+     * @param array $mapping
+     * @return bool
+     */
+    public function updateUrlMapping(array $mapping): bool {
+        return $this->_configManager->updateUrlMapping($mapping);
     }
 }

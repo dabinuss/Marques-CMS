@@ -17,13 +17,19 @@ class BlogManager {
      * @var array Systemkonfiguration
      */
     private $_config;
+
+    /**
+     * @var FileManager
+     */
+    protected FileManager $fileManager;
     
     /**
      * Konstruktor
      */
     public function __construct() {
-        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $configManager = ConfigManager::getInstance();
         $this->_config = $configManager->load('system') ?: [];
+        $this->fileManager = new FileManager(MARQUES_CONTENT_DIR);
     }
     
     /**
@@ -36,34 +42,23 @@ class BlogManager {
      */
     public function getAllPosts(int $limit = 0, int $offset = 0, string $category = ''): array {
         $posts = [];
-        $blogDir = MARQUES_CONTENT_DIR . '/blog';
+        // Suche in der neuen Ordnerstruktur:
+        $files = $this->fileManager->glob('blog/*/*/*.md');
         
-        if (!is_dir($blogDir)) {
-            if (!mkdir($blogDir, 0755, true)) {
-                return $posts;
-            }
-        }
-        
-        $files = glob($blogDir . '/*.md');
-        
-        // Nach Datum sortieren (absteigend)
         usort($files, function($a, $b) {
             return filemtime($b) - filemtime($a);
         });
         
-        // Offset anwenden
         if ($offset > 0) {
             $files = array_slice($files, $offset);
         }
-        
-        // Limit anwenden, wenn gesetzt
         if ($limit > 0) {
             $files = array_slice($files, 0, $limit);
         }
         
         foreach ($files as $file) {
-            $filename = basename($file, '.md');
-            $content = file_get_contents($file);
+            $filename = basename($file, '.md'); // z. B. "000-25C"
+            $content = $this->fileManager->readFile($file);
             $metadata = $this->extractFrontmatter($content);
             
             // Kategorie-Filter anwenden
@@ -71,13 +66,10 @@ class BlogManager {
                 continue;
             }
             
-            // Slug extrahieren (nach dem letzten "-")
-            $parts = explode('-', $filename, 4);
-            $slug = isset($parts[3]) ? $parts[3] : '';
-            
-            // Date extrahieren (Format: YYYY-MM-DD-slug)
-            $dateParts = explode('-', $filename);
-            $date = (count($dateParts) >= 3) ? $dateParts[0] . '-' . $dateParts[1] . '-' . $dateParts[2] : '';
+            // Da in unserem System die interne ID zugleich der Dateiname ist,
+            // wird der Slug idealerweise im Frontmatter (bzw. im URL-Mapping) festgelegt.
+            $slug = $metadata['slug'] ?? '';
+            $date = $metadata['date'] ?? '';
             
             $posts[] = [
                 'id' => $filename,
@@ -105,44 +97,28 @@ class BlogManager {
      * @return array|null Beitrag mit Metadaten und Inhalt
      */
     public function getPost($id) {
-        // Sicherheitscheck
         if (strpos($id, '/') !== false || strpos($id, '\\') !== false) {
             return null;
         }
-        
-        $file = MARQUES_CONTENT_DIR . '/blog/' . $id . '.md';
-        
-        if (!file_exists($file)) {
+        // Berechne den Pfad anhand der neuen Ordnerstruktur
+        $filePath = $this->getFilePathFromId($id);
+        if (!$this->fileManager->exists($filePath)) {
             return null;
         }
         
-        $content = file_get_contents($file);
-        
-        // Frontmatter und Inhalt trennen
-        $parts = preg_split('/[\r\n]*---[\r\n]+/', $content, 3);
-        
+        $content = $this->fileManager->readFile($filePath);
+        $partsContent = preg_split('/[\r\n]*---[\r\n]+/', $content, 3);
         $metadata = [];
         $body = '';
-        
-        if (count($parts) === 3) {
-            // Datei hat Frontmatter
+        if (count($partsContent) === 3) {
             $metadata = $this->extractFrontmatter($content);
-            $body = $parts[2];
+            $body = $partsContent[2];
         } else {
-            // Kein Frontmatter
             $body = $content;
         }
         
-        // Slug extrahieren (nach dem letzten "-")
-        $parts = explode('-', $filename, 4);
-        $slug = isset($parts[3]) ? $parts[3] : '';
-        
-        // Date extrahieren (Format: YYYY-MM-DD-slug)
-        $dateParts = explode('-', $id);
-        $date = '';
-        if (count($dateParts) >= 3) {
-            $date = $dateParts[0] . '-' . $dateParts[1] . '-' . $dateParts[2];
-        }
+        $slug = $metadata['slug'] ?? '';
+        $date = $metadata['date'] ?? '';
         
         return [
             'id' => $id,
@@ -159,7 +135,7 @@ class BlogManager {
             'status' => $metadata['status'] ?? 'published',
             'content' => $body
         ];
-    }
+    }    
     
     /**
      * Erstellt oder aktualisiert einen Blog-Beitrag
@@ -168,110 +144,101 @@ class BlogManager {
      * @return bool|string True oder neue ID bei Erfolg, False bei Fehler
      */
     public function savePost($postData) {
-        // VersionManager initialisieren
         $versionManager = new VersionManager();
         $currentUsername = isset($_SESSION['marques_user']) ? $_SESSION['marques_user']['username'] : 'system';
         
-        // Verzeichnis erstellen, falls nicht vorhanden
-        $blogDir = MARQUES_CONTENT_DIR . '/blog';
-        if (!is_dir($blogDir)) {
-            if (!mkdir($blogDir, 0755, true)) {
-                return false;
-            }
+        if (!$this->fileManager->exists('blog')) {
+            $this->fileManager->createDirectory('blog');
         }
         
-        // Slug generieren, wenn keiner vorhanden ist
         if (empty($postData['slug'])) {
             $postData['slug'] = $this->generateSlug($postData['title']);
         }
         
-        // Datum vorbereiten
-        $date = isset($postData['date']) && !empty($postData['date']) ? 
-                $postData['date'] : date('Y-m-d');
-        
-        // Datum überprüfen und validieren
+        $date = isset($postData['date']) && !empty($postData['date']) ? $postData['date'] : date('Y-m-d');
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             $date = date('Y-m-d');
         }
         
-        // Neue ID generieren (Format: YYYY-MM-DD-slug)
-        $newId = $date . '-' . $postData['slug'];
-        
-        // Prüfen, ob es sich um eine Aktualisierung handelt
-        $isUpdate = !empty($postData['id']);
-        $oldFile = null;
-        
-        if ($isUpdate) {
-            $oldFile = MARQUES_CONTENT_DIR . '/blog/' . $postData['id'] . '.md';
-            
-            // Versions-Backup erstellen, wenn Datei existiert
-            if (file_exists($oldFile)) {
-                $versionManager->createVersion('blog', $postData['id'], file_get_contents($oldFile), $currentUsername);
-            }
-            
-            // Bei Änderung des Slugs/Datums die alte Datei löschen
-            if ($postData['id'] !== $newId && file_exists($oldFile)) {
-                unlink($oldFile);
-            }
+        // Neue interne ID im Format "000-25C" erzeugen, wenn nicht bereits vorhanden
+        if (empty($postData['id'])) {
+            $newId = $this->generateNewId($postData, $date);
+        } else {
+            $newId = $postData['id'];
         }
         
-        // Neue Datei-Pfad
-        $file = MARQUES_CONTENT_DIR . '/blog/' . $newId . '.md';
+        $parts = explode('-', $newId);
+        $yearMonth = $parts[1]; // z. B. "25C"
+        $year = substr($yearMonth, 0, 2);
+        $month = substr($yearMonth, 2, 1);
         
-        // Frontmatter vorbereiten
+        $filePath = 'blog/' . $year . '/' . $month . '/' . $newId . '.md';
+        $this->fileManager->createDirectory('blog/' . $year . '/' . $month);
+        
         $frontmatter = [
-            'title' => $postData['title'] ?? '',
-            'excerpt' => $postData['excerpt'] ?? '',
-            'author' => $postData['author'] ?? $currentUsername,
-            'categories' => is_array($postData['categories']) ? implode(',', $postData['categories']) : $postData['categories'],
-            'tags' => is_array($postData['tags']) ? implode(',', $postData['tags']) : $postData['tags'],
+            'title'          => $postData['title'] ?? '',
+            'excerpt'        => $postData['excerpt'] ?? '',
+            'author'         => $postData['author'] ?? $currentUsername,
+            'categories'     => is_array($postData['categories']) ? implode(',', $postData['categories']) : $postData['categories'],
+            'tags'           => is_array($postData['tags']) ? implode(',', $postData['tags']) : $postData['tags'],
             'featured_image' => $postData['featured_image'] ?? '',
-            'status' => $postData['status'] ?? 'published'
+            'status'         => $postData['status'] ?? 'published',
+            'slug'           => $postData['slug']
         ];
         
-        // Datumsfelder vorbereiten
-        if ($isUpdate && file_exists($oldFile)) {
-            // Bestehendes Erstellungsdatum beibehalten
+        if (!empty($postData['id']) && $this->getPost($postData['id'])) {
             $existingPost = $this->getPost($postData['id']);
             $frontmatter['date_created'] = $existingPost['date_created'] ?? $date;
         } else {
-            // Neues Erstellungsdatum
             $frontmatter['date_created'] = $date;
         }
-        
-        // Änderungsdatum aktualisieren
         $frontmatter['date_modified'] = date('Y-m-d');
+        $frontmatter['date'] = $date;
         
-        // Frontmatter in YAML konvertieren
-        $yamlContent = '';
+        $yamlContent = "";
         foreach ($frontmatter as $key => $value) {
-            if (!empty($value)) { // Leere Werte überspringen
+            if (!empty($value)) {
                 $yamlContent .= $key . ': "' . str_replace('"', '\"', $value) . "\"\n";
             }
         }
         
-        // Inhalt zusammensetzen
         $content = "---\n" . $yamlContent . "---\n\n";
-        // Füge den Content nur hinzu, wenn er existiert
         if (isset($postData['content'])) {
             $content .= $postData['content'];
-        } else {
-            // Wenn kein neuer Inhalt vorhanden ist, den alten beibehalten
-            if ($isUpdate && file_exists($oldFile)) {
-                $existingPost = $this->getPost($postData['id']);
-                if (isset($existingPost['content'])) {
-                    $content .= $existingPost['content'];
-                }
+        } else if (!empty($postData['id']) && $this->getPost($postData['id'])) {
+            $existingPost = $this->getPost($postData['id']);
+            if (isset($existingPost['content'])) {
+                $content .= $existingPost['content'];
             }
         }
         
-        // Datei speichern
-        if (file_put_contents($file, $content) === false) {
+        if (!empty($postData['id'])) {
+            $oldFilePath = $this->getFilePathFromId($postData['id']);
+            if ($oldFilePath && $postData['id'] !== $newId && $this->fileManager->exists($oldFilePath)) {
+                $versionManager->createVersion('blog', $postData['id'], $this->fileManager->readFile($oldFilePath), $currentUsername);
+                $this->fileManager->deleteFile($oldFilePath);
+            } elseif ($this->fileManager->exists($oldFilePath)) {
+                $versionManager->createVersion('blog', $postData['id'], $this->fileManager->readFile($oldFilePath), $currentUsername);
+            }
+        }
+        
+        if (!$this->fileManager->writeFile($filePath, $content)) {
             return false;
         }
         
-        // ID zurückgeben für Weiterleitung
+        // Rückgabe der internen ID – das URL-Mapping (id → slug) wird vom Router über den ConfigManager verwaltet.
         return $newId;
+    }
+
+    private function getFilePathFromId(string $id): ?string {
+        $parts = explode('-', $id);
+        if (count($parts) !== 2) {
+            return null;
+        }
+        $yearMonth = $parts[1];
+        $year = substr($yearMonth, 0, 2);
+        $month = substr($yearMonth, 2, 1);
+        return 'blog/' . $year . '/' . $month . '/' . $id . '.md';
     }
     
     /**
@@ -281,24 +248,20 @@ class BlogManager {
      * @return bool True bei Erfolg
      */
     public function deletePost($id) {
-        // Sicherheitscheck
         if (strpos($id, '/') !== false || strpos($id, '\\') !== false) {
             return false;
         }
         
-        $file = MARQUES_CONTENT_DIR . '/blog/' . $id . '.md';
-        
-        if (!file_exists($file)) {
+        $filePath = $this->getFilePathFromId($id);
+        if (!$this->fileManager->exists($filePath)) {
             return false;
         }
         
-        // Versions-Backup erstellen
         $versionManager = new VersionManager();
         $currentUsername = isset($_SESSION['marques_user']) ? $_SESSION['marques_user']['username'] : 'system';
-        $versionManager->createVersion('blog', $id, file_get_contents($file), $currentUsername . ' (vor Löschung)');
+        $versionManager->createVersion('blog', $id, $this->fileManager->readFile($filePath), $currentUsername . ' (vor Löschung)');
         
-        // Datei löschen
-        return unlink($file);
+        return $this->fileManager->deleteFile($filePath);
     }
     
     /**
@@ -383,7 +346,11 @@ class BlogManager {
      * @param string $content Dateiinhalt
      * @return array Frontmatter-Daten
      */
-    private function extractFrontmatter($content) {
+    private function extractFrontmatter($content): array {
+        if (!is_string($content) || trim($content) === '') {
+            return [];
+        }
+        
         $parts = preg_split('/[\r\n]*---[\r\n]+/', $content, 3);
         
         if (count($parts) !== 3) {
@@ -393,25 +360,18 @@ class BlogManager {
         $frontmatter = $parts[1];
         $metadata = [];
         
-        // YAML-Parser
         $lines = explode("\n", $frontmatter);
-        
         foreach ($lines as $line) {
             $line = trim($line);
-            
             if (empty($line)) {
                 continue;
             }
-            
             if (preg_match('/^([^:]+):\s*(.*)$/', $line, $matches)) {
                 $key = trim($matches[1]);
                 $value = trim($matches[2]);
-                
-                // Anführungszeichen entfernen
                 if (preg_match('/^["\'](.*)["\']$/', $value, $stringMatches)) {
                     $value = $stringMatches[1];
                 }
-                
                 $metadata[$key] = $value;
             }
         }
@@ -425,17 +385,11 @@ class BlogManager {
      * @param string $text Eingangstext
      * @return string Slug
      */
-    public function generateSlug($text) {
-        // Transliteration (Umlaute etc. umwandeln)
+    private function generateSlug($text): string {
         $text = iconv('UTF-8', 'ASCII//TRANSLIT', $text);
-        // Alles in Kleinbuchstaben umwandeln
         $text = strtolower($text);
-        // Alle nicht-alphanumerischen Zeichen durch Bindestriche ersetzen
         $text = preg_replace('/[^a-z0-9]+/', '-', $text);
-        // Führende und nachfolgende Bindestriche entfernen
-        $text = trim($text, '-');
-        
-        return $text;
+        return trim($text, '-');
     }
     
     /**
@@ -445,16 +399,29 @@ class BlogManager {
      * @param int $length Maximale Länge des Exzerpts
      * @return string Exzerpt
      */
-    private function generateExcerpt($content, $length = 150) {
-        // Markdown/HTML entfernen
+    private function generateExcerpt($content, $length = 150): string {
+        if (!is_string($content)) {
+            return '';
+        }
         $text = strip_tags($content);
-        
-        // Auf maximale Länge kürzen
         if (strlen($text) > $length) {
             $text = substr($text, 0, $length) . '...';
         }
-        
         return $text;
+    }
+
+    /**
+     * Erzeugt eine neue interne ID im Format "000-25C".
+     */
+    private function generateNewId(array $postData, string $date): string {
+        $configManager = ConfigManager::getInstance();
+        $counter = $configManager->get('blog', 'id_counter', 0);
+        $counter++;
+        $configManager->set('blog', 'id_counter', $counter);
+        $yearTwoDigit = substr($date, 2, 2);
+        $monthNum = (int)substr($date, 5, 2);
+        $monthLetter = chr(64 + $monthNum);
+        return sprintf("%03d", $counter) . '-' . $yearTwoDigit . $monthLetter;
     }
 
     /**
