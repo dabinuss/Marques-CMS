@@ -72,9 +72,8 @@ class BlogManager {
             }
             
             // Slug extrahieren (nach dem letzten "-")
-            $pos = strrpos($filename, "-");
-            $slug = $pos === false ? $filename : substr($filename, $pos + 1);
-
+            $parts = explode('-', $filename, 4);
+            $slug = isset($parts[3]) ? $parts[3] : '';
             
             // Date extrahieren (Format: YYYY-MM-DD-slug)
             $dateParts = explode('-', $filename);
@@ -135,8 +134,8 @@ class BlogManager {
         }
         
         // Slug extrahieren (nach dem letzten "-")
-        $pos = strrpos($id, "-");
-        $slug = ($pos === false) ? $id : substr($id, $pos + 1);
+        $parts = explode('-', $filename, 4);
+        $slug = isset($parts[3]) ? $parts[3] : '';
         
         // Date extrahieren (Format: YYYY-MM-DD-slug)
         $dateParts = explode('-', $id);
