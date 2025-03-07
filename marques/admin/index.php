@@ -47,6 +47,9 @@ $pages = $pageManager->getAllPages();
 $mediaManager = new \Marques\Core\MediaManager();
 $mediaFiles = $mediaManager->getAllMedia();
 
+$themeManager = new ThemeManager();
+$templatePath = $themeManager->getThemePath('assets');
+
 // Prüfen, ob das Zugriffsstatistik-Log-Verzeichnis existiert und erstellen, falls nicht
 $statsDir = MARQUES_ROOT_DIR . '/logs/stats';
 if (!is_dir($statsDir)) {
@@ -126,7 +129,7 @@ $systemHealth = [
     'write_permissions'=> [
         'content' => is_writable(MARQUES_CONTENT_DIR),
         'config'  => is_writable(MARQUES_CONFIG_DIR),
-        'assets'  => is_writable(MARQUES_ROOT_DIR . '/assets/media')
+        'media'  => is_writable(MARQUES_ROOT_DIR . '/content/media')
     ]
 ];
 

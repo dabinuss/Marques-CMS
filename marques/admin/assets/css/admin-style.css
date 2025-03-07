@@ -26,6 +26,8 @@
     --success-text: #155724;
     --danger-bg: #f8d7da;
     --danger-text: #721c24;
+    --warning-bg: #f8e7d7;
+    --warning-text: #271e1e;
     
     /* UI elements */
     --font: 'Helvetica', Arial, sans-serif;
@@ -930,6 +932,11 @@ textarea {
     background-color: var(--danger-bg);
     color: var(--danger-text);
     border-color: #dc3545;
+}
+.admin-alert.warning {
+    background-color: var(--warning-bg);
+    color: var(--warning-text);
+    border-color: #dc9435;
 }
 
 /* ========================================
