@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 break;
                 
-            case 'social':
+            case 'other':
                 $settings->setSetting('social_links.facebook', $_POST['social_facebook'] ?? '');
                 $settings->setSetting('social_links.twitter', $_POST['social_twitter'] ?? '');
                 $settings->setSetting('social_links.instagram', $_POST['social_instagram'] ?? '');
@@ -128,7 +128,7 @@ $current_settings = $settings->getAllSettings();
 
 // Aktiven Tab bestimmen
 $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
-$allowed_tabs = ['general', 'social', 'content', 'system', 'seo', 'appearance'];
+$allowed_tabs = ['general', 'other', 'content', 'system', 'seo', 'appearance'];
 
 if (!in_array($active_tab, $allowed_tabs)) {
     $active_tab = 'general';
@@ -203,8 +203,8 @@ $time_formats = [
                     <a href="?tab=appearance" class="admin-tab <?php echo $active_tab === 'appearance' ? 'active' : ''; ?>">
                         <i class="fas fa-paint-brush"></i> Design
                     </a>
-                    <a href="?tab=social" class="admin-tab <?php echo $active_tab === 'social' ? 'active' : ''; ?>">
-                        <i class="fas fa-share-alt"></i> Social Media
+                    <a href="?tab=other" class="admin-tab <?php echo $active_tab === 'other' ? 'active' : ''; ?>">
+                        <i class="fas fa-share-alt"></i> Anderes
                     </a>
                     <a href="?tab=seo" class="admin-tab <?php echo $active_tab === 'seo' ? 'active' : ''; ?>">
                         <i class="fas fa-search"></i> SEO
@@ -247,7 +247,7 @@ $time_formats = [
                                 <p class="form-hint">Öffentliche Telefonnummer für Kontakt.</p>
                             </div>
 
-                        <?php elseif ($active_tab === 'social'): ?>
+                        <?php elseif ($active_tab === 'other'): ?>
                             <div class="form-group">
                                 <label for="social_facebook">Facebook</label>
                                 <div class="input-icon-wrapper">
