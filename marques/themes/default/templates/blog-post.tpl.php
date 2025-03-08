@@ -1,30 +1,19 @@
-<?php declare(strict_types=1); ?>
-<?php
+<?php 
+declare(strict_types=1);
+
 // URL-Parameter sollten idealerweise bereits in $tpl vorhanden sein.
 // Falls nicht, initialisieren wir sie:
 $tpl->path   = $tpl->path ?? '';
 $tpl->params = $tpl->params ?? [];
 
-// Datumsparameter extrahieren
-$year  = $tpl->params['year']  ?? null;
-$month = $tpl->params['month'] ?? null;
-$day   = $tpl->params['day']   ?? null;
+// Slug Parameter extrahieren (wichtig für URL-Mapping)
 $slug  = $tpl->params['slug']  ?? null;
-
-// Prüfen, ob alle erforderlichen Parameter vorhanden sind
-if (!$year || !$month || !$day || !$slug) {
-    echo '<div class="error">Dieser Blogbeitrag existiert nicht.</div>';
-    return;
-}
-
-// Datei-ID erstellen (YYYY-MM-DD-slug)
-$postId = $year . '-' . $month . '-' . $day . '-' . $slug;
 
 // BlogManager initialisieren, falls noch nicht vorhanden
 $tpl->blogManager = $tpl->blogManager ?? new \Marques\Core\BlogManager();
 
-// Blog-Beitrag abrufen
-$tpl->post = $tpl->blogManager->getPost($postId);
+// Blog-Beitrag anhand des Slugs abrufen (URL-Mapping sollte das korrekte ID finden)
+$tpl->post = $tpl->blogManager->getPostBySlug($slug);
 
 // Prüfen, ob der Beitrag existiert
 if (!$tpl->post) {
@@ -47,7 +36,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
                     <?php if (!empty($tpl->post['categories'])): ?>
                         <span class="post-categories">
                             in
-                            <?php 
+                            <?php
                             $categoryLinks = [];
                             foreach ($tpl->post['categories'] as $cat) {
                                 if (!empty($cat)) {
@@ -60,21 +49,21 @@ $tpl->categories = $tpl->blogManager->getCategories();
                     <?php endif; ?>
                 </div>
             </header>
-            
+
             <?php if (!empty($tpl->post['featured_image'])): ?>
                 <div class="post-featured-image">
                     <img src="<?php echo marques_site_url($tpl->post['featured_image']); ?>" alt="<?php echo htmlspecialchars($tpl->post['title']); ?>">
                 </div>
             <?php endif; ?>
-            
+
             <div class="post-content">
                 <?php echo $tpl->post['content']; ?>
             </div>
-            
+
             <?php if (!empty($tpl->post['tags'])): ?>
                 <div class="post-tags">
                     <span class="tags-title">Tags:</span>
-                    <?php 
+                    <?php
                     $tagLinks = [];
                     foreach ($tpl->post['tags'] as $tag) {
                         if (!empty($tag)) {
@@ -85,15 +74,15 @@ $tpl->categories = $tpl->blogManager->getCategories();
                     ?>
                 </div>
             <?php endif; ?>
-            
+
             <div class="post-navigation">
                 <a href="<?php echo marques_site_url('blog'); ?>" class="back-to-blog">
-                    &laquo; Zurück zum Blog
+                    « Zurück zum Blog
                 </a>
             </div>
         </article>
     </div>
-    
+
     <aside class="blog-sidebar">
         <div class="sidebar-section categories-section">
             <h3 class="sidebar-title">Kategorien</h3>

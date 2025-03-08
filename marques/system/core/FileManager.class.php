@@ -25,7 +25,7 @@ class FileManager {
     public function writeFile(string $relativePath, string $content): bool {
         $filePath = $this->getFullPath($relativePath);
         $dir = dirname($filePath);
-        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) { // Korrektur: Fehlerunterdrückung bei mkdir entfernt, um Fehler besser zu erkennen
             throw new \RuntimeException("Konnte Verzeichnis nicht erstellen: $dir");
         }
         if (file_put_contents($filePath, $content) === false) {
@@ -48,7 +48,7 @@ class FileManager {
         if (!file_exists($filePath) || !is_readable($filePath)) {
             return null;
         }
-        return file_get_contents($filePath);
+        return @file_get_contents($filePath); // Korrektur: Fehlerunterdrückung bei file_get_contents beibehalten, um Lesefehler zu vermeiden
     }
 
     /**
@@ -62,7 +62,7 @@ class FileManager {
         if (file_exists($filePath)) {
             $cacheManager = CacheManager::getInstance();
             $cacheManager->delete($filePath);
-            return unlink($filePath);
+            return @unlink($filePath); // Korrektur: Fehlerunterdrückung bei unlink beibehalten, um Löschfehler zu vermeiden
         }
         return false;
     }
@@ -123,7 +123,7 @@ class FileManager {
     public function createDirectory(string $dir): bool {
         $fullPath = $this->getFullPath($dir);
         if (!is_dir($fullPath)) {
-            return mkdir($fullPath, 0755, true);
+            return @mkdir($fullPath, 0755, true); // Korrektur: Fehlerunterdrückung bei mkdir beibehalten, da createDirectory oft im Hintergrund läuft
         }
         return true;
     }

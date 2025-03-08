@@ -3,6 +3,11 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+/**
+ * Helper-Klasse für das marques CMS
+ *
+ * Diese Klasse fasst sämtliche Utility-Funktionen zusammen.
+ */
 class Helper {
     /**
      * Cache für die Systemkonfiguration
@@ -10,9 +15,16 @@ class Helper {
      * @var array|null
      */
     private static ?array $config = null;
-    
+
     /**
-     * ConfigManager-Instance
+     * Cache für das URL-Mapping
+     *
+     * @var array|null
+     */
+    private static ?array $urlMappingCache = null;
+
+    /**
+     * ConfigManager-Instanz
      *
      * @var ConfigManager|null
      */
@@ -28,16 +40,33 @@ class Helper {
         if (self::$configManager === null) {
             self::$configManager = ConfigManager::getInstance();
         }
-        
+
         if ($forceReload || self::$config === null) {
             self::$config = self::$configManager->load('system') ?: [];
-            
+
             // Im Frontend: "/admin" aus der Base‑URL entfernen
             if (!defined('IS_ADMIN') && isset(self::$config['base_url']) && strpos(self::$config['base_url'], '/admin') !== false) {
                 self::$config['base_url'] = preg_replace('|/admin$|', '', self::$config['base_url']);
             }
         }
         return self::$config;
+    }
+
+    /**
+     * Lädt (oder gibt das bereits geladene) URL-Mapping zurück.
+     *
+     * @param bool $forceReload Erzwingt das Neuladen des Mappings
+     * @return array
+     */
+    private static function getUrlMapping(bool $forceReload = false): array {
+        if (self::$configManager === null) {
+            self::$configManager = ConfigManager::getInstance();
+        }
+
+        if ($forceReload || self::$urlMappingCache === null) {
+            self::$urlMappingCache = self::$configManager->loadUrlMapping() ?: [];
+        }
+        return self::$urlMappingCache;
     }
 
     /**
@@ -88,6 +117,7 @@ class Helper {
      * @return string
      */
     public static function getSiteUrl(string $path = ''): string {
+        // Übergibt den Admin-Status an getBaseUrl
         $baseUrl = self::getBaseUrl(defined('IS_ADMIN'));
         if (!empty($path)) {
             $path = '/' . ltrim($path, '/');
@@ -148,11 +178,13 @@ class Helper {
 
     /**
      * Formatiert die Blog-URL basierend auf den Systemeinstellungen und Blog-Post-Daten.
+     * Nutzt URL-Mapping, falls vorhanden.
      *
-     * @param array $post
-     * @return string
+     * @param array $post Post-Daten (muss 'id', 'slug' und 'date' enthalten)
+     * @return string Generierte URL
      */
     public static function formatBlogUrl(array $post): string {
+        $urlMapping = self::getUrlMapping();
         $config = self::getConfig();
         $format = $config['blog_url_format'] ?? 'date_slash';
         $dateParts = explode('-', $post['date']);
@@ -161,6 +193,13 @@ class Helper {
         }
         [$year, $month, $day] = $dateParts;
         $slug = $post['slug'];
+        $postId = $post['id']; // Interne Post-ID
+
+        // URL-Mapping prüfen
+        if (isset($urlMapping[$postId])) {
+            return self::getSiteUrl($urlMapping[$postId]); // Gemappte URL verwenden
+        }
+
         switch ($format) {
             case 'date_slash':
                 return self::getSiteUrl("blog/{$year}/{$month}/{$day}/{$slug}");
@@ -180,23 +219,33 @@ class Helper {
         }
     }
 
+
     /**
      * Generiert die URL für einen Blogbeitrag basierend auf den Systemeinstellungen.
+     * Nutzt URL-Mapping, falls vorhanden.
      *
      * @param array $post Post-Daten (muss 'id', 'slug' und 'date' enthalten)
      * @return string Generierte URL (z. B. "../blog/000-25C" oder "../blog/2025/03/15/mein-beitrag")
      */
     public static function generateBlogUrl(array $post): string {
+        $urlMapping = self::getUrlMapping(); // URL-Mapping laden
         $configManager = ConfigManager::getInstance();
         $systemSettings = $configManager->load('system') ?: [];
         $blogUrlFormat = $systemSettings['blog_url_format'] ?? 'internal';
-        
-        // Prüfe den Timestamp; falls ungültig, verwende den aktuellen Zeitpunkt
+
         $timestamp = strtotime($post['date']);
         if ($timestamp === false) {
             $timestamp = time();
         }
-        
+
+        $postId = $post['id']; // Interne Post-ID
+
+        // URL-Mapping prüfen - zuerst nach interner ID suchen
+        if (isset($urlMapping[$postId])) {
+            return '../' . $urlMapping[$postId]; // Gemappte URL verwenden (relativ zum Root)
+        }
+
+        // Fallback: Generiere URL basierend auf blog_url_format (wenn kein Mapping gefunden)
         if ($blogUrlFormat === 'internal') {
             return '../blog/' . urlencode($post['id']);
         } elseif ($blogUrlFormat === 'post_name') {
@@ -211,7 +260,108 @@ class Helper {
             $day = date('d', $timestamp);
             return "../blog/{$year}/{$month}/{$day}/" . urlencode($post['slug']);
         }
-        // Fallback
-        return '../blog/' . urlencode($post['id']);
+        return '../blog/' . urlencode($post['id']); // Fallback zu interner ID, falls Format unbekannt
     }
+
+
+    /**
+     * Gibt die URL zu einer Theme-Asset-Datei zurück.
+     *
+     * @param string $path Optionaler Pfad, der an die Theme-URL angehängt wird
+     * @return string Die Theme-URL
+     */
+    public static function themeUrl(string $path = ''): string {
+        static $themeManager = null;
+        if ($themeManager === null) {
+            $themeManager = new ThemeManager();
+        }
+        return $themeManager->getThemeAssetsUrl($path);
+    }
+}
+
+/**
+ * === Kompatibilitätsfunktionen ===
+ * Die folgenden Funktionen rufen intern die statischen Methoden der Helper-Klasse auf.
+ */
+
+/**
+ * Lädt die Systemkonfiguration.
+ *
+ * @param bool $refresh Ob die Konfiguration neu geladen werden soll
+ * @return array
+ */
+function marques_get_config($refresh = false) {
+    return Helper::getConfig((bool)$refresh);
+}
+
+/**
+ * Gibt die Site-URL zurück.
+ *
+ * @param string $path Optionaler Pfad, der an die URL angehängt wird
+ * @return string
+ */
+function marques_site_url($path = '') {
+    return Helper::getSiteUrl($path);
+}
+
+/**
+ * Gibt die URL zu einer Theme-Asset-Datei zurück.
+ *
+ * @param string $path Optionaler Pfad, der an die URL angehängt wird
+ * @return string
+ */
+function marques_theme_url($path = '') {
+    return Helper::themeUrl($path);
+}
+
+/**
+ * Formatiert ein Datum.
+ *
+ * @param string $date
+ * @param string $format Datumsformat (Standard: aus Konfiguration)
+ * @return string
+ */
+function marques_format_date(string $date, string $format = 'Y-m-d'): string {
+    return Helper::formatDate($date, $format);
+}
+
+/**
+ * Escaped einen String für die HTML-Ausgabe.
+ *
+ * @param string|null $string
+ * @return string
+ */
+function marques_escape_html($string) {
+    return Helper::escapeHtml($string);
+}
+
+/**
+ * Erstellt einen Slug aus einem String.
+ *
+ * @param string $string
+ * @return string
+ */
+function marques_create_slug(string $string): string {
+    return Helper::createSlug($string);
+}
+
+/**
+ * Debug-Funktion (nur im Entwicklungsmodus).
+ *
+ * @param mixed $var Zu debuggende Variable
+ * @param bool $die Ob nach der Ausgabe die Ausführung beendet werden soll
+ * @return void
+ */
+function marques_debug($var, $die = false) {
+    Helper::debug($var, (bool)$die);
+}
+
+/**
+ * Generiert eine formatierte Blog-URL basierend auf den Systemeinstellungen.
+ *
+ * @param array $post Blog-Post-Daten
+ * @return string Die formatierte Blog-URL
+ */
+function marques_format_blog_url($post) {
+    return Helper::formatBlogUrl($post);
 }

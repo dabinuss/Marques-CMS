@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error_message = 'Dieser Tag existiert bereits.';
             } else {
                 if ($blogManager->addTag($tag_name)) {
-                    $success_message = 'Tag erfolgreich hinzugefügt.';
+                    $success_message = 'Tag erfolgreich hinzugefügt: ' . htmlspecialchars($tag_name);
                     // Tags neu laden
                     $tags = $blogManager->getTags();
                 } else {
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error_message = 'Der neue Tag existiert bereits.';
             } else {
                 if ($blogManager->renameTag($old_name, $new_name)) {
-                    $success_message = 'Tag erfolgreich umbenannt.';
+                    $success_message = 'Tag erfolgreich umbenannt von "' . htmlspecialchars($old_name) . '" zu "' . htmlspecialchars($new_name) . '".';
                     // Tags neu laden
                     $tags = $blogManager->getTags();
                 } else {
@@ -211,7 +211,7 @@ arsort($tags);
                     <form method="post" class="add-form form-group">
                         <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                         <input type="hidden" name="action" value="add">
-                        <input type="text" name="tag_name form-control" placeholder="Tagname" required>
+                        <input type="text" name="tag_name" class="form-control" placeholder="Tagname" required>
                         <button type="submit" class="admin-button">
                             <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
                             Hinzufügen
@@ -239,7 +239,7 @@ arsort($tags);
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                             <input type="hidden" name="action" value="rename">
                                             <input type="hidden" name="old_name" value="<?php echo htmlspecialchars($name); ?>">
-                                            <input type="text" name="new_name form-control" value="<?php echo htmlspecialchars($name); ?>" required>
+                                            <input type="text" name="new_name" class="form-control" value="<?php echo htmlspecialchars($name); ?>" required>
                                             <button type="submit" class="admin-button">
                                                 <i class="fas fa-save"></i> Umbenennen
                                             </button>

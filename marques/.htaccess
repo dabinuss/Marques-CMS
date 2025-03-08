@@ -23,7 +23,7 @@ RewriteRule ^assets/ - [L]
 
 # PHP-Dateien direkt ausliefern
 RewriteCond %{REQUEST_FILENAME} -f
-RewriteRule ^(.+\.php)$ $1 [L]
+#RewriteRule ^(.+\.php)$ $1 [L]
 
 # Admin-Bereich spezielle Behandlung
 RewriteCond %{REQUEST_URI} ^/admin/
