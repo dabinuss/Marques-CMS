@@ -41,8 +41,6 @@ if (!empty($tpl->category)) {
 
 // Alle Kategorien abrufen
 $categories = $blogManager->getCategories();
-
-var_dump($tpl->posts);
 ?>
 
 <div class="blog-container">
