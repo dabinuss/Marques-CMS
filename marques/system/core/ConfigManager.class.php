@@ -243,11 +243,21 @@ class ConfigManager {
     public function loadUrlMapping(): array {
         $filePath = MARQUES_CONFIG_DIR . '/urlmapping.config.json';
         if (!file_exists($filePath)) {
-            return [];
+            return []; // Leeres Array, wenn die Datei nicht existiert
         }
-        $content = file_get_contents($filePath);
+        $content = file_get_contents($filePath); // Fehlerbehandlung!
+        if($content === false){
+          error_log("ConfigManager: Fehler beim lesen von: ". $filePath);
+          return [];
+        }
         $mapping = json_decode($content, true);
-        return is_array($mapping) ? $mapping : [];
+    
+        // Zusätzliche Prüfung, ob json_decode erfolgreich war.
+        if (!is_array($mapping)) {
+            error_log("ConfigManager: Fehler beim Parsen von urlmapping.config.json: " . json_last_error_msg());
+            return []; // Leeres Array, wenn JSON ungültig ist
+        }
+        return is_array($mapping) ? $mapping : []; // Immer ein Array zurückgeben!
     }
     
     public function updateUrlMapping(array $mapping): bool {

@@ -1,46 +1,33 @@
-<?php 
-declare(strict_types=1);
-
-// URL-Parameter sollten idealerweise bereits in $tpl vorhanden sein.
-// Falls nicht, initialisieren wir sie:
-$tpl->path   = $tpl->path ?? '';
-$tpl->params = $tpl->params ?? [];
-
-// Slug Parameter extrahieren (wichtig für URL-Mapping)
-$slug  = $tpl->params['slug']  ?? null;
-
-// BlogManager initialisieren, falls noch nicht vorhanden
-$tpl->blogManager = $tpl->blogManager ?? new \Marques\Core\BlogManager();
-
-// Blog-Beitrag anhand des Slugs abrufen (URL-Mapping sollte das korrekte ID finden)
-$tpl->post = $tpl->blogManager->getPostBySlug($slug);
+<?php
+// Blog-Beitrag anhand des Slugs abrufen
+$post = $tpl->blogManager->getPostBySlug($tpl->params['slug'] ?? '');
 
 // Prüfen, ob der Beitrag existiert
-if (!$tpl->post) {
+if (!$post) {
     echo '<div class="error">Dieser Blogbeitrag existiert nicht.</div>';
-    return;
+    return; // Wichtig: Hier beenden, wenn kein Post gefunden wurde!
 }
 
 // Alle Kategorien für die Seitenleiste abrufen
-$tpl->categories = $tpl->blogManager->getCategories();
+$categories = $tpl->blogManager->getCategories();
 ?>
 
 <div class="blog-container">
     <div class="blog-main">
         <article class="blog-post">
             <header class="post-header">
-                <h1 class="post-title"><?php echo htmlspecialchars($tpl->post['title']); ?></h1>
+                <h1 class="post-title"><?php echo $tpl->helper->escapeHtml($post['title']); ?></h1>
                 <div class="post-meta">
-                    <span class="post-date"><?php echo marques_format_date($tpl->post['date'], 'd.m.Y'); ?></span>
-                    <span class="post-author">von <?php echo htmlspecialchars($tpl->post['author']); ?></span>
-                    <?php if (!empty($tpl->post['categories'])): ?>
+                    <span class="post-date"><?php echo $tpl->helper->formatDate($post['date'], 'd.m.Y'); ?></span>
+                    <span class="post-author">von <?php echo $tpl->helper->escapeHtml($post['author']); ?></span>
+                    <?php if (!empty($post['categories'])): ?>
                         <span class="post-categories">
                             in
                             <?php
                             $categoryLinks = [];
-                            foreach ($tpl->post['categories'] as $cat) {
+                            foreach ($post['categories'] as $cat) {
                                 if (!empty($cat)) {
-                                    $categoryLinks[] = '<a href="' . marques_site_url('blog?category=' . urlencode($cat)) . '">' . htmlspecialchars($cat) . '</a>';
+                                    $categoryLinks[] = '<a href="' . $tpl->helper->getSiteUrl('blog?category=' . urlencode($cat)) . '">' . $tpl->helper->escapeHtml($cat) . '</a>';
                                 }
                             }
                             echo implode(', ', $categoryLinks);
@@ -50,24 +37,24 @@ $tpl->categories = $tpl->blogManager->getCategories();
                 </div>
             </header>
 
-            <?php if (!empty($tpl->post['featured_image'])): ?>
+            <?php if (!empty($post['featured_image'])): ?>
                 <div class="post-featured-image">
-                    <img src="<?php echo marques_site_url($tpl->post['featured_image']); ?>" alt="<?php echo htmlspecialchars($tpl->post['title']); ?>">
+                    <img src="<?php echo $tpl->helper->getSiteUrl($post['featured_image']); ?>" alt="<?php echo $tpl->helper->escapeHtml($post['title']); ?>">
                 </div>
             <?php endif; ?>
 
             <div class="post-content">
-                <?php echo $tpl->post['content']; ?>
+                <?php echo $post['content']; ?>
             </div>
 
-            <?php if (!empty($tpl->post['tags'])): ?>
+            <?php if (!empty($post['tags'])): ?>
                 <div class="post-tags">
                     <span class="tags-title">Tags:</span>
                     <?php
                     $tagLinks = [];
-                    foreach ($tpl->post['tags'] as $tag) {
+                    foreach ($post['tags'] as $tag) {
                         if (!empty($tag)) {
-                            $tagLinks[] = '<a href="' . marques_site_url('blog?tag=' . urlencode($tag)) . '" class="tag-link">' . htmlspecialchars($tag) . '</a>';
+                            $tagLinks[] = '<a href="' . $tpl->helper->getSiteUrl('blog?tag=' . urlencode($tag)) . '" class="tag-link">' . $tpl->helper->escapeHtml($tag) . '</a>';
                         }
                     }
                     echo implode(' ', $tagLinks);
@@ -76,7 +63,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
             <?php endif; ?>
 
             <div class="post-navigation">
-                <a href="<?php echo marques_site_url('blog'); ?>" class="back-to-blog">
+                <a href="<?php echo $tpl->helper->getSiteUrl('blog'); ?>" class="back-to-blog">
                     « Zurück zum Blog
                 </a>
             </div>
@@ -86,14 +73,14 @@ $tpl->categories = $tpl->blogManager->getCategories();
     <aside class="blog-sidebar">
         <div class="sidebar-section categories-section">
             <h3 class="sidebar-title">Kategorien</h3>
-            <?php if (empty($tpl->categories)): ?>
+            <?php if (empty($categories)): ?>
                 <p>Keine Kategorien vorhanden.</p>
             <?php else: ?>
                 <ul class="categories-list">
-                    <?php foreach ($tpl->categories as $cat => $count): ?>
+                    <?php foreach ($categories as $cat => $count): ?>
                         <li>
-                            <a href="<?php echo marques_site_url('blog?category=' . urlencode($cat)); ?>">
-                                <?php echo htmlspecialchars($cat); ?> (<?php echo $count; ?>)
+                            <a href="<?php echo $tpl->helper->getSiteUrl('blog?category=' . urlencode($cat)); ?>">
+                                <?php echo $tpl->helper->escapeHtml($cat); ?> (<?php echo $count; ?>)
                             </a>
                         </li>
                     <?php endforeach; ?>

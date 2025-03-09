@@ -3,24 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($tpl->title ?? ''); ?> - <?php echo htmlspecialchars($tpl->system_settings['site_name'] ?? 'marques CMS'); ?></title>
+    <title><?php echo $tpl->title; ?> - <?php echo  $tpl->system_settings['site_name']; ?></title>
     <link rel="stylesheet" href="<?php echo $tpl->themeUrl('css/main-style.css'); ?>">
     <link rel="icon" type="image/x-icon" href="<?php echo $tpl->themeUrl('images/favicon.svg'); ?>">
 </head>
 <body>
-    <?php $this->includePartial('header'); ?>
-    
+    <?php $this->includePartial('header', get_defined_vars()); ?>
+
     <main class="marques-content">
         <div class="marques-container">
-            <?php 
-            // Template basierend auf dem angegebenen Template-Namen laden
-            include __DIR__ . '/' . $tpl->templateName . '.tpl.php';
+            <?php
+            include $tpl->templateFile; // WICHTIG: Verwende $tpl->templateFile
             ?>
         </div>
     </main>
-    
-    <?php $this->includePartial('footer'); ?>
-    
-    <script src="<?php echo $tpl->themeUrl('js/main.js'); ?>"></script>
+
+    <?php $this->includePartial('footer', get_defined_vars()); ?>
+
+    <script src="<?php echo $tpl->themeUrl('js/main.js');  ?>"></script>
 </body>
 </html>

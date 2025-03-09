@@ -1,29 +1,23 @@
 <?php
 declare(strict_types=1);
-
 namespace Marques\Core;
 
-/**
- * Einfaches Event-Management-System
- */
-class EventManager {
+class EventDispatcher extends Core {
     private $listeners = [];
+
+    public function __construct(Docker $docker) {
+      parent::__construct($docker);
+    }
     
-    /**
-     * Event-Listener registrieren
-     */
     public function on(string $event, callable $callback): self {
         if (!isset($this->listeners[$event])) {
             $this->listeners[$event] = [];
         }
         $this->listeners[$event][] = $callback;
         return $this;
-    }    
+    }
     
-    /**
-     * Event auslösen
-     */
-    public function trigger(string $event, $data = null) {
+    public function dispatch(string $event, $data = null) {
         if (!isset($this->listeners[$event])) {
             return $data;
         }
@@ -34,5 +28,5 @@ class EventManager {
             }
         }
         return $data;
-    }    
+    }
 }

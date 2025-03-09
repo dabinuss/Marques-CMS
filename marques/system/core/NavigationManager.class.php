@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-class NavigationManager {
+class NavigationManager extends Core {
     /**
      * @var array Systemkonfiguration
      */
@@ -26,10 +26,10 @@ class NavigationManager {
     /**
      * Konstruktor
      */
-    public function __construct() {
-        $configManager = \Marques\Core\ConfigManager::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
-        $this->_configManager = ConfigManager::getInstance();
+    public function __construct(Docker $docker) {
+        parent::__construct($docker);
+        $this->_configManager = $this->resolve('config');
+        $this->_config = $this->_configManager->load('system') ?: [];
         $this->initNavigationFile();
     }
     
@@ -56,7 +56,11 @@ class NavigationManager {
      * @return array Navigationsdaten
      */
     public function getNavigation(): array {
-        $navigation = $this->_configManager->load('navigation', true); // true für Force-Reload
+        $navigation = $this->_configManager->load('navigation');
+
+        if (!is_array($navigation)) {
+            $navigation = []; // Standardwert, wenn die Datei fehlt oder leer ist
+        }
         
         // Sicherstellen, dass die Grundstruktur vorhanden ist
         if (!isset($navigation['main_menu'])) {

@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-class BlogManager {
+class BlogManager extends Core {
     /**
      * @var array Systemkonfiguration
      */
@@ -26,9 +26,9 @@ class BlogManager {
     /**
      * Konstruktor
      */
-    public function __construct() {
-        $configManager = ConfigManager::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
+    public function __construct(Docker $docker) {
+        parent::__construct($docker);
+        $this->_config = $this->resolve('config')->load('system') ?: [];
         $this->fileManager = new FileManager(MARQUES_CONTENT_DIR);
     }
 
@@ -40,36 +40,7 @@ class BlogManager {
      * @param string $category Optionale Kategorie-Filterung
      * @return array Blog-Beiträge mit Metadaten
      */
-    /**
-     * Gibt eine Liste aller Blog-Beiträge zurück
-     *
-     * @param int $limit Maximale Anzahl der Beiträge (0 = alle)
-     * @param int $offset Offset für Paginierung
-     * @param string $category Optionale Kategorie-Filterung
-     * @return array Blog-Beiträge mit Metadaten
-     */
-    /**
-     * Gibt eine Liste aller Blog-Beiträge zurück
-     *
-     * @param int $limit Maximale Anzahl der Beiträge (0 = alle)
-     * @param int $offset Offset für Paginierung
-     * @param string $category Optionale Kategorie-Filterung
-     * @return array Blog-Beiträge mit Metadaten
-     */
     public function getAllPosts(int $limit = 0, int $offset = 0, string $category = ''): array {
-
-
-        /*
-        $testGlobPath = MARQUES_ROOT_DIR . '/content/blog'; // TEST: Direkter Pfad, *ANPASSEN*, falls nötig
-
-        marques_debug("--- TEST GLOB() ---");
-        marques_debug("Test-Pfad VOR glob() Aufruf: ".$testGlobPath, true); // DEBUG: Pfad VOR glob() ausgeben!
-
-        $testGlobResult = glob($testGlobPath . '/*', GLOB_ONLYDIR); // TEST: Einfaches glob('*')
-        marques_debug("Ergebnis von glob() TEST: ".$testGlobResult, true);
-        marques_debug("--- ENDE TEST GLOB() ---");
-        */
-
 
         $posts = [];
         $blogDir = MARQUES_CONTENT_DIR . '/blog';
@@ -307,7 +278,7 @@ class BlogManager {
      * @return bool Erfolgreich aktualisiert oder nicht.
      */
     private function updatePostUrlMapping(string $postId, string $slug): bool {
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $urlMapping = $configManager->loadUrlMapping() ?: []; // Bestehendes Mapping laden oder leeres Array
         $newPath = 'blog/' . $slug; // URL-Pfad basierend auf Slug (anpassbar)
 
@@ -376,7 +347,7 @@ class BlogManager {
     * @return bool Erfolg
     */
     private function deletePostUrlMapping(string $postId): bool {
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $urlMapping = $configManager->loadUrlMapping() ?: [];
 
         unset($urlMapping[$postId]); // Eintrag aus dem Array entfernen
@@ -391,7 +362,7 @@ class BlogManager {
      */
     public function getCategories() {
         // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $catalogCategories = $configManager->load('categories') ?: [];
 
         // Kategorien aus Posts zählen
@@ -431,7 +402,7 @@ class BlogManager {
      */
     public function getTags() {
         // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $catalogTags = $configManager->load('tags') ?: [];
 
         // Tags aus Posts zählen
@@ -535,7 +506,7 @@ class BlogManager {
      * Erzeugt eine neue interne ID im Format "000-25C".
      */
     private function generateNewId(array $postData, string $date): string {
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $counter = $configManager->get('blog', 'id_counter', 0);
         $counter++;
         $configManager->set('blog', 'id_counter', $counter);
@@ -625,7 +596,7 @@ class BlogManager {
      */
     public function addCategory($categoryName) {
         // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $categories = $configManager->load('categories') ?: [];
 
         // Prüfen, ob Kategorie bereits existiert
@@ -653,7 +624,7 @@ class BlogManager {
         }
 
         // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $categories = $configManager->load('categories') ?: [];
 
         // Prüfen, ob alte Kategorie existiert
@@ -711,7 +682,7 @@ class BlogManager {
      */
     public function deleteCategory($categoryName) {
         // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $categories = $configManager->load('categories') ?: [];
 
         // Prüfen, ob Kategorie existiert
@@ -760,7 +731,7 @@ class BlogManager {
      */
     public function addTag($tagName) {
         // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $tags = $configManager->load('tags') ?: [];
 
         // Prüfen, ob Tag bereits existiert
@@ -788,7 +759,7 @@ class BlogManager {
         }
 
         // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $tags = $configManager->load('tags') ?: [];
 
         // Prüfen, ob alter Tag existiert
@@ -840,7 +811,7 @@ class BlogManager {
      */
     public function deleteTag($tagName) {
         // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
         $tags = $configManager->load('tags') ?: [];
 
         // Prüfen, ob Tag existiert
@@ -885,7 +856,7 @@ class BlogManager {
      * Initialisiert die Konfigurationsdateien für Tags und Kategorien
      */
     public function initCatalogFiles() {
-        $configManager = ConfigManager::getInstance();
+        $configManager = $this->resolve('config');
 
         // Kategoriedatei initialisieren, wenn sie nicht existiert
         $categories = $configManager->load('categories');

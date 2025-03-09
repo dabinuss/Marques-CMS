@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 /**
  * marques CMS - Bootstrap
  * 
@@ -28,10 +32,6 @@ define('MARQUES_TEMPLATE_DIR', MARQUES_ROOT_DIR . '/templates'); /* DEPRECIATED 
 define('MARQUES_CACHE_DIR', MARQUES_SYSTEM_DIR . '/cache');
 define('MARQUES_ADMIN_DIR', MARQUES_ROOT_DIR . '/admin');
 define('MARQUES_THEMES_DIR', MARQUES_ROOT_DIR . '/themes');
-
-// Temporäre Fehleranzeige für die Entwicklung
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 // PSR-4 konformes Autoloading
 spl_autoload_register(function ($class) {
@@ -67,38 +67,35 @@ spl_autoload_register(function ($class) {
     // Datei laden, wenn eine der Varianten existiert
     foreach ([$path1, $path2, $path3, $path4] as $path) {
         if (file_exists($path)) {
-            require_once $path;
+            require_once ($path);
             return;
         }
     }
+
+    throw new \Exception("Klasse {$class} konnte nicht geladen werden.");
 });
 
-// Hilfsfunktionen laden
 require_once MARQUES_SYSTEM_DIR . '/core/Utilities.inc.php';
-
-// Benutzerdefinierte Exceptions laden
 require_once MARQUES_SYSTEM_DIR . '/core/Exceptions.inc.php';
 
-// Container und Event-Manager initialisieren
-$container = new \Marques\Core\Container();
-
+$docker = new \Marques\Core\Docker();
 $configManager = \Marques\Core\ConfigManager::getInstance();
-$systemConfig = $configManager->load('system') ?: [];
-$container->register('config', $systemConfig);
+$docker->register('config', fn() => $configManager);
+$docker->register('settings_manager', fn() => new \Marques\Core\SettingsManager($docker));
+$docker->register('cache_manager', fn() => \Marques\Core\CacheManager::getInstance());
+$docker->register('event_dispatcher', fn() => new \Marques\Core\EventDispatcher($docker));
+$docker->register('logger', fn() => new \Marques\Core\Logger());
+$docker->register('navigation_manager', fn() => new \Marques\Core\NavigationManager($docker));
+$docker->register('user', fn() => new \Marques\Core\User($docker));
+$docker->register('blog_manager', fn() => new \Marques\Core\BlogManager($docker));
+$docker->register('route_manager', fn() => new \Marques\Core\Router($docker));
+$docker->register('template_renderer', fn() => new \Marques\Core\Template($docker));
+$docker->register('theme_manager', fn() => new \Marques\Core\ThemeManager($docker));
+$docker->register('helper', fn() => new \Marques\Core\Helper($docker)); // Helper registrieren!
+$docker->register('app', fn() => new \Marques\Core\Application($docker));
 
-$container->register(\Marques\Core\EventManager::class, new \Marques\Core\EventManager());
-$container->register(\Marques\Core\Logger::class, new \Marques\Core\Logger());
-$container->register(\Marques\Core\SettingsManager::class);
-$container->register(\Marques\Core\User::class);
+$settings = $docker->resolve('settings_manager');
 
-// Global verfügbar machen
-$GLOBALS['container'] = $container;
-$GLOBALS['events'] = $container->get(\Marques\Core\EventManager::class);
-
-// Systemeinstellungen laden
-$settings = $container->get(\Marques\Core\SettingsManager::class);
-
-// Fehlerberichterstattung einrichten
 if ($settings->getSetting('debug', false)) {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);

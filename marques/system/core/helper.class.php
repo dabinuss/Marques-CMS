@@ -5,149 +5,71 @@ namespace Marques\Core;
 
 /**
  * Helper-Klasse für das marques CMS
- *
- * Diese Klasse fasst sämtliche Utility-Funktionen zusammen.
  */
-class Helper {
-    /**
-     * Cache für die Systemkonfiguration
-     *
-     * @var array|null
-     */
-    private static ?array $config = null;
+class Helper extends Core { // Nicht mehr statisch!
 
-    /**
-     * Cache für das URL-Mapping
-     *
-     * @var array|null
-     */
-    private static ?array $urlMappingCache = null;
+    private  $config = null;
+    private  $urlMappingCache = null;
+    private  $configManager;
 
-    /**
-     * ConfigManager-Instanz
-     *
-     * @var ConfigManager|null
-     */
-    private static ?ConfigManager $configManager = null;
+    public function __construct(Docker $docker) {
+        parent::__construct($docker);
+        $this->configManager = $this->resolve('config');
+    }
 
-    /**
-     * Lädt (oder gibt den bereits geladenen) Systemkonfiguration zurück.
-     *
-     * @param bool $forceReload Erzwingt das Neuladen der Konfiguration
-     * @return array
-     */
-    public static function getConfig(bool $forceReload = false): array {
-        if (self::$configManager === null) {
-            self::$configManager = ConfigManager::getInstance();
-        }
-
-        if ($forceReload || self::$config === null) {
-            self::$config = self::$configManager->load('system') ?: [];
-
-            // Im Frontend: "/admin" aus der Base‑URL entfernen
-            if (!defined('IS_ADMIN') && isset(self::$config['base_url']) && strpos(self::$config['base_url'], '/admin') !== false) {
-                self::$config['base_url'] = preg_replace('|/admin$|', '', self::$config['base_url']);
+    public  function getConfig(bool $forceReload = false): array {
+        if ($forceReload || $this->config === null) {
+            $this->config = $this->configManager->load('system') ?: [];
+            if (!defined('IS_ADMIN') && isset($this->config['base_url']) && strpos($this->config['base_url'], '/admin') !== false) {
+                $this->config['base_url'] = preg_replace('|/admin$|', '', $this->config['base_url']);
             }
         }
-        return self::$config;
+        return $this->config;
     }
 
-    /**
-     * Lädt (oder gibt das bereits geladene) URL-Mapping zurück.
-     *
-     * @param bool $forceReload Erzwingt das Neuladen des Mappings
-     * @return array
-     */
-    private static function getUrlMapping(bool $forceReload = false): array {
-        if (self::$configManager === null) {
-            self::$configManager = ConfigManager::getInstance();
+    private  function getUrlMapping(bool $forceReload = false): array {
+        if ($forceReload || $this->urlMappingCache === null) {
+            $this->urlMappingCache = $this->configManager->loadUrlMapping() ?: [];
         }
-
-        if ($forceReload || self::$urlMappingCache === null) {
-            self::$urlMappingCache = self::$configManager->loadUrlMapping() ?: [];
-        }
-        return self::$urlMappingCache;
+        return $this->urlMappingCache;
     }
 
-    /**
-     * Gibt die Base‑URL zurück und passt sie je nach Kontext an.
-     *
-     * @param bool $isAdmin True, wenn im Admin-Bereich
-     * @return string
-     */
-    public static function getBaseUrl(bool $isAdmin = false): string {
-        $config = self::getConfig();
+    public  function getBaseUrl(bool $isAdmin = false): string {
+        $config = $this->getConfig();
         $baseUrl = rtrim($config['base_url'] ?? '', '/');
-        if ($isAdmin) {
-            if (strpos($baseUrl, '/admin') === false) {
+         // Füge /admin nur hinzu, wenn es NICHT bereits vorhanden ist UND wir im Admin-Bereich sind.
+        if ($isAdmin && strpos($baseUrl, '/admin') === false) {
                 $baseUrl .= '/admin';
-            }
-        } else {
-            if (strpos($baseUrl, '/admin') !== false) {
-                $baseUrl = preg_replace('|/admin$|', '', $baseUrl);
-            }
         }
         return $baseUrl;
     }
 
-    /**
-     * Validiert einen Pfad anhand eines Regex.
-     *
-     * @param string $path
-     * @return bool
-     */
-    public static function isValidPath(string $path): bool {
+    public  function isValidPath(string $path): bool {
         return preg_match('/^[a-zA-Z0-9\-_\/]+$/', $path) === 1;
     }
 
-    /**
-     * Escaped einen String für die HTML-Ausgabe.
-     *
-     * @param string|null $string
-     * @return string
-     */
-    public static function escapeHtml(?string $string): string {
+    public  function escapeHtml(?string $string): string {
         return $string === null ? '' : htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
     }
 
-    /**
-     * Gibt die vollständige Site-URL zurück, optional mit angehängtem Pfad.
-     *
-     * @param string $path
-     * @return string
-     */
-    public static function getSiteUrl(string $path = ''): string {
-        // Übergibt den Admin-Status an getBaseUrl
-        $baseUrl = self::getBaseUrl(defined('IS_ADMIN'));
+    public  function getSiteUrl(string $path = ''): string {
+        $baseUrl = $this->getBaseUrl(defined('IS_ADMIN'));
         if (!empty($path)) {
             $path = '/' . ltrim($path, '/');
         }
         return $baseUrl . $path;
     }
 
-    /**
-     * Formatiert ein Datum gemäß dem in der Konfiguration definierten Format.
-     *
-     * @param string $date
-     * @param string|null $format
-     * @return string
-     */
-    public static function formatDate(string $date, ?string $format = null): string {
-        $config = self::getConfig();
+    public  function formatDate(string $date, ?string $format = null): string {
+        $config = $this->getConfig();
         if ($format === null) {
             $format = $config['date_format'] ?? 'Y-m-d';
         }
         $timestamp = strtotime($date);
-        return date($format, $timestamp);
+        return ($timestamp !== false) ? date($format, $timestamp) : ''; // Sichere Behandlung
     }
 
-    /**
-     * Erzeugt einen Slug aus einem String.
-     *
-     * @param string $string
-     * @return string
-     */
-    public static function createSlug(string $string): string {
+    public  function createSlug(string $string): string {
         if (function_exists('transliterator_transliterate')) {
             $string = transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $string);
         } else {
@@ -157,15 +79,8 @@ class Helper {
         return trim($string, '-');
     }
 
-    /**
-     * Debug-Funktion – gibt eine Variable formatiert aus, wenn Debug aktiviert ist.
-     *
-     * @param mixed $var
-     * @param bool $die
-     * @return void
-     */
-    public static function debug($var, bool $die = false): void {
-        $config = self::getConfig();
+    public  function debug($var, bool $die = false): void {
+        $config = $this->getConfig();
         if (($config['debug'] ?? false) === true) {
             echo '<pre>';
             print_r($var);
@@ -175,110 +90,89 @@ class Helper {
             }
         }
     }
-
-    /**
-     * Formatiert die Blog-URL basierend auf den Systemeinstellungen und Blog-Post-Daten.
-     * Nutzt URL-Mapping, falls vorhanden.
-     *
-     * @param array $post Post-Daten (muss 'id', 'slug' und 'date' enthalten)
-     * @return string Generierte URL
-     */
-    public static function formatBlogUrl(array $post): string {
-        $urlMapping = self::getUrlMapping();
-        $config = self::getConfig();
+  public  function formatBlogUrl(array $post): string
+    {
+        $urlMapping = $this->getUrlMapping();
+        $config = $this->getConfig();
         $format = $config['blog_url_format'] ?? 'date_slash';
-        $dateParts = explode('-', $post['date']);
+
+        // Stelle sicher, dass $post['date'] im richtigen Format vorliegt
+        $date = is_numeric($post['date']) ? date('Y-m-d', (int)$post['date']) : $post['date'];
+        $dateParts = explode('-', $date);
+
         if (count($dateParts) !== 3) {
-            return self::getSiteUrl('blog/' . $post['slug']);
+            // Wenn das Datum ungültig ist, verwende den Slug (oder eine andere Fallback-Logik)
+            return $this->getSiteUrl('blog/' . $post['slug']);
         }
+
         [$year, $month, $day] = $dateParts;
         $slug = $post['slug'];
-        $postId = $post['id']; // Interne Post-ID
+        $postId = $post['id'];
 
-        // URL-Mapping prüfen
         if (isset($urlMapping[$postId])) {
-            return self::getSiteUrl($urlMapping[$postId]); // Gemappte URL verwenden
+            return $this->getSiteUrl($urlMapping[$postId]);
         }
 
         switch ($format) {
             case 'date_slash':
-                return self::getSiteUrl("blog/{$year}/{$month}/{$day}/{$slug}");
+                return $this->getSiteUrl("blog/{$year}/{$month}/{$day}/{$slug}");
             case 'date_dash':
-                return self::getSiteUrl("blog/{$year}-{$month}-{$day}/{$slug}");
+                 return $this->getSiteUrl("blog/{$year}-{$month}-{$day}/{$slug}");
             case 'year_month':
-                return self::getSiteUrl("blog/{$year}/{$month}/{$slug}");
+                return $this->getSiteUrl("blog/{$year}/{$month}/{$slug}");
             case 'numeric':
-                if (isset($post['id']) && !empty($post['id'])) {
-                    return self::getSiteUrl("blog/{$post['id']}");
-                }
-                return self::getSiteUrl("blog/{$year}{$month}{$day}-{$slug}");
+                return isset($post['id']) ? $this->getSiteUrl("blog/{$post['id']}") : $this->getSiteUrl("blog/{$year}{$month}{$day}-{$slug}");
             case 'post_name':
-                return self::getSiteUrl("blog/{$slug}");
+                return $this->getSiteUrl("blog/{$slug}");
             default:
-                return self::getSiteUrl("blog/{$year}/{$month}/{$day}/{$slug}");
+                return $this->getSiteUrl("blog/{$year}/{$month}/{$day}/{$slug}");
         }
     }
 
-
-    /**
-     * Generiert die URL für einen Blogbeitrag basierend auf den Systemeinstellungen.
-     * Nutzt URL-Mapping, falls vorhanden.
-     *
-     * @param array $post Post-Daten (muss 'id', 'slug' und 'date' enthalten)
-     * @return string Generierte URL (z. B. "../blog/000-25C" oder "../blog/2025/03/15/mein-beitrag")
-     */
-    public static function generateBlogUrl(array $post): string {
-        $urlMapping = self::getUrlMapping(); // URL-Mapping laden
-        $configManager = ConfigManager::getInstance();
-        $systemSettings = $configManager->load('system') ?: [];
-        $blogUrlFormat = $systemSettings['blog_url_format'] ?? 'internal';
+    public  function generateBlogUrl(array $post): string
+    {
+        $urlMapping = $this->getUrlMapping();
+        $config = $this->getConfig();
+        $blogUrlFormat = $config['blog_url_format'] ?? 'internal';
 
         $timestamp = strtotime($post['date']);
         if ($timestamp === false) {
-            $timestamp = time();
+            $timestamp = time(); // Aktuelle Zeit, wenn das Datum ungültig ist
         }
 
-        $postId = $post['id']; // Interne Post-ID
+        $postId = $post['id'];
 
-        // URL-Mapping prüfen - zuerst nach interner ID suchen
         if (isset($urlMapping[$postId])) {
-            return '../' . $urlMapping[$postId]; // Gemappte URL verwenden (relativ zum Root)
+             return $this->getSiteUrl($urlMapping[$postId]); // Vollständige URL
         }
 
-        // Fallback: Generiere URL basierend auf blog_url_format (wenn kein Mapping gefunden)
-        if ($blogUrlFormat === 'internal') {
-            return '../blog/' . urlencode($post['id']);
-        } elseif ($blogUrlFormat === 'post_name') {
-            return '../blog/' . urlencode($post['slug']);
-        } elseif ($blogUrlFormat === 'year_month') {
-            $year = date('Y', $timestamp);
-            $month = date('m', $timestamp);
-            return "../blog/{$year}/{$month}/" . urlencode($post['slug']);
-        } elseif ($blogUrlFormat === 'date_slash') {
-            $year = date('Y', $timestamp);
-            $month = date('m', $timestamp);
-            $day = date('d', $timestamp);
-            return "../blog/{$year}/{$month}/{$day}/" . urlencode($post['slug']);
+        $year = date('Y', $timestamp);
+        $month = date('m', $timestamp);
+        $day = date('d', $timestamp);
+        $slug = $post['slug'];
+
+        switch($blogUrlFormat){
+            case 'internal':
+                return $this->getSiteUrl('blog/' . urlencode($postId));
+            case 'post_name':
+                return $this->getSiteUrl('blog/' . urlencode($slug));
+            case 'year_month':
+                return $this->getSiteUrl("blog/{$year}/{$month}/" . urlencode($slug));
+            case 'date_slash':
+                 return $this->getSiteUrl("blog/{$year}/{$month}/{$day}/" . urlencode($slug));
+            default:
+                return $this->getSiteUrl('blog/' . urlencode($postId)); // Fallback
         }
-        return '../blog/' . urlencode($post['id']); // Fallback zu interner ID, falls Format unbekannt
     }
 
-
-    /**
-     * Gibt die URL zu einer Theme-Asset-Datei zurück.
-     *
-     * @param string $path Optionaler Pfad, der an die Theme-URL angehängt wird
-     * @return string Die Theme-URL
-     */
-    public static function themeUrl(string $path = ''): string {
-        static $themeManager = null;
-        if ($themeManager === null) {
-            $themeManager = new ThemeManager();
-        }
+    public  function themeUrl(string $path = ''): string {
+        $themeManager = $this->resolve('theme_manager'); // Verwende den Docker!
         return $themeManager->getThemeAssetsUrl($path);
     }
 }
 
+?>
+<!--
 /**
  * === Kompatibilitätsfunktionen ===
  * Die folgenden Funktionen rufen intern die statischen Methoden der Helper-Klasse auf.
@@ -365,3 +259,4 @@ function marques_debug($var, $die = false) {
 function marques_format_blog_url($post) {
     return Helper::formatBlogUrl($post);
 }
+-->

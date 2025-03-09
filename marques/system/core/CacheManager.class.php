@@ -21,10 +21,9 @@ class CacheManager {
     public static function getInstance(?string $cacheDir = null, ?bool $enabled = null): CacheManager {
         if (self::$instance === null) {
             if ($enabled === null) {
-                // Lade die Systemeinstellungen über den SettingsManager
-                $settingsManager = new SettingsManager();
-                $system_settings = $settingsManager->getAllSettings();
-                $enabled = $system_settings['cache_enabled'] ?? true;
+                $configManager = ConfigManager::getInstance(); // ConfigManager ist IMMER verfügbar
+                $config = $configManager->load('system');       // Lade die Konfiguration
+                $enabled = $config['cache_enabled'] ?? true;   // Hole die Einstellung
             }
             self::$instance = new self($cacheDir, $enabled);
         }

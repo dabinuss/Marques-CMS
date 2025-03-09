@@ -10,27 +10,33 @@ class TemplateVars {
         $this->data = $data;
     }
 
-    public function __get(string $key) {
-        return $this->data[$key] ?? null;
-    }
-
-    public function __set(string $key, $value): void {
-        $this->data[$key] = $value;
-    }
-
-    /**
-     * Gibt die Theme-Assets URL zurück und führt automatisch Cachebusting durch.
-     *
-     * @param string $path Pfad zur Asset-Datei
-     * @return string
-     */
-    public function themeUrl(string $path = ''): string {
-        if (isset($this->data['themeManager']) && method_exists($this->data['themeManager'], 'getThemeAssetsUrl')) {
-            $url = $this->data['themeManager']->getThemeAssetsUrl($path);
-            // Automatisch Cachebusting durchführen:
-            $cacheManager = CacheManager::getInstance();
-            return $cacheManager->bustUrl($url);
+    public function __get(string $name) {
+        if (array_key_exists($name, $this->data)) {
+            return $this->data[$name];
         }
+        return null;
+    }
+
+    public function __isset(string $name): bool {
+        return isset($this->data[$name]);
+    }
+
+    public function __set(string $name, $value): void{
+      $this->data[$name] = $value;
+    }
+
+
+    public function themeUrl(string $path = ''): string {
+        if (isset($this->data['themeManager']) && $this->data['themeManager'] instanceof ThemeManager) {
+            $url =  $this->data['themeManager']->getThemeAssetsUrl($path);
+
+            if (isset($this->data['cacheManager']) && $this->data['cacheManager'] instanceof CacheManager){
+                $cacheManager =  $this->data['cacheManager'];
+                return $cacheManager->bustUrl($url);
+            }
+           return $url;
+        }
+
         return $path;
     }
 }

@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-class SettingsManager {
+class SettingsManager extends Core {
     /**
      * @var array Aktuelle Systemeinstellungen
      */
@@ -26,8 +26,9 @@ class SettingsManager {
     /**
      * Konstruktor
      */
-    public function __construct() {
-        $this->_configManager = \Marques\Core\ConfigManager::getInstance();
+    public function __construct(Docker $docker) {
+        parent::__construct($docker);
+        $this->_configManager = $this->resolve('config');
         $this->_loadSettings();
     }
     

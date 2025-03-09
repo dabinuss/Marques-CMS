@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-class PageManager {
+class PageManager extends Core {
     /**
      * @var array Systemkonfiguration
      */
@@ -21,9 +21,9 @@ class PageManager {
     /**
      * Konstruktor
      */
-    public function __construct() {
-        $configManager = \Marques\Core\ConfigManager::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
+    public function __construct(Docker $docker) {
+        parent::__construct($docker);
+        $this->_config = $this->resolve('config')->load('system') ?: [];
     }
     
     /**

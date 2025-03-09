@@ -6,90 +6,68 @@ namespace Marques\Core;
 /**
  * Hauptanwendungsklasse
  */
-class Application {
+class Application extends Core {
     private Router $router;
     private Template $template;
-    private array $config;
-    private EventManager $eventManager;
+    private EventDispatcher $eventDispatcher;
     private ConfigManager $configManager;
-    
+
     /**
      * Konstruktor mit vereinfachtem DI
      */
-    public function __construct(Router $router, Template $template, EventManager $eventManager) {
-        $this->router = $router;
-        $this->template = $template;
-        $this->eventManager = $eventManager;
-        $this->configManager = ConfigManager::getInstance();
-        $this->config = $this->configManager->load('system') ?: [];
+    public function __construct(Docker $docker) {
+        parent::__construct($docker);
+        $this->router = $this->resolve('route_manager');
+        $this->template = $this->resolve('template_renderer');
+        $this->eventDispatcher = $this->resolve('event_dispatcher');
+        $this->configManager = $this->resolve('config');
     }
-    
+
     /**
      * Führt die Anwendung aus
      */
     public function run(): void {
         try {
-            // Event vor der Anfrageverarbeitung
-            $this->eventManager->trigger('before_request');
-            
-            // Anfrage durch den Router verarbeiten
+            $this->eventDispatcher->dispatch('onRequestStart');
+
             $route = $this->router->processRequest();
-            $GLOBALS['route'] = $route;
-            
-            // Event nach dem Routing
-            $route = $this->eventManager->trigger('after_routing', $route);
-            
-            // Inhalt basierend auf der Route abrufen
-            $content = new Content();
+
+            $route = $this->eventDispatcher->dispatch('onRouteResolved', $route);
+
+            $content = new Content($this->docker);
+
             $pageData = $content->getPage($route['path']);
-            
-            // Event vor dem Rendering
-            $pageData = $this->eventManager->trigger('before_render', $pageData);
-            
-            // Seite mit der Template-Engine rendern
+
+            $pageData = $this->eventDispatcher->dispatch('onBeforeRender', $pageData);
+
             $this->template->render($pageData);
-            
-            // Event nach dem Rendering
-            $this->eventManager->trigger('after_render');
-            
+            $this->eventDispatcher->dispatch('onAfterRender');
+
         } catch (\Exception $e) {
-            // Fehler behandeln
             $this->handleError($e);
         }
     }
-    
+
     /**
      * Behandelt Anwendungsfehler
      */
     private function handleError(\Exception $e): void {
-        // Event vor der Fehlerbehandlung
-        $this->eventManager->trigger('before_error_handle', ['exception' => $e]);
-        
-        // Logger holen und Fehler loggen
-        $logger = $GLOBALS['container']->get(\Marques\Core\Logger::class);
-        $logger->error($e->getMessage(), [
-            'file' => $e->getFile(),
-            'line' => $e->getLine()
-        ]);
-        
-        // Einstellungen laden
-        $settings = $GLOBALS['container']->get(\Marques\Core\SettingsManager::class);
+        $this->eventDispatcher->dispatch('before_error_handle', ['exception' => $e]);
+
+        $settings = $this->resolve('settings_manager');
         $debug_mode = $settings->getSetting('debug', false);
-        
-        // HTTP-Statuscode bestimmen
+
         $statusCode = 500;
         if ($e instanceof NotFoundException) {
             $statusCode = 404;
         } elseif ($e instanceof PermissionException) {
             $statusCode = 403;
         }
-        
+
         http_response_code($statusCode);
-        
-        // Fehlerseite-Template bestimmen
+
         $errorTemplate = 'errors/error-' . $statusCode;
-        
-        // Daten für das Template vorbereiten
+
         $errorData = [
             'title' => 'Fehler ' . $statusCode,
             'content' => $e->getMessage(),
@@ -99,18 +77,16 @@ class Application {
             'template' => $errorTemplate,
             'system_settings' => $settings->getAllSettings()
         ];
-        
-        // Event nach der Fehlerbehandlung
-        $errorData = $this->eventManager->trigger('after_error_handle', $errorData);
-        
-        // Versuchen, Error-Template zu rendern, ansonsten Standard-Fehlerseite
+
+        $errorData = $this->eventDispatcher->dispatch('after_error_handle', $errorData);
+
         try {
             $this->template->render($errorData);
         } catch (\Exception $renderException) {
             $this->renderFallbackErrorPage($errorData);
         }
     }
-    
+
     /**
      * Rendert eine Fallback-Fehlerseite
      */
@@ -119,8 +95,7 @@ class Application {
         $debug = $data['debug'] ?? false;
         $exception = $data['exception'] ?? null;
         $content = $data['content'] ?? 'Ein unerwarteter Fehler ist aufgetreten.';
-        
-        // Einfache HTML-Fehlerseite ausgeben
+
         echo '<!DOCTYPE html>
         <html lang="de">
         <head>
@@ -136,9 +111,9 @@ class Application {
             <div class="error-container">
                 <h1 class="error-code">' . $errorCode . '</h1>
                 <p>' . htmlspecialchars($content) . '</p>
-                <a href="/">Zurück zur Startseite</a>
+                <a href="' . marques_site_url() . '">Zurück zur Startseite</a>
             </div>';
-        
+
         if ($debug && $exception) {
             echo '<div style="margin-top: 30px; padding: 15px; background: #f5f5f5;">
                 <h3>Debug-Informationen</h3>
@@ -147,7 +122,7 @@ class Application {
                 <pre>' . htmlspecialchars($exception->getTraceAsString()) . '</pre>
             </div>';
         }
-        
+
         echo '</body></html>';
     }
 }

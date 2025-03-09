@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-class Admin {
+class Admin extends Core {
     /**
      * @var User Benutzer-Objekt
      */
@@ -26,10 +26,10 @@ class Admin {
     /**
      * Konstruktor
      */
-    public function __construct() {
-        $this->_user = new User();
-        $configManager = \Marques\Core\ConfigManager::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
+    public function __construct(Docker $docker) {
+        parent::__construct($docker);
+        $this->_user = $this->resolve('user');
+        $this->_config = $this->resolve('config')->load('system') ?: [];
     }
     
     /**
