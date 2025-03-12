@@ -36,7 +36,7 @@ class MarquesApp extends AppCore
         }
 
         // Hilfsfunktionen laden
-        require_once MARQUES_SYSTEM_DIR . '/core/Utilities.inc.php';
+        //require_once MARQUES_SYSTEM_DIR . '/core/Utilities.inc.php';
         require_once MARQUES_SYSTEM_DIR . '/core/Exceptions.inc.php';
 
         $systemConfig = $this->configManager->load('system') ?: [];

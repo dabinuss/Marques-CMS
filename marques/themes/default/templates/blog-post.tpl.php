@@ -31,7 +31,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
             <header class="post-header">
                 <h1 class="post-title"><?= htmlspecialchars($tpl->post['title']); ?></h1>
                 <div class="post-meta">
-                    <span class="post-date"><?= marques_format_date($tpl->post['date'], 'd.m.Y'); ?></span>
+                    <span class="post-date"><?= \Marques\Core\Helper::formatDate($tpl->post['date'], 'd.m.Y'); ?></span>
                     <span class="post-author">von <?= htmlspecialchars($tpl->post['author']); ?></span>
                     <?php if (!empty($tpl->post['categories'])): ?>
                         <span class="post-categories">
@@ -40,7 +40,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
                             $categoryLinks = [];
                             foreach ($tpl->post['categories'] as $cat) {
                                 if (!empty($cat)) {
-                                    $categoryLinks[] = '<a href="' . marques_site_url('blog?category=' . urlencode($cat)) . '">' . htmlspecialchars($cat) . '</a>';
+                                    $categoryLinks[] = '<a href="' . \Marques\Core\Helper::getSiteUrl('blog?category=' . urlencode($cat)) . '">' . htmlspecialchars($cat) . '</a>';
                                 }
                             }
                             echo implode(', ', $categoryLinks);
@@ -52,7 +52,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
 
             <?php if (!empty($tpl->post['featured_image'])): ?>
                 <div class="post-featured-image">
-                    <img src="<?= marques_site_url($tpl->post['featured_image']); ?>" alt="<?= htmlspecialchars($tpl->post['title']); ?>">
+                    <img src="<?= \Marques\Core\Helper::getSiteUrl($tpl->post['featured_image']); ?>" alt="<?= htmlspecialchars($tpl->post['title']); ?>">
                 </div>
             <?php endif; ?>
 
@@ -67,7 +67,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
                     $tagLinks = [];
                     foreach ($tpl->post['tags'] as $tag) {
                         if (!empty($tag)) {
-                            $tagLinks[] = '<a href="' . marques_site_url('blog?tag=' . urlencode($tag)) . '" class="tag-link">' . htmlspecialchars($tag) . '</a>';
+                            $tagLinks[] = '<a href="' . \Marques\Core\Helper::getSiteUrl('blog?tag=' . urlencode($tag)) . '" class="tag-link">' . htmlspecialchars($tag) . '</a>';
                         }
                     }
                     echo implode(' ', $tagLinks);
@@ -76,7 +76,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
             <?php endif; ?>
 
             <div class="post-navigation">
-                <a href="<?= marques_site_url('blog'); ?>" class="back-to-blog">
+                <a href="<?= \Marques\Core\Helper::getSiteUrl('blog'); ?>" class="back-to-blog">
                     « Zurück zum Blog
                 </a>
             </div>
@@ -92,7 +92,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
                 <ul class="categories-list">
                     <?php foreach ($tpl->categories as $cat => $count): ?>
                         <li>
-                            <a href="<?= marques_site_url('blog?category=' . urlencode($cat)); ?>">
+                            <a href="<?= \Marques\Core\Helper::getSiteUrl('blog?category=' . urlencode($cat)); ?>">
                                 <?= htmlspecialchars($cat); ?> (<?= $count; ?>)
                             </a>
                         </li>

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($title ?? 'Super Blog'); ?> - <?= htmlspecialchars($system_settings['site_name'] ?? 'Super Blog CMS'); ?></title>
-  <link rel="stylesheet" href="<?= marques_theme_url('css/super-blog-style.css'); ?>">
-  <link rel="icon" type="image/x-icon" href="<?= marques_theme_url('images/favicon.svg'); ?>">
+  <link rel="stylesheet" href="<?= \Marques\Core\Helper::themeUrl('css/super-blog-style.css'); ?>">
+  <link rel="icon" type="image/x-icon" href="<?= \Marques\Core\Helper::themeUrl('images/favicon.svg'); ?>">
 </head>
 <body>
   <?php $this->includePartial('header'); ?>
@@ -29,6 +29,6 @@
 
   <?php $this->includePartial('footer'); ?>
 
-  <script src="<?= marques_theme_url('js/script.js'); ?>"></script>
+  <script src="<?= \Marques\Core\Helper::themeUrl('js/script.js'); ?>"></script>
 </body>
 </html>

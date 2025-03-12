@@ -14,7 +14,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title ?? '403 - Zugriff verweigert'); ?> - <?= htmlspecialchars($system_settings['site_name'] ?? 'marques CMS'); ?></title>
-    <link rel="stylesheet" href="<?= marques_theme_url('css/main-style.css'); ?>">
+    <link rel="stylesheet" href="<?= \Marques\Core\Helper::themeUrl('css/main-style.css'); ?>">
     <style>
         .error-container {
             text-align: center;

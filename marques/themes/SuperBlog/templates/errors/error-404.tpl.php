@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($title ?? '404 - Seite nicht gefunden'); ?> - <?= htmlspecialchars($system_settings['site_name'] ?? 'Super Blog'); ?></title>
-  <link rel="stylesheet" href="<?= marques_theme_url('css/super-blog-style.css'); ?>">
+  <link rel="stylesheet" href="<?= \Marques\Core\Helper::themeUrl('css/super-blog-style.css'); ?>">
 </head>
 <body>
   <div class="super-blog-error-container">
