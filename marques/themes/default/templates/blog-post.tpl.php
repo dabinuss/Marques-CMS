@@ -29,10 +29,10 @@ $tpl->categories = $tpl->blogManager->getCategories();
     <div class="blog-main">
         <article class="blog-post">
             <header class="post-header">
-                <h1 class="post-title"><?php echo htmlspecialchars($tpl->post['title']); ?></h1>
+                <h1 class="post-title"><?= htmlspecialchars($tpl->post['title']); ?></h1>
                 <div class="post-meta">
-                    <span class="post-date"><?php echo marques_format_date($tpl->post['date'], 'd.m.Y'); ?></span>
-                    <span class="post-author">von <?php echo htmlspecialchars($tpl->post['author']); ?></span>
+                    <span class="post-date"><?= marques_format_date($tpl->post['date'], 'd.m.Y'); ?></span>
+                    <span class="post-author">von <?= htmlspecialchars($tpl->post['author']); ?></span>
                     <?php if (!empty($tpl->post['categories'])): ?>
                         <span class="post-categories">
                             in
@@ -52,12 +52,12 @@ $tpl->categories = $tpl->blogManager->getCategories();
 
             <?php if (!empty($tpl->post['featured_image'])): ?>
                 <div class="post-featured-image">
-                    <img src="<?php echo marques_site_url($tpl->post['featured_image']); ?>" alt="<?php echo htmlspecialchars($tpl->post['title']); ?>">
+                    <img src="<?= marques_site_url($tpl->post['featured_image']); ?>" alt="<?= htmlspecialchars($tpl->post['title']); ?>">
                 </div>
             <?php endif; ?>
 
             <div class="post-content">
-                <?php echo $tpl->post['content']; ?>
+                <?= $tpl->post['content']; ?>
             </div>
 
             <?php if (!empty($tpl->post['tags'])): ?>
@@ -76,7 +76,7 @@ $tpl->categories = $tpl->blogManager->getCategories();
             <?php endif; ?>
 
             <div class="post-navigation">
-                <a href="<?php echo marques_site_url('blog'); ?>" class="back-to-blog">
+                <a href="<?= marques_site_url('blog'); ?>" class="back-to-blog">
                     « Zurück zum Blog
                 </a>
             </div>
@@ -92,8 +92,8 @@ $tpl->categories = $tpl->blogManager->getCategories();
                 <ul class="categories-list">
                     <?php foreach ($tpl->categories as $cat => $count): ?>
                         <li>
-                            <a href="<?php echo marques_site_url('blog?category=' . urlencode($cat)); ?>">
-                                <?php echo htmlspecialchars($cat); ?> (<?php echo $count; ?>)
+                            <a href="<?= marques_site_url('blog?category=' . urlencode($cat)); ?>">
+                                <?= htmlspecialchars($cat); ?> (<?= $count; ?>)
                             </a>
                         </li>
                     <?php endforeach; ?>

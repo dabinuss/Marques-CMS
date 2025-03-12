@@ -13,7 +13,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fehler <?php echo (int)($error_code ?? 500); ?></title>
+    <title>Fehler <?= (int)($error_code ?? 500); ?></title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -66,7 +66,7 @@
 </head>
 <body>
     <div class="error-container">
-        <h1 class="error-code"><?php echo (int)($error_code ?? 500); ?></h1>
+        <h1 class="error-code"><?= (int)($error_code ?? 500); ?></h1>
         
         <h2 class="error-title">
             <?php 
@@ -84,7 +84,7 @@
         </h2>
         
         <p class="error-message">
-            <?php echo htmlspecialchars($content ?? 'Es ist ein unerwarteter Fehler aufgetreten.'); ?>
+            <?= htmlspecialchars($content ?? 'Es ist ein unerwarteter Fehler aufgetreten.'); ?>
         </p>
         
         <a href="/" class="home-button">Zurück zur Startseite</a>
@@ -94,12 +94,12 @@
     <div style="max-width: 800px; margin: 20px auto; text-align: left; background: #f8f9fa; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         <h3 style="color: #d9534f;">Debug-Informationen</h3>
         <div style="background: white; padding: 15px; border-radius: 4px; margin-top: 10px;">
-            <p><strong>Fehlermeldung:</strong> <?php echo htmlspecialchars($exception->getMessage()); ?></p>
-            <p><strong>Datei:</strong> <?php echo htmlspecialchars($exception->getFile()); ?></p>
-            <p><strong>Zeile:</strong> <?php echo (int)$exception->getLine(); ?></p>
+            <p><strong>Fehlermeldung:</strong> <?= htmlspecialchars($exception->getMessage()); ?></p>
+            <p><strong>Datei:</strong> <?= htmlspecialchars($exception->getFile()); ?></p>
+            <p><strong>Zeile:</strong> <?= (int)$exception->getLine(); ?></p>
             
             <h4>Stack Trace:</h4>
-            <pre style="background: #f5f5f5; padding: 10px; overflow-x: auto; font-family: monospace; font-size: 13px;"><?php echo htmlspecialchars($exception->getTraceAsString()); ?></pre>
+            <pre style="background: #f5f5f5; padding: 10px; overflow-x: auto; font-family: monospace; font-size: 13px;"><?= htmlspecialchars($exception->getTraceAsString()); ?></pre>
         </div>
         <p style="font-size: 12px; color: #6c757d; margin-top: 10px;">Diese detaillierte Fehlermeldung wird nur im Debug-Modus angezeigt.</p>
     </div>

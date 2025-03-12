@@ -45,7 +45,7 @@ $categories = $blogManager->getCategories();
 
 <div class="blog-container">
     <div class="blog-header">
-        <h1 class="blog-title"><?php echo $tpl->pageTitle; ?></h1>
+        <h1 class="blog-title"><?= $tpl->pageTitle; ?></h1>
     </div>
 
     <div class="blog-main">
@@ -58,13 +58,13 @@ $categories = $blogManager->getCategories();
                 <article class="blog-post-summary">
                     <header>
                         <h2 class="post-title">
-                            <a href="<?php echo \Marques\Core\Helper::formatBlogUrl($post); ?>">  <!-- KORREKTUR: formatBlogUrl verwenden -->
-                                <?php echo htmlspecialchars($post['title']); ?>
+                            <a href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>">  <!-- KORREKTUR: formatBlogUrl verwenden -->
+                                <?= htmlspecialchars($post['title']); ?>
                             </a>
                         </h2>
                         <div class="post-meta">
-                            <span class="post-date"><?php echo marques_format_date($post['date'], 'd.m.Y'); ?></span>
-                            <span class="post-author">von <?php echo htmlspecialchars($post['author']); ?></span>
+                            <span class="post-date"><?= marques_format_date($post['date'], 'd.m.Y'); ?></span>
+                            <span class="post-author">von <?= htmlspecialchars($post['author']); ?></span>
                             <?php if (!empty($post['categories'])): ?>
                                 <span class="post-categories">
                                     in
@@ -84,18 +84,18 @@ $categories = $blogManager->getCategories();
 
                     <?php if (!empty($post['featured_image'])): ?>
                         <div class="post-featured-image">
-                            <a href="<?php echo \Marques\Core\Helper::formatBlogUrl($post); ?>"> <!-- KORREKTUR: formatBlogUrl verwenden -->
-                                <img src="<?php echo marques_site_url($post['featured_image']); ?>" alt="<?php echo htmlspecialchars($post['title']); ?>">
+                            <a href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>"> <!-- KORREKTUR: formatBlogUrl verwenden -->
+                                <img src="<?= marques_site_url($post['featured_image']); ?>" alt="<?= htmlspecialchars($post['title']); ?>">
                             </a>
                         </div>
                     <?php endif; ?>
 
                     <div class="post-excerpt">
-                        <?php echo htmlspecialchars($post['excerpt']); ?>
+                        <?= htmlspecialchars($post['excerpt']); ?>
                     </div>
 
                     <div class="post-read-more">
-                        <a href="<?php echo \Marques\Core\Helper::formatBlogUrl($post); ?>" class="read-more-link"> <!-- KORREKTUR: formatBlogUrl verwenden -->
+                        <a href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>" class="read-more-link"> <!-- KORREKTUR: formatBlogUrl verwenden -->
                             Weiterlesen
                         </a>
                     </div>
@@ -105,13 +105,13 @@ $categories = $blogManager->getCategories();
             <!-- Paginierung -->
             <div class="blog-pagination">
                 <?php if ($tpl->page > 1): ?>
-                    <a href="<?php echo marques_site_url('blog?page=' . ($tpl->page - 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-prev marques-button marques-button--outline">
+                    <a href="<?= marques_site_url('blog?page=' . ($tpl->page - 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-prev marques-button marques-button--outline">
                         « Vorherige
                     </a>
                 <?php endif; ?>
 
                 <?php if (count($posts) === $tpl->perPage): ?>
-                    <a href="<?php echo marques_site_url('blog?page=' . ($tpl->page + 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-next marques-button marques-button--outline">
+                    <a href="<?= marques_site_url('blog?page=' . ($tpl->page + 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-next marques-button marques-button--outline">
                         Nächste »
                     </a>
                 <?php endif; ?>
@@ -128,8 +128,8 @@ $categories = $blogManager->getCategories();
                 <ul class="categories-list">
                     <?php foreach ($categories as $cat => $count): ?>
                         <li>
-                            <a href="<?php echo marques_site_url('blog?category=' . urlencode($cat)); ?>">
-                                <?php echo htmlspecialchars($cat); ?> (<?php echo $count; ?>)
+                            <a href="<?= marques_site_url('blog?category=' . urlencode($cat)); ?>">
+                                <?= htmlspecialchars($cat); ?> (<?= $count; ?>)
                             </a>
                         </li>
                     <?php endforeach; ?>

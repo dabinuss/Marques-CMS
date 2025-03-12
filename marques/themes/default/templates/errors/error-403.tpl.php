@@ -9,12 +9,12 @@
  */
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo isset($system_settings['admin_language']) ? $system_settings['admin_language'] : 'de'; ?>">
+<html lang="<?= isset($system_settings['admin_language']) ? $system_settings['admin_language'] : 'de'; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($title ?? '403 - Zugriff verweigert'); ?> - <?php echo htmlspecialchars($system_settings['site_name'] ?? 'marques CMS'); ?></title>
-    <link rel="stylesheet" href="<?php echo marques_theme_url('css/main-style.css'); ?>">
+    <title><?= htmlspecialchars($title ?? '403 - Zugriff verweigert'); ?> - <?= htmlspecialchars($system_settings['site_name'] ?? 'marques CMS'); ?></title>
+    <link rel="stylesheet" href="<?= marques_theme_url('css/main-style.css'); ?>">
     <style>
         .error-container {
             text-align: center;
@@ -64,7 +64,7 @@
         <h2 class="error-title">Zugriff verweigert</h2>
         
         <p class="error-message">
-            <?php echo htmlspecialchars($content ?? 'Sie haben keine Berechtigung, auf diese Seite zuzugreifen.'); ?>
+            <?= htmlspecialchars($content ?? 'Sie haben keine Berechtigung, auf diese Seite zuzugreifen.'); ?>
         </p>
         
         <div class="error-illustration">
@@ -74,19 +74,19 @@
             </svg>
         </div>
         
-        <a href="<?php echo rtrim($system_settings['base_url'] ?? '', '/'); ?>/" class="home-button">Zurück zur Startseite</a>
+        <a href="<?= rtrim($system_settings['base_url'] ?? '', '/'); ?>/" class="home-button">Zurück zur Startseite</a>
     </div>
 
     <?php if (isset($debug) && $debug === true && isset($exception)): ?>
     <div class="debug-container">
         <h3>Debug-Informationen</h3>
         <div class="debug-info">
-            <p><strong>Fehlermeldung:</strong> <?php echo htmlspecialchars($exception->getMessage()); ?></p>
-            <p><strong>Datei:</strong> <?php echo htmlspecialchars($exception->getFile()); ?></p>
-            <p><strong>Zeile:</strong> <?php echo (int)$exception->getLine(); ?></p>
+            <p><strong>Fehlermeldung:</strong> <?= htmlspecialchars($exception->getMessage()); ?></p>
+            <p><strong>Datei:</strong> <?= htmlspecialchars($exception->getFile()); ?></p>
+            <p><strong>Zeile:</strong> <?= (int)$exception->getLine(); ?></p>
             
             <h4>Stack Trace:</h4>
-            <pre><?php echo htmlspecialchars($exception->getTraceAsString()); ?></pre>
+            <pre><?= htmlspecialchars($exception->getTraceAsString()); ?></pre>
         </div>
         <p class="debug-note">Diese detaillierte Fehlermeldung wird nur im Debug-Modus angezeigt.</p>
     </div>
