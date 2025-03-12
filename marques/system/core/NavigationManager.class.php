@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Core\Helper;
+
 class NavigationManager {
     /**
      * @var array Systemkonfiguration
@@ -291,25 +293,25 @@ class NavigationManager {
             [
                 'id' => uniqid('menu_'),
                 'title' => 'Startseite',
-                'url' => marques_site_url(),
+                'url' => Helper::getSiteUrl(),
                 'target' => '_self'
             ],
             [
                 'id' => uniqid('menu_'),
                 'title' => 'Blog',
-                'url' => marques_site_url('blog'),
+                'url' => Helper::getSiteUrl('blog'),
                 'target' => '_self'
             ],
             [
                 'id' => uniqid('menu_'),
                 'title' => 'Über uns',
-                'url' => marques_site_url('about'),
+                'url' => Helper::getSiteUrl('about'),
                 'target' => '_self'
             ],
             [
                 'id' => uniqid('menu_'),
                 'title' => 'Kontakt',
-                'url' => marques_site_url('contact'),
+                'url' => Helper::getSiteUrl('contact'),
                 'target' => '_self'
             ]
         ];

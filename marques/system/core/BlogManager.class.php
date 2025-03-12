@@ -58,37 +58,23 @@ class BlogManager {
      */
     public function getAllPosts(int $limit = 0, int $offset = 0, string $category = ''): array {
 
-
-        /*
-        $testGlobPath = MARQUES_ROOT_DIR . '/content/blog'; // TEST: Direkter Pfad, *ANPASSEN*, falls nötig
-
-        marques_debug("--- TEST GLOB() ---");
-        marques_debug("Test-Pfad VOR glob() Aufruf: ".$testGlobPath, true); // DEBUG: Pfad VOR glob() ausgeben!
-
-        $testGlobResult = glob($testGlobPath . '/*', GLOB_ONLYDIR); // TEST: Einfaches glob('*')
-        marques_debug("Ergebnis von glob() TEST: ".$testGlobResult, true);
-        marques_debug("--- ENDE TEST GLOB() ---");
-        */
-
-
         $posts = [];
         $blogDir = MARQUES_CONTENT_DIR . '/blog';
         if (!is_dir($blogDir)) {
-            marques_debug("Blog-Verzeichnis existiert nicht: " . $blogDir); // DEBUG
             return $posts;
         }
 
         $files = [];
         $yearDirs = glob($blogDir . '/*', GLOB_ONLYDIR); // Finde *alle* Ordner direkt unterhalb von content/blog/
-        // marques_debug("Jahr-Verzeichnisse gefunden:" . $yearDirs); // DEBUG
+
         if ($yearDirs) {
             foreach ($yearDirs as $yearDir) {
                 $monthDirs = glob($yearDir . '/[A-M]', GLOB_ONLYDIR);
-                // marques_debug("Monats-Verzeichnisse in " . $yearDir . ":" . $monthDirs); // DEBUG
+
                 if ($monthDirs) {
                     foreach ($monthDirs as $monthDir) {
                         $postFiles = glob($monthDir . '/*.md');
-                        // marques_debug("Post-Dateien in " . $monthDir . ": " . $postFiles); // DEBUG
+
                         if ($postFiles) {
                             $files = array_merge($files, $postFiles);
                         }
@@ -96,8 +82,6 @@ class BlogManager {
                 }
             }
         }
-
-        // marques_debug("Anzahl der gefundenen Dateien vor Paginierung/Limitierung: " . count($files)); // DEBUG
 
         usort($files, function ($a, $b) {
             return filemtime($b) - filemtime($a);
@@ -109,9 +93,6 @@ class BlogManager {
         if ($limit > 0) {
             $files = array_slice($files, 0, $limit);
         }
-
-        // marques_debug("Anzahl der Dateien nach Paginierung/Limitierung: " . count($files)); // DEBUG
-        // marques_debug("Verwendete Dateien (Pfade): " . $files); // DEBUG
 
         foreach ($files as $file) {
             $relativePath = str_replace(MARQUES_CONTENT_DIR . DIRECTORY_SEPARATOR, '', $file);
@@ -142,7 +123,6 @@ class BlogManager {
             ];
         }
 
-        // marques_debug("Erstelltes $posts Array (vor Rückgabe): " . $posts); // DEBUG
         return $posts;
     }
 
