@@ -26,23 +26,32 @@ define('MARQUES_ADMIN_DIR', MARQUES_ROOT_DIR . '/admin');
 define('MARQUES_THEMES_DIR', MARQUES_ROOT_DIR . '/themes');
 
 // Autoloading *vor* allem anderen
-spl_autoload_register(function ($class) {
-    if (strpos($class, 'Marques\\') !== 0) {
+spl_autoload_register(function (string $class): void {
+    if (!str_starts_with($class, 'Marques\\')) {
         return;
     }
+    
+    static $cache = [];
+    
+    if (isset($cache[$class])) {
+        require_once $cache[$class];
+        return;
+    }
+    
     $relativeClass = substr($class, 8);
     $parts = explode('\\', $relativeClass);
     $className = array_pop($parts);
     $namespacePath = strtolower(implode('/', $parts));
-
-    $basePath = MARQUES_ROOT_DIR . '/system/' . $namespacePath . '/'; // Korrigierter Pfad
+    
+    $basePath = MARQUES_ROOT_DIR . '/system/' . $namespacePath . '/';
     $paths = [
-          $basePath . $className . '.class.php',
-          $basePath . strtolower($className) . '.class.php', // Fallback
+        $basePath . $className . '.class.php',
+        $basePath . strtolower($className) . '.class.php', // Fallback
     ];
-
+    
     foreach ($paths as $path) {
         if (file_exists($path)) {
+            $cache[$class] = $path;
             require_once $path;
             return;
         }
