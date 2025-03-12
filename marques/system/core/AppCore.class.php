@@ -6,7 +6,7 @@ namespace Marques\Core;
 abstract class AppCore
 {
     protected ConfigManager $configManager;
-    protected Logger $logger;
+    protected AppLogger $log;
     protected EventManager $eventManager;
     protected User $user; // User-Instanz
 
@@ -14,7 +14,7 @@ abstract class AppCore
     {
         // Diese Dienste werden *immer* benötigt und sind für alle Subklassen relevant.
         $this->configManager = ConfigManager::getInstance();
-        $this->logger = new Logger();          // Logger direkt instanziieren
+        $this->log = new AppLogger();          // AppLogger direkt instanziieren
         $this->eventManager = new EventManager(); // EventManager direkt instanziieren
         $this->user = new User;
     }
@@ -33,7 +33,7 @@ abstract class AppCore
         }
 
         // Loggen des Fehlers (immer)
-        $this->logger->error($message, [
+        $this->log->error($message, [
             'exception_message' => $e->getMessage(),
             'file'            => $e->getFile(),
             'line'            => $e->getLine(),
