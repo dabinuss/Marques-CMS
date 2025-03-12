@@ -1,12 +1,11 @@
 <?php
 /**
  * marques CMS - Haupteinstiegspunkt
- * 
+ *
  * Diese Datei dient als Front-Controller für das marques CMS.
  * Alle Anfragen werden über .htaccess-Rewriting hierher geleitet.
  *
  * @package marques
- * @version 0.1.0
  */
 
 ini_set('display_errors', 1);
@@ -16,14 +15,42 @@ error_reporting(E_ALL);
 // Basispfad definieren
 define('MARQUES_ROOT_DIR', __DIR__);
 
-// Bootstrap laden
-require_once MARQUES_ROOT_DIR . '/system/core/Bootstrap.inc.php';
+// Konstanten definieren
+define('MARQUES_VERSION', '0.3.0'); // FALLBACK
+define('MARQUES_SYSTEM_DIR', MARQUES_ROOT_DIR . '/system');
+define('MARQUES_CONFIG_DIR', MARQUES_ROOT_DIR . '/config');
+define('MARQUES_CONTENT_DIR', MARQUES_ROOT_DIR . '/content');
+define('MARQUES_TEMPLATE_DIR', MARQUES_ROOT_DIR . '/templates'); /* DEPRECIATED */
+define('MARQUES_CACHE_DIR', MARQUES_SYSTEM_DIR . '/cache');
+define('MARQUES_ADMIN_DIR', MARQUES_ROOT_DIR . '/admin');
+define('MARQUES_THEMES_DIR', MARQUES_ROOT_DIR . '/themes');
 
-// Abhängigkeiten erstellen
-$router = new Marques\Core\Router();
-$template = new Marques\Core\Template();
-$eventManager = new Marques\Core\EventManager();
+// Autoloading *vor* allem anderen
+spl_autoload_register(function ($class) {
+    if (strpos($class, 'Marques\\') !== 0) {
+        return;
+    }
+    $relativeClass = substr($class, 8);
+    $parts = explode('\\', $relativeClass);
+    $className = array_pop($parts);
+    $namespacePath = strtolower(implode('/', $parts));
 
-// Anwendung initialisieren
-$app = new Marques\Core\Application($router, $template, $eventManager);
+    $basePath = MARQUES_ROOT_DIR . '/system/' . $namespacePath . '/'; // Korrigierter Pfad
+    $paths = [
+          $basePath . $className . '.class.php',
+          $basePath . strtolower($className) . '.class.php', // Fallback
+    ];
+
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            require_once $path;
+            return;
+        }
+    }
+});
+
+require_once MARQUES_ROOT_DIR . '/system/core/MarquesApp.class.php';
+
+$app = new Marques\Core\MarquesApp();
+$app->init();
 $app->run();

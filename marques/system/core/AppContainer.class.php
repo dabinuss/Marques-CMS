@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 /**
- * Einfacher Dependency Injection Container
+ * Einfacher Dependency Injection AppContainer
  */
-class Container {
+class AppContainer {
     private array $services = [];
     private array $instances = [];    
     

@@ -79,24 +79,24 @@ require_once MARQUES_SYSTEM_DIR . '/core/Utilities.inc.php';
 // Benutzerdefinierte Exceptions laden
 require_once MARQUES_SYSTEM_DIR . '/core/Exceptions.inc.php';
 
-// Container und Event-Manager initialisieren
-$container = new \Marques\Core\Container();
+// AppContainer und Event-Manager initialisieren
+$appcontainer = new \Marques\Core\AppContainer();
 
 $configManager = \Marques\Core\ConfigManager::getInstance();
 $systemConfig = $configManager->load('system') ?: [];
-$container->register('config', $systemConfig);
+$appcontainer->register('config', $systemConfig);
 
-$container->register(\Marques\Core\EventManager::class, new \Marques\Core\EventManager());
-$container->register(\Marques\Core\Logger::class, new \Marques\Core\Logger());
-$container->register(\Marques\Core\SettingsManager::class);
-$container->register(\Marques\Core\User::class);
+$appcontainer->register(\Marques\Core\EventManager::class, new \Marques\Core\EventManager());
+$appcontainer->register(\Marques\Core\Logger::class, new \Marques\Core\Logger());
+$appcontainer->register(\Marques\Core\SettingsManager::class);
+$appcontainer->register(\Marques\Core\User::class);
 
 // Global verfügbar machen
-$GLOBALS['container'] = $container;
-$GLOBALS['events'] = $container->get(\Marques\Core\EventManager::class);
+$GLOBALS['appcontainer'] = $appcontainer;
+$GLOBALS['events'] = $appcontainer->get(\Marques\Core\EventManager::class);
 
 // Systemeinstellungen laden
-$settings = $container->get(\Marques\Core\SettingsManager::class);
+$settings = $appcontainer->get(\Marques\Core\SettingsManager::class);
 
 // Fehlerberichterstattung einrichten
 if ($settings->getSetting('debug', false)) {
