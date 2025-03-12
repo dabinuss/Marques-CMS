@@ -31,23 +31,7 @@ class BlogManager {
         $this->_config = $configManager->load('system') ?: [];
         $this->fileManager = new FileManager(MARQUES_CONTENT_DIR);
     }
-
-    /**
-     * Gibt eine Liste aller Blog-Beiträge zurück
-     *
-     * @param int $limit Maximale Anzahl der Beiträge (0 = alle)
-     * @param int $offset Offset für Paginierung
-     * @param string $category Optionale Kategorie-Filterung
-     * @return array Blog-Beiträge mit Metadaten
-     */
-    /**
-     * Gibt eine Liste aller Blog-Beiträge zurück
-     *
-     * @param int $limit Maximale Anzahl der Beiträge (0 = alle)
-     * @param int $offset Offset für Paginierung
-     * @param string $category Optionale Kategorie-Filterung
-     * @return array Blog-Beiträge mit Metadaten
-     */
+    
     /**
      * Gibt eine Liste aller Blog-Beiträge zurück
      *
