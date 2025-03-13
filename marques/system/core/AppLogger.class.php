@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 class AppLogger {
+    private static ?AppLogger $instance = null;
     private string $logDir;
 
     public function __construct() {
@@ -11,6 +12,13 @@ class AppLogger {
         if (!is_dir($this->logDir)) {
             mkdir($this->logDir, 0755, true);
         }
+    }
+
+    public static function getInstance(): AppLogger {
+        if (self::$instance === null) {
+            self::$instance = new AppLogger();
+        }
+        return self::$instance;
     }
     
     /**

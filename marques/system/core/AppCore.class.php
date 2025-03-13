@@ -14,9 +14,9 @@ abstract class AppCore
     {
         // Diese Dienste werden *immer* benötigt und sind für alle Subklassen relevant.
         $this->configManager = ConfigManager::getInstance();
-        $this->log = new AppLogger();          // AppLogger direkt instanziieren
+        $this->log = AppLogger::getInstance();          // AppLogger direkt instanziieren
         $this->eventManager = new EventManager(); // EventManager direkt instanziieren
-        $this->user = new User;
+        $this->user = new User();
     }
 
     /**

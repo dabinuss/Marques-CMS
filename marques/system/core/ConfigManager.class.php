@@ -109,15 +109,14 @@ class ConfigManager {
     }
     
     /**
-     * Holt einen Wert aus einer Konfiguration
+     * Holt einen Wert aus der Konfiguration.
      *
-     * @param string $name Name der Konfiguration
      * @param string $key Schlüssel des Werts
      * @param mixed $default Standardwert, falls nicht gefunden
      * @return mixed Konfigurationswert
      */
-    public function get(string $name, string $key, $default = null) {
-        $config = $this->load($name);
+    public function get(string $key, $default = null) {
+        $config = $this->load('default'); // oder wie auch immer du deine Konfiguration lädst
         if ($config === null) {
             return $default;
         }
