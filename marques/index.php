@@ -8,6 +8,9 @@
  * @package marques
  */
 
+//$file = MARQUES_CONTENT_DIR . '/blog/somefile.md';
+//$file = $this->appPath->combine('content', 'blog/somefile.md');
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -15,15 +18,17 @@ error_reporting(E_ALL);
 // Basispfad definieren
 define('MARQUES_ROOT_DIR', __DIR__);
 
-// Konstanten definieren
+/*
+ * Constants definition for admin | FALLBACK FOR ADMIN (DEPRECIATED CONSTANTS)
+ */
 define('MARQUES_VERSION', '0.3.0'); // FALLBACK
-define('MARQUES_SYSTEM_DIR', MARQUES_ROOT_DIR . '/system');
-define('MARQUES_CONFIG_DIR', MARQUES_ROOT_DIR . '/config');
-define('MARQUES_CONTENT_DIR', MARQUES_ROOT_DIR . '/content');
-define('MARQUES_TEMPLATE_DIR', MARQUES_ROOT_DIR . '/templates'); /* DEPRECIATED */
-define('MARQUES_CACHE_DIR', MARQUES_SYSTEM_DIR . '/cache');
-define('MARQUES_ADMIN_DIR', MARQUES_ROOT_DIR . '/admin');
-define('MARQUES_THEMES_DIR', MARQUES_ROOT_DIR . '/themes');
+define('MARQUES_SYSTEM_DIR',    MARQUES_ROOT_DIR . '/system');
+define('MARQUES_CONFIG_DIR',    MARQUES_ROOT_DIR . '/config');
+define('MARQUES_CONTENT_DIR',   MARQUES_ROOT_DIR . '/content');
+define('MARQUES_TEMPLATE_DIR',  MARQUES_ROOT_DIR . '/templates'); /* DEPRECIATED */
+define('MARQUES_CACHE_DIR',     MARQUES_SYSTEM_DIR . '/cache');
+define('MARQUES_ADMIN_DIR',     MARQUES_ROOT_DIR . '/admin');
+define('MARQUES_THEMES_DIR',    MARQUES_ROOT_DIR . '/themes');
 
 // Autoloading
 require_once MARQUES_ROOT_DIR . '/system/bootstrap/spl_autoload_register.php';

@@ -27,7 +27,7 @@ class BlogManager {
      * Konstruktor
      */
     public function __construct() {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         $this->_config = $configManager->load('system') ?: [];
         $this->fileManager = new FileManager(MARQUES_CONTENT_DIR);
     }
@@ -248,7 +248,7 @@ class BlogManager {
 
         $this->updatePostUrlMapping($newId, $postData['slug']); // Korrektur: URL-Mapping nach dem Speichern aktualisieren
 
-        // Rückgabe der internen ID – das URL-Mapping (id → slug) wird vom Router über den ConfigManager verwaltet.
+        // Rückgabe der internen ID – das URL-Mapping (id → slug) wird vom Router über den AppConfig verwaltet.
         return $newId;
     }
 
@@ -271,7 +271,7 @@ class BlogManager {
      * @return bool Erfolgreich aktualisiert oder nicht.
      */
     private function updatePostUrlMapping(string $postId, string $slug): bool {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         $urlMapping = $configManager->loadUrlMapping() ?: []; // Bestehendes Mapping laden oder leeres Array
         $newPath = 'blog/' . $slug; // URL-Pfad basierend auf Slug (anpassbar)
 
@@ -340,7 +340,7 @@ class BlogManager {
     * @return bool Erfolg
     */
     private function deletePostUrlMapping(string $postId): bool {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         $urlMapping = $configManager->loadUrlMapping() ?: [];
 
         unset($urlMapping[$postId]); // Eintrag aus dem Array entfernen
@@ -354,8 +354,8 @@ class BlogManager {
      * @return array Kategorien mit Anzahl der Beiträge
      */
     public function getCategories() {
-        // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        // AppConfig verwenden
+        $configManager = AppConfig::getInstance();
         $catalogCategories = $configManager->load('categories') ?: [];
 
         // Kategorien aus Posts zählen
@@ -394,8 +394,8 @@ class BlogManager {
      * @return array Tags mit Anzahl der Beiträge
      */
     public function getTags() {
-        // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        // AppConfig verwenden
+        $configManager = AppConfig::getInstance();
         $catalogTags = $configManager->load('tags') ?: [];
 
         // Tags aus Posts zählen
@@ -499,7 +499,7 @@ class BlogManager {
      * Erzeugt eine neue interne ID im Format "000-25C".
      */
     private function generateNewId(array $postData, string $date): string {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         $counter = $configManager->get('blog', 'id_counter', 0);
         $counter++;
         $configManager->set('blog', 'id_counter', $counter);
@@ -588,8 +588,8 @@ class BlogManager {
      * @return bool Erfolg
      */
     public function addCategory($categoryName) {
-        // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        // AppConfig verwenden
+        $configManager = AppConfig::getInstance();
         $categories = $configManager->load('categories') ?: [];
 
         // Prüfen, ob Kategorie bereits existiert
@@ -616,8 +616,8 @@ class BlogManager {
             return true; // Nichts zu tun
         }
 
-        // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        // AppConfig verwenden
+        $configManager = AppConfig::getInstance();
         $categories = $configManager->load('categories') ?: [];
 
         // Prüfen, ob alte Kategorie existiert
@@ -674,8 +674,8 @@ class BlogManager {
      * @return bool Erfolg
      */
     public function deleteCategory($categoryName) {
-        // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        // AppConfig verwenden
+        $configManager = AppConfig::getInstance();
         $categories = $configManager->load('categories') ?: [];
 
         // Prüfen, ob Kategorie existiert
@@ -723,8 +723,8 @@ class BlogManager {
      * @return bool Erfolg
      */
     public function addTag($tagName) {
-        // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        // AppConfig verwenden
+        $configManager = AppConfig::getInstance();
         $tags = $configManager->load('tags') ?: [];
 
         // Prüfen, ob Tag bereits existiert
@@ -751,8 +751,8 @@ class BlogManager {
             return true; // Nichts zu tun
         }
 
-        // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        // AppConfig verwenden
+        $configManager = AppConfig::getInstance();
         $tags = $configManager->load('tags') ?: [];
 
         // Prüfen, ob alter Tag existiert
@@ -803,8 +803,8 @@ class BlogManager {
      * @return bool Erfolg
      */
     public function deleteTag($tagName) {
-        // ConfigManager verwenden
-        $configManager = ConfigManager::getInstance();
+        // AppConfig verwenden
+        $configManager = AppConfig::getInstance();
         $tags = $configManager->load('tags') ?: [];
 
         // Prüfen, ob Tag existiert
@@ -849,7 +849,7 @@ class BlogManager {
      * Initialisiert die Konfigurationsdateien für Tags und Kategorien
      */
     public function initCatalogFiles() {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
 
         // Kategoriedatei initialisieren, wenn sie nicht existiert
         $categories = $configManager->load('categories');

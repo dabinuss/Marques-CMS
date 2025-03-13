@@ -26,7 +26,7 @@ $user = new \Marques\Core\User();
 $pageManager = new \Marques\Core\PageManager();
 
 // Konfiguration laden
-$configManager = \Marques\Core\ConfigManager::getInstance();
+$configManager = \Marques\Core\AppConfig::getInstance();
 $system_config = $configManager->load('system') ?: [];
 
 // CSRF-Token generieren

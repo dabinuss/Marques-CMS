@@ -12,7 +12,7 @@ class ThemeManager {
     
     public function __construct() {
         $this->themesPath = MARQUES_ROOT_DIR . '/themes';
-        $this->configManager = ConfigManager::getInstance();
+        $this->configManager = AppConfig::getInstance();
         $this->loadThemes();
         $this->settingsManager = new SettingsManager();
         $this->currentTheme = $this->settingsManager->getSetting('active_theme', 'default');

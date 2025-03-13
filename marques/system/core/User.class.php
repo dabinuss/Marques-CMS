@@ -21,7 +21,7 @@ class User {
      * Konstruktor
      */
     public function __construct() {
-        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $configManager = \Marques\Core\AppConfig::getInstance();
         $this->_config = $configManager->load('system') ?: [];
         $this->_loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
         $this->_initSession();
@@ -477,7 +477,7 @@ class User {
      * @return array Benutzerdaten
      */
     private function _getUsers() {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         $users = $configManager->load('users');
         
         if (empty($users)) {
@@ -525,7 +525,7 @@ class User {
      * @return bool True bei Erfolg
      */
     private function _saveUsers($users) {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         return $configManager->save('users', $users);
     }
 }

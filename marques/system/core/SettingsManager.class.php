@@ -19,7 +19,7 @@ class SettingsManager {
     private $_system_settings;
     
     /**
-     * @var ConfigManager Instance des ConfigManager
+     * @var AppConfig Instance des AppConfig
      */
     private $_configManager;
     
@@ -27,7 +27,7 @@ class SettingsManager {
      * Konstruktor
      */
     public function __construct() {
-        $this->_configManager = \Marques\Core\ConfigManager::getInstance();
+        $this->_configManager = \Marques\Core\AppConfig::getInstance();
         $this->_loadSettings();
     }
     
@@ -202,7 +202,7 @@ class SettingsManager {
             }
         }
         
-        // ConfigManager verwenden
+        // AppConfig verwenden
         return $this->_configManager->save('system', $this->_system_settings);
     }
 }

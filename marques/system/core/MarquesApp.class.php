@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 /**
- * Marques CMS - Hauptanwendungsklasse (kombiniert Bootstrap und Application)
+ * marques CMS - Hauptanwendungsklasse (kombiniert Bootstrap und Application)
  */
 class MarquesApp extends AppCore
 {
@@ -20,7 +20,7 @@ class MarquesApp extends AppCore
         $this->appcontainer = new AppContainer();
         $this->appcontainer->register(SettingsManager::class);
         $this->appcontainer->register(User::class);
-    
+
         $this->router = new Router();
         $this->template = new Template();
     }
@@ -34,10 +34,6 @@ class MarquesApp extends AppCore
         if (!defined('MARQUES_ROOT_DIR')) {
             exit('Direkter Zugriff ist nicht erlaubt.');
         }
-
-        // Hilfsfunktionen laden
-        //require_once MARQUES_SYSTEM_DIR . '/core/Utilities.inc.php';
-        require_once MARQUES_SYSTEM_DIR . '/core/Exceptions.inc.php';
 
         $systemConfig = $this->configManager->load('system') ?: [];
         $this->appcontainer->register('config', $systemConfig);
@@ -62,8 +58,7 @@ class MarquesApp extends AppCore
             $maintenance_message = $settings->getSetting('maintenance_message', 'Die Website wird aktuell gewartet.');
 
             // User bereits in AppCore initialisiert
-            if (!$this->user->isAdmin()) { // Zugriff über $this, da in AppCore
-                // Wartungsmodus-Seite anzeigen (HTML-Code bleibt gleich)
+            if (!$this->user->isAdmin()) {
                 header('HTTP/1.1 503 Service Temporarily Unavailable');
                 header('Status: 503 Service Temporarily Unavailable');
                 header('Retry-After: 3600'); // Eine Stunde
@@ -74,14 +69,15 @@ class MarquesApp extends AppCore
 
         // Nur Seitenaufrufe von echten Benutzern erfassen (keine Bots, keine Admin-Besuche)
         if (!defined('IS_ADMIN') && !preg_match('/(bot|crawler|spider|slurp|bingbot|googlebot)/i', $_SERVER['HTTP_USER_AGENT'] ?? '')) {
-            $statsDir = MARQUES_SYSTEM_DIR . '/../logs/stats'; // Korrigierter Pfad
+            $statsDir = $this->appPath->combine('logs', 'stats');
             if (!is_dir($statsDir)) {
                 @mkdir($statsDir, 0755, true);
             }
             $logData = [
                 'time'       => date('Y-m-d H:i:s'),
                 'ip'         => $_SERVER['REMOTE_ADDR'] ?? '',
-                'url'        => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}",
+                'url'        => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") 
+                                 . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}",
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
                 'referrer'   => $_SERVER['HTTP_REFERER'] ?? ''
             ];
@@ -92,6 +88,9 @@ class MarquesApp extends AppCore
             $logFile = $statsDir . '/' . date('Y-m-d') . '.log';
             @file_put_contents($logFile, json_encode($logData) . PHP_EOL, FILE_APPEND);
         }
+
+        // Hilfsfunktionen laden (z. B. Exceptions)
+        require_once $this->appPath->combine('core', 'Exceptions.inc.php');
 
         // Hilfsfunktionen für das Theme-System (bleiben global)
         //\marques_init_default_theme();
@@ -108,9 +107,8 @@ class MarquesApp extends AppCore
             $pageData = $this->triggerEvent('before_render', $pageData);
             $this->template->render($pageData);
             $this->triggerEvent('after_render');
-
         } catch (\Exception $e) {
-            $this->handleException($e); // Nutzt die zentrale Fehlerbehandlung der AppCore-Klasse
+            $this->handleException($e);
         }
     }
 }

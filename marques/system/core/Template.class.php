@@ -28,7 +28,7 @@ class Template {
      * Konstruktor
      */
     public function __construct() {
-        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $configManager = \Marques\Core\AppConfig::getInstance();
         $this->_config = $configManager->load('system') ?: [];
 
         $themeManager = new ThemeManager();

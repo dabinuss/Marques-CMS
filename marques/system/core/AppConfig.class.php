@@ -12,18 +12,21 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-class ConfigManager {
+class AppConfig {
 
-    private static ?ConfigManager $_instance = null;
+    private static ?AppConfig $_instance = null;
     private array $_cache = [];
     
     /**
      * Privater Konstruktor (Singleton-Pattern)
      */
     private function __construct() {
+
         // Stellen sicher, dass das Konfigurationsverzeichnis existiert
-        if (!is_dir(MARQUES_CONFIG_DIR)) {
-            mkdir(MARQUES_CONFIG_DIR, 0755, true);
+        try {
+            AppPath::getInstance()->preparePath('config');
+        } catch (\Exception $e) {
+            echo "Fehler beim Vorbereiten des Konfigurationsverzeichnisses: " . $e->getMessage();
         }
         
         // .htaccess-Datei erstellen, falls nicht vorhanden
@@ -33,9 +36,9 @@ class ConfigManager {
     /**
      * Gibt die einzige Instanz der Klasse zurück
      *
-     * @return ConfigManager
+     * @return AppConfig
      */
-    public static function getInstance(): ConfigManager {
+    public static function getInstance(): AppConfig {
         if (self::$_instance === null) {
             self::$_instance = new self();
         }
@@ -56,17 +59,17 @@ class ConfigManager {
         }
         $filePath = $this->getConfigPath($name);
         if (!file_exists($filePath)) {
-            error_log("ConfigManager: Konfigurationsdatei nicht gefunden: " . $filePath);
+            error_log("AppConfig: Konfigurationsdatei nicht gefunden: " . $filePath);
             return null;
         }
         if (!is_readable($filePath)) {
-            error_log("ConfigManager: Konfigurationsdatei nicht lesbar: " . $filePath);
+            error_log("AppConfig: Konfigurationsdatei nicht lesbar: " . $filePath);
             return null;
         }
         $content = file_get_contents($filePath);
         $config = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("ConfigManager: Fehler beim Parsen der JSON-Konfiguration: " . json_last_error_msg());
+            error_log("AppConfig: Fehler beim Parsen der JSON-Konfiguration: " . json_last_error_msg());
             return null;
         }
         $this->_cache[$name] = $config;
@@ -86,21 +89,21 @@ class ConfigManager {
         $dir = dirname($filePath);
         if (!is_dir($dir)) {
             if (!@mkdir($dir, 0755, true)) {
-                error_log("ConfigManager: Konnte Verzeichnis nicht erstellen: " . $dir);
+                error_log("AppConfig: Konnte Verzeichnis nicht erstellen: " . $dir);
                 return false;
             }
         }
         $content = json_encode($data, JSON_PRETTY_PRINT);
         $tempFile = $filePath . '.tmp';
         if (file_put_contents($tempFile, $content) === false) {
-            error_log("ConfigManager: Fehler beim Schreiben der temporären Datei: " . $tempFile);
+            error_log("AppConfig: Fehler beim Schreiben der temporären Datei: " . $tempFile);
             if (file_exists($tempFile)) {
                 @unlink($tempFile);
             }
             return false;
         }
         if (!@rename($tempFile, $filePath)) {
-            error_log("ConfigManager: Fehler beim Umbenennen der temporären Datei zu: " . $filePath);
+            error_log("AppConfig: Fehler beim Umbenennen der temporären Datei zu: " . $filePath);
             @unlink($tempFile);
             return false;
         }
@@ -228,7 +231,9 @@ class ConfigManager {
      * Stellt sicher, dass eine .htaccess-Datei im Konfigurationsverzeichnis existiert
      */
     private function ensureHtaccessExists(): void {
-        $htaccessPath = MARQUES_CONFIG_DIR . '/.htaccess';
+        // Hier nutzen wir den AppPath-Zugriff (optional: könntest du auch preparePath() einsetzen)
+        $configDir = AppPath::getInstance()->getPath('config');
+        $htaccessPath = $configDir . '/.htaccess';
         if (!file_exists($htaccessPath)) {
             $htaccessContent = "# Konfigurationsverzeichnis vor direktem Zugriff schützen\n";
             $htaccessContent .= "Order deny,allow\n";

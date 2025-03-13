@@ -19,7 +19,7 @@ class Content {
     private $_cache = [];
     
     /**
-     * @var ConfigManager 
+     * @var AppConfig 
      */
     private $_configManager;
     
@@ -27,7 +27,7 @@ class Content {
      * Konstruktor
      */
     public function __construct() {
-        $this->_configManager = ConfigManager::getInstance();
+        $this->_configManager = AppConfig::getInstance();
     }
     
     /**

@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 /**
- * Einfacher Dependency Injection AppContainer ohne Exceptions und Interface
+ * Einfacher Dependency Injection AppContainer
  */
 class AppContainer {
     /** @var array<string, callable|string|object|null> */

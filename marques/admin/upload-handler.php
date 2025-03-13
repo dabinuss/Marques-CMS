@@ -22,8 +22,8 @@ $admin->requireLogin();
 // Antwort-Header setzen
 header('Content-Type: application/json');
 
-// ConfigManager initialisieren
-$configManager = \Marques\Core\ConfigManager::getInstance();
+// AppConfig initialisieren
+$configManager = \Marques\Core\AppConfig::getInstance();
 
 // Konfiguration laden
 $system_config = $configManager->load('system') ?: [];

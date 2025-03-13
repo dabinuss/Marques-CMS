@@ -29,7 +29,7 @@ $pageManager = new \Marques\Core\PageManager();
 $versionManager = new \Marques\Core\VersionManager();
 
 // Konfiguration laden
-$configManager = \Marques\Core\ConfigManager::getInstance();
+$configManager = \Marques\Core\AppConfig::getInstance();
 $system_config = $configManager->load('system') ?: [];
 
 // CSRF-Token generieren

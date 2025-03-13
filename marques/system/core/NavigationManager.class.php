@@ -21,7 +21,7 @@ class NavigationManager {
     private $_config;
     
     /**
-     * @var ConfigManager ConfigManager-Instanz
+     * @var AppConfig AppConfig-Instanz
      */
     private $_configManager;
     
@@ -29,9 +29,9 @@ class NavigationManager {
      * Konstruktor
      */
     public function __construct() {
-        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $configManager = \Marques\Core\AppConfig::getInstance();
         $this->_config = $configManager->load('system') ?: [];
-        $this->_configManager = ConfigManager::getInstance();
+        $this->_configManager = AppConfig::getInstance();
         $this->initNavigationFile();
     }
     
@@ -39,7 +39,7 @@ class NavigationManager {
      * Initialisiert die Navigationsdatei, wenn sie nicht existiert
      */
     public function initNavigationFile() {
-        // Prüfen, ob Navigation bereits im ConfigManager existiert
+        // Prüfen, ob Navigation bereits im AppConfig existiert
         $navigation = $this->_configManager->load('navigation');
         
         if (empty($navigation)) {

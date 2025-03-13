@@ -18,12 +18,13 @@ define('IS_ADMIN', true);
 require_once MARQUES_ROOT_DIR . '/system/core/Bootstrap.inc.php';
 
 // Konfiguration laden
-$configManager = \Marques\Core\ConfigManager::getInstance();
+$configManager = \Marques\Core\AppConfig::getInstance();
 $system_config = $configManager->load('system') ?: [];
 
 // Admin-Klasse initialisieren
 $admin = new \Marques\Core\Admin();
 $admin->requireLogin();
+
 
 // Benutzer-Objekt initialisieren
 $user = new \Marques\Core\User();

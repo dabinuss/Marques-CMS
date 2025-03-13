@@ -1,7 +1,7 @@
 <?php
 use Marques\Core\AppLogger;
 use Marques\Core\AppUnhandledExceptions;
-use Marques\Core\ConfigManager;
+use Marques\Core\AppConfig;
 
 /**
  * set_exception_handler
@@ -22,7 +22,7 @@ set_exception_handler(function (\Throwable $e) {
     http_response_code($statusCode);
 
     // Debug-Modus aus der Konfiguration holen
-    $debug = ConfigManager::getInstance()->get('debug', false);
+    $debug = AppConfig::getInstance()->get('debug', false);
 
     echo '<!DOCTYPE html><html><head><title>Fehler ' . $statusCode . '</title></head>';
     echo '<body><h1>Fehler ' . $statusCode . '</h1><p>' . htmlspecialchars($e->getMessage()) . '</p>';

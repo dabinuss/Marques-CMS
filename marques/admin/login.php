@@ -14,8 +14,8 @@ define('MARQUES_ROOT_DIR', dirname(__DIR__));
 // Bootstrap laden
 require_once MARQUES_ROOT_DIR . '/system/core/Bootstrap.inc.php';
 
-// ConfigManager initialisieren
-$configManager = \Marques\Core\ConfigManager::getInstance();
+// AppConfig initialisieren
+$configManager = \Marques\Core\AppConfig::getInstance();
 
 // Konfiguration laden
 $system_config = $configManager->load('system') ?: [];

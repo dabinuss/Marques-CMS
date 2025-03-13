@@ -19,7 +19,7 @@ class Router {
     private $_routes;
     
     /**
-     * @var ConfigManager Instance des ConfigManager
+     * @var AppConfig Instance des AppConfig
      */
     private $_configManager;
     
@@ -27,8 +27,8 @@ class Router {
      * Konstruktor
      */
     public function __construct() {
-        // ConfigManager-Instanz holen
-        $this->_configManager = ConfigManager::getInstance();
+        // AppConfig-Instanz holen
+        $this->_configManager = AppConfig::getInstance();
         
         // Routen aus Konfiguration laden
         $this->_routes = $this->_configManager->load('routes') ?: [];
