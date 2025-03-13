@@ -5,15 +5,25 @@ namespace Marques\Core;
 
 abstract class AppCore
 {
-    protected ConfigManager $configManager;
+    protected AppPath $appPath;
+    protected ?AppConfig $configManager = null;
     protected AppLogger $log;
     protected EventManager $eventManager;
     protected User $user; // User-Instanz
 
     public function __construct()
     {
+        // Verwende den Singleton-Zugriff für AppPath
+        $this->appPath = AppPath::getInstance();
+
+        $this->configManager = AppConfig::getInstance();
+/*
         // Diese Dienste werden *immer* benötigt und sind für alle Subklassen relevant.
-        $this->configManager = ConfigManager::getInstance();
+        $this->appPath = new AppPath();
+        if (static::class !== AppConfig::class) {
+            $this->configManager = AppConfig::getInstance();
+        }
+*/
         $this->log = AppLogger::getInstance();          // AppLogger direkt instanziieren
         $this->eventManager = new EventManager(); // EventManager direkt instanziieren
         $this->user = new User();

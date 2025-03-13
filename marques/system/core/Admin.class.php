@@ -28,7 +28,7 @@ class Admin {
      */
     public function __construct() {
         $this->_user = new User();
-        $configManager = \Marques\Core\ConfigManager::getInstance();
+        $configManager = \Marques\Core\AppConfig::getInstance();
         $this->_config = $configManager->load('system') ?: [];
     }
     

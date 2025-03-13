@@ -26,7 +26,7 @@ $user = new \Marques\Core\User();
 $blogManager = new \Marques\Core\BlogManager();
 
 // Konfiguration laden
-$configManager = \Marques\Core\ConfigManager::getInstance();
+$configManager = \Marques\Core\AppConfig::getInstance();
 $system_config = $configManager->load('system') ?: [];
 
 // get Blog Entry URL

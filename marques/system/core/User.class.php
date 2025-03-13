@@ -13,16 +13,23 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 class User {
+    /**
+     * Enthält ausschließlich die benutzerspezifischen Konfigurationsdaten.
+     * Diese sollten niemals Systemdaten enthalten.
+     */
     private $_config;
     private $_session = null;
     private $_loginAttemptsFile;
     
     /**
      * Konstruktor
+     *
+     * @param array $userConfig Array mit benutzerspezifischen Einstellungen.
+     *                          Falls nicht übergeben, wird ein leeres Array genutzt.
      */
-    public function __construct() {
-        $configManager = \Marques\Core\ConfigManager::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
+    public function __construct(array $userConfig = []) {
+        // Verwende ausschließlich die übergebenen Userdaten
+        $this->_config = $userConfig;
         $this->_loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
         $this->_initSession();
     }
@@ -187,7 +194,6 @@ class User {
         }
         
         // Normale Passwortprüfung für alle anderen Fälle
-        // Sicherstellen, dass wir einen gültigen Hash haben
         if (empty($user['password'])) {
             error_log("Login failed: Empty password hash for user '$username'");
             $this->_logLoginAttempt($username, false);
@@ -477,7 +483,7 @@ class User {
      * @return array Benutzerdaten
      */
     private function _getUsers() {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         $users = $configManager->load('users');
         
         if (empty($users)) {
@@ -525,7 +531,7 @@ class User {
      * @return bool True bei Erfolg
      */
     private function _saveUsers($users) {
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         return $configManager->save('users', $users);
     }
 }

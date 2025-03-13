@@ -24,11 +24,11 @@ class Helper {
     private static ?array $urlMappingCache = null;
 
     /**
-     * ConfigManager-Instanz
+     * AppConfig-Instanz
      *
-     * @var ConfigManager|null
+     * @var AppConfig|null
      */
-    private static ?ConfigManager $configManager = null;
+    private static ?AppConfig $configManager = null;
 
     /**
      * Lädt (oder gibt den bereits geladenen) Systemkonfiguration zurück.
@@ -38,7 +38,7 @@ class Helper {
      */
     public static function getConfig(bool $forceReload = false): array {
         if (self::$configManager === null) {
-            self::$configManager = ConfigManager::getInstance();
+            self::$configManager = AppConfig::getInstance();
         }
 
         if ($forceReload || self::$config === null) {
@@ -60,7 +60,7 @@ class Helper {
      */
     private static function getUrlMapping(bool $forceReload = false): array {
         if (self::$configManager === null) {
-            self::$configManager = ConfigManager::getInstance();
+            self::$configManager = AppConfig::getInstance();
         }
 
         if ($forceReload || self::$urlMappingCache === null) {
@@ -229,7 +229,7 @@ class Helper {
      */
     public static function generateBlogUrl(array $post): string {
         $urlMapping = self::getUrlMapping(); // URL-Mapping laden
-        $configManager = ConfigManager::getInstance();
+        $configManager = AppConfig::getInstance();
         $systemSettings = $configManager->load('system') ?: [];
         $blogUrlFormat = $systemSettings['blog_url_format'] ?? 'internal';
 

@@ -2,8 +2,8 @@
 // Aktuelle Seite ermitteln
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 
-// ConfigManager für das Logo verwenden
-$configManager = \Marques\Core\ConfigManager::getInstance();
+// AppConfig für das Logo verwenden
+$configManager = \Marques\Core\AppConfig::getInstance();
 $systemConfig = $configManager->load('system') ?: [];
 ?>
 
