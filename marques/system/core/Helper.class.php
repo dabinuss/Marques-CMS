@@ -277,4 +277,20 @@ class Helper {
         }
         return $themeManager->getThemeAssetsUrl($path);
     }
+
+    /**
+     * Formatiert eine Byte-Größe in ein menschenlesbares Format.
+     *
+     * @param int $bytes Die Größe in Bytes.
+     * @param int $precision Anzahl der Dezimalstellen.
+     * @return string Die formatierte Größe (z.B. "1.23 MB").
+     */
+    public static function formatBytes(int $bytes, int $precision = 2): string {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = ($bytes > 0) ? floor(log($bytes, 1024)) : 0;
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1024 ** $pow);
+        return round($bytes, $precision) . ' ' . $units[$pow];
+    }
 }

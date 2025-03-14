@@ -27,9 +27,9 @@ class User {
      * @param array $userConfig Array mit benutzerspezifischen Einstellungen.
      *                          Falls nicht übergeben, wird ein leeres Array genutzt.
      */
-    public function __construct(array $userConfig = []) {
-        // Verwende ausschließlich die übergebenen Userdaten
-        $this->_config = $userConfig;
+    public function __construct() {
+        $configManager = \Marques\Core\AppConfig::getInstance();
+        $this->_config = $configManager->load('system') ?: [];
         $this->_loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
         $this->_initSession();
     }

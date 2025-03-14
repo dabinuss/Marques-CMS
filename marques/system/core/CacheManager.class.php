@@ -214,4 +214,20 @@ class CacheManager {
         }
         return $url;
     }
+
+    public function getCacheFileCount(): int {
+        $files = glob($this->cacheDir . '/*.cache');
+        return $files === false ? 0 : count($files);
+    }
+    
+    public function getCacheSize(): int {
+        $files = glob($this->cacheDir . '/*.cache');
+        $size = 0;
+        if ($files !== false) {
+            foreach ($files as $file) {
+                $size += filesize($file);
+            }
+        }
+        return $size;
+    }
 }

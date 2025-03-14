@@ -1,0 +1,87 @@
+[14-Mar-2025 11:14:17 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:17 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:17 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:17 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:17 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:17 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js
+[14-Mar-2025 11:14:17 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:17 Europe/Berlin] PHP Warning:  http_response_code(): Cannot set response code - headers already sent (output started at /homepages/38/d4298831632/htdocs/marques/index.php:22) in /homepages/38/d4298831632/htdocs/marques/system/core/AppCore.class.php on line 63
+[14-Mar-2025 11:14:18 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:18 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:18 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:18 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:18 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:18 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js
+[14-Mar-2025 11:14:18 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:18 Europe/Berlin] PHP Warning:  http_response_code(): Cannot set response code - headers already sent (output started at /homepages/38/d4298831632/htdocs/marques/index.php:22) in /homepages/38/d4298831632/htdocs/marques/system/core/AppCore.class.php on line 63
+[14-Mar-2025 11:14:19 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:19 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:19 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:19 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:19 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:19 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js
+[14-Mar-2025 11:14:19 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:19 Europe/Berlin] PHP Warning:  http_response_code(): Cannot set response code - headers already sent (output started at /homepages/38/d4298831632/htdocs/marques/index.php:22) in /homepages/38/d4298831632/htdocs/marques/system/core/AppCore.class.php on line 63
+[14-Mar-2025 11:14:19 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:19 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:19 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:19 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:19 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:19 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js
+[14-Mar-2025 11:14:19 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:19 Europe/Berlin] PHP Warning:  http_response_code(): Cannot set response code - headers already sent (output started at /homepages/38/d4298831632/htdocs/marques/index.php:22) in /homepages/38/d4298831632/htdocs/marques/system/core/AppCore.class.php on line 63
+[14-Mar-2025 11:14:20 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:20 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:20 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:20 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:20 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:20 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js
+[14-Mar-2025 11:14:20 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /homepages/38/d4298831632/htdocs/marques/system/core/MarquesApp.class.php on line 31
+[14-Mar-2025 12:14:20 Europe/Berlin] PHP Warning:  http_response_code(): Cannot set response code - headers already sent (output started at /homepages/38/d4298831632/htdocs/marques/index.php:22) in /homepages/38/d4298831632/htdocs/marques/system/core/AppCore.class.php on line 63
+[14-Mar-2025 12:14:24 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:24 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js
+[14-Mar-2025 12:14:24 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:24 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js
+[14-Mar-2025 12:14:24 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:24 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:24 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js
+[14-Mar-2025 12:14:25 Europe/Berlin] getPage aufgerufen mit path: home
+[14-Mar-2025 12:14:25 Europe/Berlin] Route-Parameter: Array
+(
+)
+
+[14-Mar-2025 12:14:25 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/css/main-style.css
+[14-Mar-2025 12:14:25 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/images/favicon.svg
+[14-Mar-2025 12:14:25 Europe/Berlin] Theme Asset URL: https://faktenfront.de/themes/default/assets/js/main.js

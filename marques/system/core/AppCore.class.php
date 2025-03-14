@@ -89,7 +89,7 @@ abstract class AppCore
      */
     protected function getConfig(string $key, $default = null)
     {
-        return $this->configManager->get($key, $default);
+        return $this->configManager->get($key, null, $default);
     }
 
     /**

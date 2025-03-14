@@ -118,14 +118,22 @@ class AppConfig {
      * @param mixed $default Standardwert, falls nicht gefunden
      * @return mixed Konfigurationswert
      */
-    public function get(string $key, $default = null) {
-        $config = $this->load('default'); // oder wie auch immer du deine Konfiguration lädst
-        if ($config === null) {
+    public function get(string $key, $config = null, $default = null) {
+        // Wenn der übergebene Konfigurationsname kein String ist, verwende "system"
+        if (!is_string($config)) {
+            $config = 'system';
+        }
+        
+        // Lade die Konfiguration anhand des angegebenen Namens
+        $data = $this->load($config);
+        if ($data === null) {
             return $default;
         }
+        
+        // Unterstütze verschachtelte Schlüssel (z. B. "admin_language")
         if (strpos($key, '.') !== false) {
             $keys = explode('.', $key);
-            $value = $config;
+            $value = $data;
             foreach ($keys as $k) {
                 if (!isset($value[$k])) {
                     return $default;
@@ -134,8 +142,10 @@ class AppConfig {
             }
             return $value;
         }
-        return $config[$key] ?? $default;
+        
+        return $data[$key] ?? $default;
     }
+    
     
     /**
      * Setzt einen Wert in einer Konfiguration
@@ -225,6 +235,57 @@ class AppConfig {
      */
     private function getConfigPath(string $name): string {
         return MARQUES_CONFIG_DIR . '/' . $name . '.config.json';
+    }
+
+    /**
+     * Gibt Standard-Einstellungen zurück
+     *
+     * @return array Standard-Einstellungen
+     */
+    public function getDefaultSettings() {
+    
+        return [
+            // Grundlegende Website-Informationen
+            'site_name' => 'marques CMS',
+            'site_description' => 'Ein leichtgewichtiges, dateibasiertes CMS',
+            'site_logo' => '',
+            'site_favicon' => '',
+            'base_url' => 'https://faktenfront.de',
+
+            // Datums- und Zeiteinstellungen
+            'timezone' => 'Europe/Berlin',
+            'date_format' => 'd.m.Y',
+            'time_format' => 'H:i',
+
+            // Systemeinstellungen
+            'debug' => false,
+            'cache_enabled' => true,
+            'version' => MARQUES_VERSION,
+            'maintenance' => false,
+            'maintenance_message' => 'Die Website wird aktuell gewartet. Bitte versuchen Sie es später erneut.',
+            'comments_enabled' => false,
+
+            // Admin-Einstellungen
+            'admin_language' => 'de',
+            'admin_email' => '',
+            'contact_phone' => '',
+
+            // Kontaktinformationen
+            'contact_email' => '',
+            'contact_phone' => '',
+
+            // Inhaltseinstellungen
+            'posts_per_page' => 10,
+            'excerpt_length' => 150,
+            'comments_enabled' => false,
+            'blog_url_format'=> 'date_slash',
+            
+            'security' => [
+                'max_login_attempts' => 6,
+                'login_attempt_window' => 600,
+                'login_block_duration' => 600,
+            ],
+        ];
     }
     
     /**
