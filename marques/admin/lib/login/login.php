@@ -8,12 +8,6 @@
  * @subpackage admin
  */
 
-// Basispfad definieren
-define('MARQUES_ROOT_DIR', dirname(__DIR__));
-
-// Bootstrap laden
-require_once MARQUES_ROOT_DIR . '/system/core/Bootstrap.inc.php';
-
 // AppConfig initialisieren
 $configManager = \Marques\Core\AppConfig::getInstance();
 
@@ -87,11 +81,11 @@ if (isset($users['admin'])) {
 
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $system_config['admin_language'] ?? 'de'; ?>">
+<html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - <?php echo htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <title>Login - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
     <link rel="stylesheet" href="assets/css/login-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
@@ -103,7 +97,7 @@ if (isset($users['admin'])) {
         </div>
         
         <?php if (!empty($error)): ?>
-            <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+            <div class="error-message"><?= htmlspecialchars($error); ?></div>
         <?php endif; ?>
         
         <?php if ($showAdminDefaultPassword): ?>
@@ -122,7 +116,7 @@ if (isset($users['admin'])) {
                 <label for="username">Benutzername</label>
                 <div class="input-icon-wrapper">
                     <span class="input-icon"><i class="fas fa-user"></i></span>
-                    <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($username); ?>" required>
+                    <input type="text" id="username" name="username" value="<?= htmlspecialchars($username); ?>" required>
                 </div>
             </div>
             
@@ -134,7 +128,7 @@ if (isset($users['admin'])) {
                 </div>
             </div>
             
-            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+            <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
             
             <button type="submit" class="submit-button">
                 <i class="fas fa-sign-in-alt"></i> Anmelden
@@ -142,7 +136,7 @@ if (isset($users['admin'])) {
         </form>
         
         <div class="login-footer">
-            <p>marques CMS v<?php echo MARQUES_VERSION; ?></p>
+            <p>marques CMS v<?= MARQUES_VERSION; ?></p>
         </div>
     </div>
 </body>

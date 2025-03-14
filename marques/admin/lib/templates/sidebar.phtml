@@ -1,6 +1,6 @@
 <?php
 // Aktuelle Seite ermitteln
-$current_page = basename($_SERVER['SCRIPT_NAME']);
+$current_page = $_GET['page'] ?? '';
 
 // AppConfig für das Logo verwenden
 $configManager = \Marques\Core\AppConfig::getInstance();
@@ -31,50 +31,50 @@ $systemConfig = $configManager->load('system') ?: [];
     <nav>
         <ul class="admin-menu">
             <li class="admin-menu-item">
-                <a href="index.php" class="admin-menu-link <?= $current_page === 'index.php' ? 'active' : ''; ?>">
+                <a href="index.php" class="admin-menu-link <?= (!isset($current_page) || $current_page === '' || $current_page === 'dashboard') ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-tachometer-alt"></i></span>
                     Dashboard
                 </a>
             </li>
             <li class="admin-menu-item">
-                <a href="pages.php" class="admin-menu-link <?= $current_page === 'pages.php' || $current_page === 'page-edit.php' ? 'active' : ''; ?>">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>" class="admin-menu-link <?= $current_page === 'pages' || $current_page === 'page-edit' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-file-alt"></i></span>
                     Seiten
                 </a>
             </li>
             <li class="admin-menu-item">
-                <a href="blog.php" class="admin-menu-link <?= $current_page === 'blog.php' || $current_page === 'blog-categories.php' || $current_page === 'blog-tags.php' || $current_page === 'blog-edit.php' ? 'active' : ''; ?>">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>" class="admin-menu-link <?= $current_page === 'blog' || $current_page === 'blog-categories' || $current_page === 'blog-tags' || $current_page === 'blog-edit' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-blog"></i></span>
                     Blog
                 </a>
                 <ul class="admin-submenu">
-                    <li><a href="blog.php" class="admin-submenu-link <?= $current_page === 'blog.php' ? 'active' : ''; ?>">Alle Beiträge</a></li>
-                    <li><a href="blog-edit.php" class="admin-submenu-link <?= $current_page === 'blog-edit.php' ? 'active' : ''; ?>">Neuer Beitrag</a></li>
-                    <li><a href="blog-categories.php" class="admin-submenu-link <?= $current_page === 'blog-categories.php' ? 'active' : ''; ?>">Kategorien</a></li>
-                    <li><a href="blog-tags.php" class="admin-submenu-link <?= $current_page === 'blog-tags.php' ? 'active' : ''; ?>">Tags</a></li>
+                    <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>" class="admin-submenu-link <?= $current_page === 'blog' ? 'active' : ''; ?>">Alle Beiträge</a></li>
+                    <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-submenu-link <?= $current_page === 'blog-edit' ? 'active' : ''; ?>">Neuer Beitrag</a></li>
+                    <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-categories'); ?>" class="admin-submenu-link <?= $current_page === 'blog-categories' ? 'active' : ''; ?>">Kategorien</a></li>
+                    <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-tags'); ?>" class="admin-submenu-link <?= $current_page === 'blog-tags' ? 'active' : ''; ?>">Tags</a></li>
                 </ul>
             </li>
             <li class="admin-menu-item">
-                <a href="media.php" class="admin-menu-link <?= $current_page === 'media.php' ? 'active' : ''; ?>">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media'); ?>" class="admin-menu-link <?= $current_page === 'media' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-images"></i></span>
                     Medien
                 </a>
             </li>
             <li class="admin-menu-item">
-                <a href="navigation.php" class="admin-menu-link <?= $current_page === 'navigation.php' ? 'active' : ''; ?>">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=navigation'); ?>" class="admin-menu-link <?= $current_page === 'navigation' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-bars"></i></span>
                     Menüs
                 </a>
             </li>
             <?php if (isset($user) && $user->isAdmin()): ?>
             <li class="admin-menu-item">
-                <a href="users.php" class="admin-menu-link <?= $current_page === 'users.php' || $current_page === 'user-edit.php' ? 'active' : ''; ?>">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=users'); ?>" class="admin-menu-link <?= $current_page === 'users' || $current_page === 'user-edit' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-users"></i></span>
                     Benutzer
                 </a>
             </li>
             <li class="admin-menu-item">
-                <a href="settings.php" class="admin-menu-link <?= $current_page === 'settings.php' ? 'active' : ''; ?>">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=settings'); ?>" class="admin-menu-link <?= $current_page === 'settings' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-cog"></i></span>
                     Einstellungen
                 </a>

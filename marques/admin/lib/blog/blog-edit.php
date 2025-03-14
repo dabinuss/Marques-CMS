@@ -155,11 +155,11 @@ $tags_json = json_encode(array_keys($all_tags));
 
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $system_config['admin_language'] ?? 'de'; ?>">
+<html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $editing ? 'Beitrag bearbeiten' : 'Neuen Beitrag erstellen'; ?> - Admin-Panel - <?php echo htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <title><?= $editing ? 'Beitrag bearbeiten' : 'Neuen Beitrag erstellen'; ?> - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="assets/js/tinymce/tinymce.min.js"></script>
@@ -230,7 +230,7 @@ $tags_json = json_encode(array_keys($all_tags));
         
         <main class="admin-content">
             <div class="admin-topbar">
-                <h2 class="admin-page-title"><?php echo $editing ? 'Beitrag bearbeiten' : 'Neuen Beitrag erstellen'; ?></h2>
+                <h2 class="admin-page-title"><?= $editing ? 'Beitrag bearbeiten' : 'Neuen Beitrag erstellen'; ?></h2>
                 
                 <div class="admin-actions">
                     <a href="blog.php" class="admin-button">
@@ -243,7 +243,7 @@ $tags_json = json_encode(array_keys($all_tags));
                         // Erzeuge die URL für den aktuellen Beitrag:
                         $blogUrl = Helper::generateBlogUrl($post);
                     ?>
-                    <a href="<?php echo htmlspecialchars($blogUrl); ?>" class="admin-button" target="_blank">
+                    <a href="<?= htmlspecialchars($blogUrl); ?>" class="admin-button" target="_blank">
                         <span class="admin-button-icon"><i class="fas fa-eye"></i></span>
                         Beitrag ansehen
                     </a>
@@ -253,32 +253,32 @@ $tags_json = json_encode(array_keys($all_tags));
             
             <?php if (!empty($success_message)): ?>
                 <div class="alert alert-success">
-                    <?php echo htmlspecialchars($success_message); ?>
+                    <?= htmlspecialchars($success_message); ?>
                 </div>
             <?php endif; ?>
             
             <?php if (!empty($error_message)): ?>
                 <div class="alert alert-danger">
-                    <?php echo htmlspecialchars($error_message); ?>
+                    <?= htmlspecialchars($error_message); ?>
                 </div>
             <?php endif; ?>
             
             <form method="post" class="admin-form ">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                <input type="hidden" name="id" value="<?php echo htmlspecialchars($post['id']); ?>">
+                <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                <input type="hidden" name="id" value="<?= htmlspecialchars($post['id']); ?>">
                 
                 <div class="form-row">
                     <div class="form-column">
                         <div class="form-group">
                             <label for="title" class="form-label">Titel</label>
-                            <input type="text" id="title" name="title" class="form-control" value="<?php echo htmlspecialchars($post['title']); ?>" required>
+                            <input type="text" id="title" name="title" class="form-control" value="<?= htmlspecialchars($post['title']); ?>" required>
                         </div>
                     </div>
                     
                     <div class="form-column">
                         <div class="form-group">
                             <label for="slug" class="form-label">Slug</label>
-                            <input type="text" id="slug" name="slug" class="form-control" value="<?php echo htmlspecialchars($post['slug']); ?>" placeholder="wird-automatisch-generiert">
+                            <input type="text" id="slug" name="slug" class="form-control" value="<?= htmlspecialchars($post['slug']); ?>" placeholder="wird-automatisch-generiert">
                             <div class="form-help">Leer lassen für automatische Generierung aus dem Titel.</div>
                         </div>
                     </div>
@@ -288,14 +288,14 @@ $tags_json = json_encode(array_keys($all_tags));
                     <div class="form-column">
                         <div class="form-group">
                             <label for="date" class="form-label">Datum</label>
-                            <input type="date" id="date" name="date" class="form-control" value="<?php echo htmlspecialchars($post['date']); ?>" required>
+                            <input type="date" id="date" name="date" class="form-control" value="<?= htmlspecialchars($post['date']); ?>" required>
                         </div>
                     </div>
                     
                     <div class="form-column">
                         <div class="form-group">
                             <label for="author" class="form-label">Autor</label>
-                            <input type="text" id="author" name="author" class="form-control" value="<?php echo htmlspecialchars($post['author']); ?>" required>
+                            <input type="text" id="author" name="author" class="form-control" value="<?= htmlspecialchars($post['author']); ?>" required>
                         </div>
                     </div>
                     
@@ -303,8 +303,8 @@ $tags_json = json_encode(array_keys($all_tags));
                         <div class="form-group">
                             <label for="status" class="form-label">Status</label>
                             <select id="status" name="status" class="form-control">
-                                <option value="published" <?php echo $post['status'] === 'published' ? 'selected' : ''; ?>>Veröffentlicht</option>
-                                <option value="draft" <?php echo $post['status'] === 'draft' ? 'selected' : ''; ?>>Entwurf</option>
+                                <option value="published" <?= $post['status'] === 'published' ? 'selected' : ''; ?>>Veröffentlicht</option>
+                                <option value="draft" <?= $post['status'] === 'draft' ? 'selected' : ''; ?>>Entwurf</option>
                             </select>
                         </div>
                     </div>
@@ -312,7 +312,7 @@ $tags_json = json_encode(array_keys($all_tags));
                 
                 <div class="form-group">
                     <label for="excerpt" class="form-label">Auszug</label>
-                    <textarea id="excerpt" name="excerpt" class="form-control" rows="3"><?php echo htmlspecialchars($post['excerpt']); ?></textarea>
+                    <textarea id="excerpt" name="excerpt" class="form-control" rows="3"><?= htmlspecialchars($post['excerpt']); ?></textarea>
                     <div class="form-help">Kurze Zusammenfassung des Beitrags. Leer lassen für automatische Generierung.</div>
                 </div>
                 
@@ -320,13 +320,13 @@ $tags_json = json_encode(array_keys($all_tags));
                     <div class="form-column">
                         <div class="form-group">
                             <label class="form-label">Kategorien</label>
-                            <input type="hidden" id="categories" name="categories" value="<?php echo htmlspecialchars(implode(',', $post['categories'])); ?>">
+                            <input type="hidden" id="categories" name="categories" value="<?= htmlspecialchars(implode(',', $post['categories'])); ?>">
                             <div class="tag-container" id="categoryContainer">
                                 <?php foreach ($post['categories'] as $category): ?>
                                     <?php if (!empty($category)): ?>
                                         <div class="tag">
-                                            <?php echo htmlspecialchars($category); ?>
-                                            <span class="tag-remove" data-value="<?php echo htmlspecialchars($category); ?>">×</span>
+                                            <?= htmlspecialchars($category); ?>
+                                            <span class="tag-remove" data-value="<?= htmlspecialchars($category); ?>">×</span>
                                         </div>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
@@ -339,13 +339,13 @@ $tags_json = json_encode(array_keys($all_tags));
                     <div class="form-column">
                         <div class="form-group">
                             <label class="form-label">Tags</label>
-                            <input type="hidden" id="tags" name="tags" value="<?php echo htmlspecialchars(implode(',', $post['tags'])); ?>">
+                            <input type="hidden" id="tags" name="tags" value="<?= htmlspecialchars(implode(',', $post['tags'])); ?>">
                             <div class="tag-container" id="tagContainer">
                                 <?php foreach ($post['tags'] as $tag): ?>
                                     <?php if (!empty($tag)): ?>
                                         <div class="tag">
-                                            <?php echo htmlspecialchars($tag); ?>
-                                            <span class="tag-remove" data-value="<?php echo htmlspecialchars($tag); ?>">×</span>
+                                            <?= htmlspecialchars($tag); ?>
+                                            <span class="tag-remove" data-value="<?= htmlspecialchars($tag); ?>">×</span>
                                         </div>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
@@ -358,13 +358,13 @@ $tags_json = json_encode(array_keys($all_tags));
                 
                 <div class="form-group">
                     <label for="featured_image" class="form-label">Beitragsbild (URL)</label>
-                    <input type="text" id="featured_image" name="featured_image" class="form-control" value="<?php echo htmlspecialchars($post['featured_image']); ?>">
+                    <input type="text" id="featured_image" name="featured_image" class="form-control" value="<?= htmlspecialchars($post['featured_image']); ?>">
                     <div class="form-help">Relativer Pfad zum Beitragsbild (z.B. "assets/media/bild.jpg").</div>
                 </div>
                 
                 <div class="form-group">
                     <label for="content" class="form-label">Inhalt</label>
-                    <textarea id="content" name="content" class="form-control content-editor"><?php echo htmlspecialchars($post['content']); ?></textarea>
+                    <textarea id="content" name="content" class="form-control content-editor"><?= htmlspecialchars($post['content']); ?></textarea>
                 </div>
                 
                 <div class="admin-actions">
@@ -400,8 +400,8 @@ $tags_json = json_encode(array_keys($all_tags));
             });
 
             // Kategorie- und Tag-System
-            const categories = <?php echo $categories_json; ?>;
-            const tags = <?php echo $tags_json; ?>;
+            const categories = <?= $categories_json; ?>;
+            const tags = <?= $tags_json; ?>;
 
             if (typeof setupTagSystem === 'function') {
                 setupTagSystem('category', categories);

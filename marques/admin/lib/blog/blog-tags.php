@@ -114,11 +114,11 @@ arsort($tags);
 
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $system_config['admin_language'] ?? 'de'; ?>">
+<html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tags verwalten - Admin-Panel - <?php echo htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <title>Tags verwalten - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
@@ -193,13 +193,13 @@ arsort($tags);
             
             <?php if (!empty($success_message)): ?>
                 <div class="alert alert-success">
-                    <?php echo htmlspecialchars($success_message); ?>
+                    <?= htmlspecialchars($success_message); ?>
                 </div>
             <?php endif; ?>
             
             <?php if (!empty($error_message)): ?>
                 <div class="alert alert-danger">
-                    <?php echo htmlspecialchars($error_message); ?>
+                    <?= htmlspecialchars($error_message); ?>
                 </div>
             <?php endif; ?>
             
@@ -209,7 +209,7 @@ arsort($tags);
                 </div>
                 <div class="admin-card-content">
                     <form method="post" class="add-form form-group">
-                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
                         <input type="hidden" name="action" value="add">
                         <input type="text" name="tag_name" class="form-control" placeholder="Tagname" required>
                         <button type="submit" class="admin-button">
@@ -231,15 +231,15 @@ arsort($tags);
                         <?php else: ?>
                             <?php foreach ($tags as $name => $count): ?>
                                 <div class="tag-item">
-                                    <div class="tag-name"><?php echo htmlspecialchars($name); ?></div>
-                                    <div class="tag-count"><?php echo $count; ?> Beiträge</div>
+                                    <div class="tag-name"><?= htmlspecialchars($name); ?></div>
+                                    <div class="tag-count"><?= $count; ?> Beiträge</div>
                                     <div class="tag-actions">
                                         <!-- Bearbeitungsformular -->
                                         <form method="post" style="display:inline;" class="form-group">
-                                            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                            <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
                                             <input type="hidden" name="action" value="rename">
-                                            <input type="hidden" name="old_name" value="<?php echo htmlspecialchars($name); ?>">
-                                            <input type="text" name="new_name" class="form-control" value="<?php echo htmlspecialchars($name); ?>" required>
+                                            <input type="hidden" name="old_name" value="<?= htmlspecialchars($name); ?>">
+                                            <input type="text" name="new_name" class="form-control" value="<?= htmlspecialchars($name); ?>" required>
                                             <button type="submit" class="admin-button">
                                                 <i class="fas fa-save"></i> Umbenennen
                                             </button>
@@ -247,9 +247,9 @@ arsort($tags);
                                         
                                         <!-- Löschformular -->
                                         <form method="post" style="display:inline;" class="form-group" onsubmit="return confirm('Wirklich löschen? Der Tag wird aus allen zugehörigen Beiträgen entfernt.')">
-                                            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                            <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
                                             <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="tag_name" value="<?php echo htmlspecialchars($name); ?>">
+                                            <input type="hidden" name="tag_name" value="<?= htmlspecialchars($name); ?>">
                                             <button type="submit" class="admin-button admin-button-danger">
                                                 <i class="fas fa-trash-alt"></i> Löschen
                                             </button>

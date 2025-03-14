@@ -1,214 +1,31 @@
-<?php
-/**
- * marques CMS - Blog-Versionen
- * 
- * Anzeige und Verwaltung von Versionen eines Blog-Beitrags.
- *
- * @package marques
- * @subpackage admin
- */
-
-// Basispfad definieren
-define('MARQUES_ROOT_DIR', dirname(__DIR__));
-define('IS_ADMIN', true);
-
-// Bootstrap laden
-require_once MARQUES_ROOT_DIR . '/system/core/Bootstrap.inc.php';
-
-// Admin-Klasse initialisieren
-$admin = new \Marques\Core\Admin();
-$admin->requireLogin();
-
-// Benutzer-Objekt initialisieren
-$user = new \Marques\Core\User();
-
-// BlogManager initialisieren
-$blogManager = new \Marques\Core\BlogManager();
-
-// VersionManager initialisieren
-$versionManager = new \Marques\Core\VersionManager();
-
-// Konfiguration laden
-$configManager = \Marques\Core\AppConfig::getInstance();
-$system_config = $configManager->load('system') ?: [];
-
-// CSRF-Token generieren
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
-
-// Erfolgsmeldung und Fehlermeldung initialisieren
-$success_message = '';
-$error_message = '';
-
-// Überprüfen, ob eine Beitrags-ID übergeben wurde
-if (!isset($_GET['id']) || empty($_GET['id'])) {
-    header('Location: blog.php');
-    exit;
-}
-
-$post_id = $_GET['id'];
-$post = $blogManager->getPost($post_id);
-
-// Prüfen, ob der Beitrag existiert
-if (!$post) {
-    header('Location: blog.php');
-    exit;
-}
-
-// Versionen des Beitrags abrufen
-$versions = $versionManager->getVersions('blog', $post_id);
-
-// Versions-Aktionen verarbeiten
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // CSRF-Token prüfen
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        $error_message = 'Ungültige Anfrage. Bitte versuchen Sie es erneut.';
-    } else {
-        if (isset($_POST['action'])) {
-            $action = $_POST['action'];
-            $version_id = $_POST['version_id'] ?? '';
-            
-            if (empty($version_id)) {
-                $error_message = 'Keine Versions-ID angegeben.';
-            } else {
-                // Version wiederherstellen
-                if ($action === 'restore') {
-                    if ($versionManager->restoreVersion('blog', $post_id, $version_id, $user->getCurrentUsername())) {
-                        $success_message = 'Version wurde erfolgreich wiederhergestellt.';
-                    } else {
-                        $error_message = 'Fehler beim Wiederherstellen der Version.';
-                    }
-                }
-                // Version löschen
-                elseif ($action === 'delete') {
-                    if ($versionManager->deleteVersion('blog', $post_id, $version_id)) {
-                        $success_message = 'Version wurde erfolgreich gelöscht.';
-                        // Versionen neu laden
-                        $versions = $versionManager->getVersions('blog', $post_id);
-                    } else {
-                        $error_message = 'Fehler beim Löschen der Version.';
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Versions-Inhalt anzeigen, wenn angefordert
-$show_version = false;
-$version_content = '';
-$version_metadata = null;
-$diff = [];
-
-if (isset($_GET['version']) && !empty($_GET['version'])) {
-    $version_id = $_GET['version'];
-    $version_content = $versionManager->getVersionContent('blog', $post_id, $version_id);
-    
-    if ($version_content !== false) {
-        $show_version = true;
-        
-        // Versions-Metadaten finden
-        foreach ($versions as $v) {
-            if ($v['version_id'] === $version_id) {
-                $version_metadata = $v;
-                break;
-            }
-        }
-        
-        // Diff zur aktuellen Version erstellen
-        $current_content = file_get_contents(MARQUES_CONTENT_DIR . '/blog/' . $post_id . '.md');
-        $diff = $versionManager->createDiff($version_content, $current_content);
-    }
-}
-
-?>
 <!DOCTYPE html>
 <html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Versionen: <?= htmlspecialchars($post['title']); ?> - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <title>Versionen: <?= htmlspecialchars($page['title']); ?> - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        .version-diff {
-            margin-top: 20px;
-            border: 1px solid var(--gray-300);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-        .diff-header {
-            background-color: var(--gray-100);
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--gray-300);
-            font-weight: 600;
-        }
-        .diff-content {
-            padding: 15px;
-            background-color: var(--white);
-            overflow-x: auto;
-        }
-        .diff-line {
-            display: flex;
-            margin-bottom: 5px;
-            font-family: monospace;
-        }
-        .diff-line-number {
-            width: 40px;
-            color: var(--text-light);
-            text-align: right;
-            padding-right: 10px;
-            user-select: none;
-        }
-        .diff-line-content {
-            flex: 1;
-            padding: 2px 5px;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .diff-added {
-            background-color: rgba(0, 255, 0, 0.1);
-        }
-        .diff-removed {
-            background-color: rgba(255, 0, 0, 0.1);
-        }
-        .diff-changed {
-            background-color: rgba(255, 255, 0, 0.1);
-        }
-        .version-metadata {
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: var(--gray-100);
-            border-radius: var(--radius);
-        }
-        .version-metadata p {
-            margin: 5px 0;
-        }
-        .version-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
+
     </style>
 </head>
 <body>
     <div class="admin-layout">
         
         <!-- SIDEBAR & NAVIGATION -->
-        <?php include 'includes/sidebar.php'; ?>
+        <?php include 'sidebar.phtml'; ?>
         
         <main class="admin-content">
             <div class="admin-topbar">
-                <h2 class="admin-page-title">Versionen: <?= htmlspecialchars($post['title']); ?></h2>
+                <h2 class="admin-page-title">Versionen: <?= htmlspecialchars($page['title']); ?></h2>
                 
                 <div class="admin-actions">
-                    <a href="blog-edit.php?id=<?= htmlspecialchars($post_id); ?>" class="admin-button">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit&id=' . htmlspecialchars($page_id)); ?>" class="admin-button">
                         <span class="admin-button-icon"><i class="fas fa-edit"></i></span>
-                        Beitrag bearbeiten
+                        Seite bearbeiten
                     </a>
-                    <a href="blog.php" class="admin-button">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>" class="admin-button">
                         <span class="admin-button-icon"><i class="fas fa-arrow-left"></i></span>
                         Zurück zur Übersicht
                     </a>
@@ -248,7 +65,7 @@ if (isset($_GET['version']) && !empty($_GET['version'])) {
                             </button>
                         </form>
                         
-                        <a href="blog-versions.php?id=<?= htmlspecialchars($post_id); ?>" class="admin-button">
+                        <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-versions&id=' . htmlspecialchars($page_id)); ?>" class="admin-button">
                             <span class="admin-button-icon"><i class="fas fa-times"></i></span>
                             Zurück zur Versionsliste
                         </a>
@@ -286,7 +103,7 @@ if (isset($_GET['version']) && !empty($_GET['version'])) {
                 <div class="admin-form">
                     <h3>Versionsverlauf</h3>
                     <?php if (empty($versions)): ?>
-                        <p>Keine Versionen gefunden. Änderungen am Beitrag erstellen automatisch neue Versionen.</p>
+                        <p>Keine Versionen gefunden. Änderungen an der Seite erstellen automatisch neue Versionen.</p>
                     <?php else: ?>
                         <table class="admin-table">
                             <thead>
@@ -304,7 +121,7 @@ if (isset($_GET['version']) && !empty($_GET['version'])) {
                                         <td><?= htmlspecialchars($version['username']); ?></td>
                                         <td><?= htmlspecialchars($version['version_id']); ?></td>
                                         <td class="admin-table-actions">
-                                            <a href="blog-versions.php?id=<?= htmlspecialchars($post_id); ?>&version=<?= htmlspecialchars($version['version_id']); ?>" class="admin-table-action" title="Anzeigen">
+                                            <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-versions&id=' . htmlspecialchars($page_id) . '&version=' . htmlspecialchars($version['version_id'])); ?>" class="admin-table-action" title="Anzeigen">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <a href="#" class="admin-table-action restore" title="Wiederherstellen" data-id="<?= htmlspecialchars($version['version_id']); ?>" data-date="<?= date('d.m.Y H:i:s', $version['timestamp']); ?>">

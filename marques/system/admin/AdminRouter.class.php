@@ -37,7 +37,8 @@ class AdminRouter
         $page = $_GET['page'] ?? 'dashboard';
 
         if (!array_key_exists($page, $this->allowedPages)) {
-            $page = 'dashboard';
+            //$page = 'dashboard';
+            throw new \Exception("{$page} nicht in $allowedPages gefunden");
         }
 
         return $this->allowedPages[$page];

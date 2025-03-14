@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $editing ? 'Seite bearbeiten' : 'Neue Seite erstellen'; ?> - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <link rel="stylesheet" href="assets/css/admin-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- TinyMCE einbinden -->
+    <script src="assets/js/tinymce/tinymce.min.js"></script>
+    <script src="assets/js/tinymce-config.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+
+        <!-- SIDEBAR & NAVIGATION -->
+        <?php include 'sidebar.phtml'; ?>
+        
+        <main class="admin-content">
+            <div class="admin-topbar">
+                <h2 class="admin-page-title"><?= $editing ? 'Seite bearbeiten' : 'Neue Seite erstellen'; ?></h2>
+                
+                <div class="admin-actions">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>" class="admin-button">
+                        <span class="admin-button-icon"><i class="fas fa-arrow-left"></i></span>
+                        Zurück zur Übersicht
+                    </a>
+                    <?php if ($editing): ?>
+                    <a href="../<?= htmlspecialchars($page['id']); ?>" class="admin-button" target="_blank">
+                        <span class="admin-button-icon"><i class="fas fa-eye"></i></span>
+                        Seite ansehen
+                    </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <?php if (!empty($success_message)): ?>
+                <div class="alert alert-success">
+                    <?= htmlspecialchars($success_message); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($error_message)): ?>
+                <div class="alert alert-danger">
+                    <?= htmlspecialchars($error_message); ?>
+                </div>
+            <?php endif; ?>
+            
+            <form method="post" class="admin-form">
+                <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                <input type="hidden" name="id" value="<?= htmlspecialchars($page['id']); ?>">
+                
+                <div class="form-row">
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label for="title" class="form-label">Titel</label>
+                            <input type="text" id="title" name="title" class="form-control" value="<?= htmlspecialchars($page['title']); ?>" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label for="template" class="form-label">Template</label>
+                            <select id="template" name="template" class="form-control">
+                                <option value="page" <?= $page['template'] === 'page' ? 'selected' : ''; ?>>Standard-Seite</option>
+                                <option value="landing" <?= $page['template'] === 'landing' ? 'selected' : ''; ?>>Landing-Page</option>
+                                <option value="sidebar" <?= $page['template'] === 'sidebar' ? 'selected' : ''; ?>>Seite mit Seitenleiste</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">Beschreibung</label>
+                    <input type="text" id="description" name="description" class="form-control" value="<?= htmlspecialchars($page['description']); ?>">
+                    <div class="form-help">Kurze Beschreibung der Seite für SEO-Zwecke.</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="featured_image" class="form-label">Beitragsbild (URL)</label>
+                    <input type="text" id="featured_image" name="featured_image" class="form-control" value="<?= htmlspecialchars($page['featured_image']); ?>">
+                    <div class="form-help">Relativer Pfad zum Beitragsbild (z.B. "uploads/image.jpg").</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="content" class="form-label">Inhalt</label>
+                    <textarea id="content" name="content" class="form-control content-editor"><?= htmlspecialchars($page['content']); ?></textarea>
+                </div>
+                
+                <div class="admin-actions">
+                    <button type="submit" class="admin-button">
+                        <span class="admin-button-icon"><i class="fas fa-save"></i></span>
+                        Speichern
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // TinyMCE initialisieren
+            initTinyMCE('.content-editor');
+        });
+    </script>
+</body>
+</html>

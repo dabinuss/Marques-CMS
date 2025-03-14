@@ -42,6 +42,10 @@ class MarquesAdmin extends AppCore
             exit('Direkter Zugriff ist nicht erlaubt.');
         }
 
+        // Admin-Zugang prüfen
+        $admin = new Admin();
+        $admin->requireLogin();
+
         /** @var AppConfig $appConfig */
         $appConfig = $this->appcontainer->get(AppConfig::class);
 
@@ -66,10 +70,6 @@ class MarquesAdmin extends AppCore
             ini_set('display_errors', 0);
         }
         date_default_timezone_set($this->systemConfig['timezone'] ?? 'UTC');
-
-        // Admin-Zugang prüfen
-        $admin = new Admin();
-        $admin->requireLogin();
 
         // Authentifizierten Benutzer aus dem Container holen
         $this->user = $this->appcontainer->get(User::class);

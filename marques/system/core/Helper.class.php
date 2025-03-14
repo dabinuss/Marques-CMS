@@ -293,4 +293,46 @@ class Helper {
         $bytes /= (1024 ** $pow);
         return round($bytes, $precision) . ' ' . $units[$pow];
     }
+
+    /**
+     * Fügt einen GET-Parameter zur aktuellen URL hinzu oder aktualisiert ihn, wenn er schon existiert.
+     *
+     * @param string      $param Der Parameter-String, z. B. "menu=footer".
+     * @param string|null $url   Optional: Eine Basis-URL. Standardmäßig wird $_SERVER['REQUEST_URI'] verwendet.
+     *
+     * @return string Die URL mit dem neuen bzw. aktualisierten Parameter.
+     */
+    public static function appQueryParam(string $param, ?string $url = null): string {
+        // Nutzt REQUEST_URI, um den gesamten aktuellen Pfad inkl. Query-String zu erhalten.
+        if ($url === null) {
+            $url = $_SERVER['REQUEST_URI'];
+        }
+
+        // Zerlege die URL in ihre Bestandteile
+        $parts = parse_url($url);
+        $path = $parts['path'] ?? '';
+        $query = $parts['query'] ?? '';
+
+        // Bestehende Parameter extrahieren
+        parse_str($query, $existingParams);
+
+        // Neuen Parameter-String in Array umwandeln
+        parse_str($param, $newParams);
+
+        // Zusammenführen: Bereits vorhandene Werte werden durch neue überschrieben
+        $mergedParams = array_merge($existingParams, $newParams);
+
+        // Neuen Query-String erzeugen
+        $newQuery = http_build_query($mergedParams);
+
+        // URL wieder zusammensetzen
+        $result = $path;
+        if ($newQuery) {
+            $result .= '?' . $newQuery;
+        }
+        if (isset($parts['fragment'])) {
+            $result .= '#' . $parts['fragment'];
+        }
+        return $result;
+    }
 }

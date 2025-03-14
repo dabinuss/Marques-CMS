@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medienverwaltung - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <link rel="stylesheet" href="assets/css/admin-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="admin-layout">
+        
+        <!-- SIDEBAR & NAVIGATION -->
+        <?php if (!$tinyMCEMode): ?>
+            <?php include 'sidebar.phtml'; ?>
+        <?php endif; ?>
+        
+        <main class="<?= $tinyMCEMode ? 'tinymce-content' : 'admin-content'; ?>">
+            <div class="admin-topbar">
+                <h2 class="admin-page-title">
+                    <?= $tinyMCEMode ? 'Medium auswählen' : 'Medienverwaltung'; ?>
+                </h2>
+                
+                <?php if (!$tinyMCEMode): ?>
+                <div class="admin-actions">
+                    <a href="../" class="admin-button" target="_blank">
+                        <span class="admin-button-icon"><i class="fas fa-external-link-alt"></i></span>
+                        Website ansehen
+                    </a>
+                </div>
+                <?php endif; ?>
+            </div>
+            
+            <?php if (!empty($success_message)): ?>
+                <div class="alert alert-success">
+                    <?= htmlspecialchars($success_message); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($error_message)): ?>
+                <div class="alert alert-danger">
+                    <?= htmlspecialchars($error_message); ?>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Upload-Formular -->
+            <form method="post" enctype="multipart/form-data" class="media-upload-form">
+                <input type="hidden" name="action" value="upload">
+                <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                
+                <div class="media-upload-input">
+                    <label for="media" class="form-label">Medium hochladen</label>
+                    <input type="file" id="media" name="media" accept="image/*,application/pdf" class="form-control">
+                </div>
+                
+                <div>
+                    <button type="submit" class="admin-button">
+                        <span class="admin-button-icon"><i class="fas fa-upload"></i></span>
+                        Hochladen
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Medien-Grid -->
+            <?php if (empty($media)): ?>
+                <div class="admin-welcome">
+                    <h3>Keine Medien gefunden</h3>
+                    <p>Laden Sie Ihre ersten Medien mit dem Formular oben hoch.</p>
+                </div>
+            <?php else: ?>
+                <div class="media-grid">
+                    <?php foreach ($media as $item): ?>
+                        <div class="media-item" data-url="<?= marques_site_url($item['cache_bust_url']); ?>" data-filename="<?= htmlspecialchars($item['filename']); ?>">
+                            <div class="media-thumbnail">
+                                <?php if (strpos($item['filetype'], 'image/') === 0): ?>
+                                    <img src="../<?= $item['cache_bust_url']; ?>" alt="<?= htmlspecialchars($item['filename']); ?>">
+                                <?php elseif ($item['filetype'] === 'application/pdf'): ?>
+                                    <i class="fas fa-file-pdf" style="font-size: 3rem; color: #dc3545;"></i>
+                                <?php else: ?>
+                                    <i class="fas fa-file" style="font-size: 3rem; color: #6c757d;"></i>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="media-info">
+                                <div class="media-filename" title="<?= htmlspecialchars($item['filename']); ?>">
+                                    <?= htmlspecialchars($item['filename']); ?>
+                                </div>
+                                <div class="media-details">
+                                    <?= htmlspecialchars($item['filesize']); ?>
+                                    <?php if (!empty($item['dimensions'])): ?>
+                                        <br><?= htmlspecialchars($item['dimensions']); ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="media-actions">
+                                <?php if ($tinyMCEMode): ?>
+                                    <a href="#" class="media-table-action select-media" title="Auswählen">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                <?php else: ?>
+
+                                    <a href="../<?= $item['cache_bust_url']; ?>" class="media-table-action" title="Ansehen" target="_blank">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+
+                                    <a href="#" class="media-table-action delete" title="Löschen" data-id="<?= htmlspecialchars($item['filename']); ?>" data-title="<?= htmlspecialchars($item['filename']); ?>">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </main>
+    </div>
+    
+    <!-- Lösch-Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Medium löschen</h3>
+            <div class="modal-body">
+                Sind Sie sicher, dass Sie das Medium "<span id="deleteMedia"></span>" löschen möchten?
+                Dieser Vorgang kann nicht rückgängig gemacht werden.
+            </div>
+            <div class="modal-actions">
+                <button id="cancelDelete" class="admin-button modal-close">Abbrechen</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="media_id" id="deleteMediaId">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                    <button type="submit" class="admin-button modal-delete">Löschen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Modal-Funktionalität
+        document.addEventListener('DOMContentLoaded', function() {
+            var modal = document.getElementById('deleteModal');
+            var deleteButtons = document.querySelectorAll('.media-table-action.delete');
+            var cancelButton = document.getElementById('cancelDelete');
+            var deleteMediaElement = document.getElementById('deleteMedia');
+            var deleteMediaIdInput = document.getElementById('deleteMediaId');
+            
+            deleteButtons.forEach(function(button) {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var mediaId = this.dataset.id;
+                    var mediaTitle = this.dataset.title;
+                    
+                    deleteMediaElement.textContent = mediaTitle;
+                    deleteMediaIdInput.value = mediaId;
+                    
+                    modal.style.display = 'block';
+                });
+            });
+            
+            cancelButton.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            <?php if ($tinyMCEMode): ?>
+            // TinyMCE Integration für Media Browser
+            document.querySelectorAll('.select-media').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const mediaItem = this.closest('.media-item');
+                    const mediaUrl = mediaItem.dataset.url; // Dies enthält bereits den Cache-Busting-Parameter
+                    const fileName = mediaItem.dataset.filename;
+                    
+                    // Callback an TinyMCE
+                    window.parent.postMessage({
+                        mceAction: 'insertMedia',
+                        content: mediaUrl,
+                        alt: fileName
+                    }, '*');
+                });
+            });
+            <?php endif; ?>
+        });
+    </script>
+</body>
+</html>

@@ -82,8 +82,8 @@ session_start();
     </style>
 </head>
 <body>
-    <div class="message <?php echo $success ? 'success' : 'error'; ?>">
-        <?php echo htmlspecialchars($message); ?>
+    <div class="message <?= $success ? 'success' : 'error'; ?>">
+        <?= htmlspecialchars($message); ?>
     </div>
     
     <div class="links">

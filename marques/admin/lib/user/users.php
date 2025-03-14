@@ -71,7 +71,7 @@ $page_title = 'Benutzer verwalten';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?> - Admin-Panel - marques CMS</title>
+    <title><?= htmlspecialchars($page_title); ?> - Admin-Panel - marques CMS</title>
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
@@ -83,7 +83,7 @@ $page_title = 'Benutzer verwalten';
         
         <main class="admin-content">
             <div class="admin-topbar">
-                <h2 class="admin-page-title"><?php echo htmlspecialchars($page_title); ?></h2>
+                <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
                 
                 <div class="admin-actions">
                     <a href="user-edit.php" class="admin-button">
@@ -95,13 +95,13 @@ $page_title = 'Benutzer verwalten';
             
             <?php if (!empty($success_message)): ?>
                 <div class="admin-alert success">
-                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+                    <i class="fas fa-check-circle"></i> <?= htmlspecialchars($success_message); ?>
                 </div>
             <?php endif; ?>
             
             <?php if (!empty($error_message)): ?>
                 <div class="admin-alert error">
-                    <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error_message); ?>
+                    <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error_message); ?>
                 </div>
             <?php endif; ?>
             
@@ -121,8 +121,8 @@ $page_title = 'Benutzer verwalten';
                         <tbody>
                             <?php foreach ($all_users as $username => $userData): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($username); ?></td>
-                                    <td><?php echo htmlspecialchars($userData['display_name']); ?></td>
+                                    <td><?= htmlspecialchars($username); ?></td>
+                                    <td><?= htmlspecialchars($userData['display_name']); ?></td>
                                     <td>
                                         <?php 
                                         switch ($userData['role']) {
@@ -159,15 +159,15 @@ $page_title = 'Benutzer verwalten';
                                         ?>
                                     </td>
                                     <td class="actions">
-                                        <a href="user-edit.php?username=<?php echo urlencode($username); ?>" class="action-btn edit" title="Bearbeiten">
+                                        <a href="user-edit.php?username=<?= urlencode($username); ?>" class="action-btn edit" title="Bearbeiten">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         
                                         <?php if ($username !== 'admin'): ?>
-                                            <form method="post" action="" onsubmit="return confirm('Möchten Sie den Benutzer <?php echo htmlspecialchars($username); ?> wirklich löschen?');" style="display: inline;">
+                                            <form method="post" action="" onsubmit="return confirm('Möchten Sie den Benutzer <?= htmlspecialchars($username); ?> wirklich löschen?');" style="display: inline;">
                                                 <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="username" value="<?php echo htmlspecialchars($username); ?>">
-                                                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                                <input type="hidden" name="username" value="<?= htmlspecialchars($username); ?>">
+                                                <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
                                                 <button type="submit" class="action-btn delete" title="Löschen">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>

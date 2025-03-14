@@ -169,7 +169,7 @@ $page_title = $edit_mode ? 'Benutzer bearbeiten' : 'Neuen Benutzer erstellen';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?> - Admin-Panel - marques CMS</title>
+    <title><?= htmlspecialchars($page_title); ?> - Admin-Panel - marques CMS</title>
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
@@ -181,7 +181,7 @@ $page_title = $edit_mode ? 'Benutzer bearbeiten' : 'Neuen Benutzer erstellen';
         
         <main class="admin-content">
             <div class="admin-topbar">
-                <h2 class="admin-page-title"><?php echo htmlspecialchars($page_title); ?></h2>
+                <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
                 
                 <div class="admin-actions">
                     <a href="users.php" class="admin-button">
@@ -193,13 +193,13 @@ $page_title = $edit_mode ? 'Benutzer bearbeiten' : 'Neuen Benutzer erstellen';
             
             <?php if (!empty($success_message)): ?>
                 <div class="admin-alert success">
-                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+                    <i class="fas fa-check-circle"></i> <?= htmlspecialchars($success_message); ?>
                 </div>
             <?php endif; ?>
             
             <?php if (!empty($error_message)): ?>
                 <div class="admin-alert error">
-                    <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error_message); ?>
+                    <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error_message); ?>
                 </div>
             <?php endif; ?>
             
@@ -216,22 +216,22 @@ $page_title = $edit_mode ? 'Benutzer bearbeiten' : 'Neuen Benutzer erstellen';
                         <div class="form-group">
                             <label for="username">Benutzername</label>
                             <?php if ($edit_mode): ?>
-                                <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($username); ?>" readonly class="readonly">
+                                <input type="text" id="username" name="username" value="<?= htmlspecialchars($username); ?>" readonly class="readonly">
                                 <p class="form-hint">Der Benutzername kann nicht geändert werden.</p>
                             <?php else: ?>
-                                <input type="text" id="username" name="username" value="<?php echo isset($form_username) ? htmlspecialchars($form_username) : ''; ?>" required>
+                                <input type="text" id="username" name="username" value="<?= isset($form_username) ? htmlspecialchars($form_username) : ''; ?>" required>
                                 <p class="form-hint">Nur Buchstaben, Zahlen und Unterstriche erlaubt.</p>
                             <?php endif; ?>
                         </div>
                         
                         <div class="form-group">
                             <label for="display_name">Anzeigename</label>
-                            <input type="text" id="display_name" name="display_name" value="<?php echo isset($userData['display_name']) ? htmlspecialchars($userData['display_name']) : (isset($display_name) ? htmlspecialchars($display_name) : ''); ?>" required>
+                            <input type="text" id="display_name" name="display_name" value="<?= isset($userData['display_name']) ? htmlspecialchars($userData['display_name']) : (isset($display_name) ? htmlspecialchars($display_name) : ''); ?>" required>
                         </div>
                         
                         <div class="form-group">
-                            <label for="password">Passwort <?php echo $edit_mode ? '(leer lassen, um nicht zu ändern)' : ''; ?></label>
-                            <input type="password" id="password" name="password" <?php echo $edit_mode ? '' : 'required'; ?>>
+                            <label for="password">Passwort <?= $edit_mode ? '(leer lassen, um nicht zu ändern)' : ''; ?></label>
+                            <input type="password" id="password" name="password" <?= $edit_mode ? '' : 'required'; ?>>
                             <?php if ($edit_mode): ?>
                                 <p class="form-hint">Lassen Sie dieses Feld leer, wenn Sie das Passwort nicht ändern möchten.</p>
                             <?php endif; ?>
@@ -241,8 +241,8 @@ $page_title = $edit_mode ? 'Benutzer bearbeiten' : 'Neuen Benutzer erstellen';
                             <label for="role">Rolle</label>
                             <select id="role" name="role">
                                 <?php foreach ($available_roles as $role_value => $role_name): ?>
-                                    <option value="<?php echo htmlspecialchars($role_value); ?>" <?php echo (isset($userData['role']) && $userData['role'] === $role_value) || (isset($role) && $role === $role_value) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($role_name); ?>
+                                    <option value="<?= htmlspecialchars($role_value); ?>" <?= (isset($userData['role']) && $userData['role'] === $role_value) || (isset($role) && $role === $role_value) ? 'selected' : ''; ?>>
+                                        <?= htmlspecialchars($role_name); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -251,23 +251,23 @@ $page_title = $edit_mode ? 'Benutzer bearbeiten' : 'Neuen Benutzer erstellen';
                         <?php if ($edit_mode && isset($userData['created'])): ?>
                             <div class="form-group">
                                 <label>Erstellt am</label>
-                                <p><?php echo date('d.m.Y H:i', $userData['created']); ?></p>
+                                <p><?= date('d.m.Y H:i', $userData['created']); ?></p>
                             </div>
                         <?php endif; ?>
                         
                         <?php if ($edit_mode && isset($userData['last_login']) && $userData['last_login'] > 0): ?>
                             <div class="form-group">
                                 <label>Letzter Login</label>
-                                <p><?php echo date('d.m.Y H:i', $userData['last_login']); ?></p>
+                                <p><?= date('d.m.Y H:i', $userData['last_login']); ?></p>
                             </div>
                         <?php endif; ?>
                         
-                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
                         
                         <div class="form-group">
                             <button type="submit" class="admin-button">
                                 <span class="admin-button-icon"><i class="fas fa-save"></i></span>
-                                <?php echo $edit_mode ? 'Benutzer speichern' : 'Benutzer erstellen'; ?>
+                                <?= $edit_mode ? 'Benutzer speichern' : 'Benutzer erstellen'; ?>
                             </button>
                         </div>
                     </form>

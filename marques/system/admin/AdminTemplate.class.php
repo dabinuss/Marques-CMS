@@ -36,7 +36,7 @@ class AdminTemplate
         extract($vars);
 
         $contentFile = $this->contentBase . $template . '.php';
-        $layoutFile  = $this->templateBase . basename($template) . '.ctpl';
+        $layoutFile  = $this->templateBase . basename($template) . '.phtml';
 
         if (!file_exists($contentFile)) {
             throw new \Exception("Content-Datei nicht gefunden: {$contentFile}");
