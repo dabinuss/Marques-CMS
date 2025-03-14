@@ -97,13 +97,13 @@ class MarquesAdmin extends AppCore
         try {
             $this->triggerEvent('before_request');
 
-            // Ermittelt den Basis-Pfad für die Content-Datei,
-            // z. B. MARQUES_ROOT_DIR . '/admin/pages/dashboard'
-            $basePath = $this->router->route();
+            // Ermittele den Template-Schlüssel (z. B. "dashboard", "content/pages" etc.)
+            $templateKey = $this->router->route();
 
             // Globale Variablen abrufen und Template rendern
             $vars = $this->getGlobalVars();
-            $this->template->render($vars, $basePath);
+            
+            $this->template->render($vars, $templateKey);
 
             $this->triggerEvent('after_render');
         } catch (\Exception $e) {

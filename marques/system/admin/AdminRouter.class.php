@@ -4,28 +4,42 @@ namespace Marques\Admin;
 class AdminRouter
 {
     /**
-     * Bestimmt die entsprechende Admin-Seite basierend auf einem GET-Parameter und liefert den Pfad zur Template-Datei.
+     * Definiert erlaubte Seiten mit Unterpfaden
      *
-     * @return string Pfad zur Admin-Template-Datei.
+     * @var array
+     */
+    protected array $allowedPages = [
+        'dashboard'         => 'system/dashboard',
+        'navigation'        => 'system/navigation',
+        'settings'          => 'system/settings',
+        'login'             => 'login',
+        'logout'            => 'logout',
+        'pages'             => 'pages/pages',
+        'page-edit'         => 'pages/page-edit',
+        'page-versions'     => 'pages/page-versions',
+        'blog'              => 'blog/blog',
+        'blog-edit'         => 'blog/blog-edit',
+        'blog-categories'   => 'blog/blog-categories',
+        'blog-tags'         => 'blog/blog-tags',
+        'blog-versions'     => 'blog/blog-versions',
+        'media'             => 'media/media',
+        'users'             => 'user/users',
+        'user-edit'         => 'user/user-edit'
+    ];
+
+    /**
+     * Ermittelt die aktuell angeforderte Admin-Seite
+     *
+     * @return string Schlüssel der Seite
      */
     public function route(): string
     {
-        // Definiere erlaubte Seiten
-        $allowedPages = ['dashboard', 'pages', 'blog', 'media', 'users', 'settings', 'statistics'];
         $page = $_GET['page'] ?? 'dashboard';
-        if (!in_array($page, $allowedPages, true)) {
+
+        if (!array_key_exists($page, $this->allowedPages)) {
             $page = 'dashboard';
         }
 
-        /*
-        // Ermittel den Pfad zur entsprechenden Template-Datei, z.B. in /admin/pages/
-        $pageFile = MARQUES_ROOT_DIR . '/admin/pages/' . $page . '.php';
-        if (!file_exists($pageFile)) {
-            throw new \Exception("Seite nicht gefunden.");
-        }
-        */
-        
-        // Rückgabe des ermittelten Template-Pfads
-        return $page;
+        return $this->allowedPages[$page];
     }
 }

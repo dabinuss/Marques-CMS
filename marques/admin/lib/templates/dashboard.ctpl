@@ -13,7 +13,7 @@
     <div class="admin-layout">
 
         <!-- SIDEBAR & NAVIGATION -->
-        <?php include 'includes/sidebar.php'; ?>
+        <?php include 'sidebar.ctpl'; ?>
         
         <main class="admin-content">
             <div class="admin-topbar">
