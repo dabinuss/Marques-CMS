@@ -102,7 +102,6 @@ class MarquesAdmin extends AppCore
 
             // Globale Variablen abrufen und Template rendern
             $vars = $this->getGlobalVars();
-            
             $this->template->render($vars, $templateKey);
 
             $this->triggerEvent('after_render');

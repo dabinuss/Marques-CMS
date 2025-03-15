@@ -46,8 +46,17 @@ class Admin {
      * Leitet zur Login-Seite weiter, wenn nicht
      */
     public function requireLogin(): void {
+        // Prüfe, ob die aktuelle Seite bereits die Login-Seite ist
+        $currentPage = $_GET['page'] ?? 'dashboard';
+        
         if (!$this->checkAccess()) {
-            header('Location: login.php');
+            if ($currentPage !== 'login') {
+                header('Location: index.php?page=login');
+                exit;
+            }
+        } elseif ($currentPage === 'login') {
+            // Wenn bereits eingeloggt und auf der Login-Seite, zum Dashboard weiterleiten
+            header('Location: index.php?page=dashboard');
             exit;
         }
     }

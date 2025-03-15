@@ -1,0 +1,252 @@
+<!-- Erweiterte Statistikseite (code bleibt unverändert) -->
+<div class="admin-welcome">
+    <h3>Website-Statistiken</h3>
+    <p>Hier sehen Sie detaillierte Zugriffsstatistiken für Ihre Website.</p>
+</div>
+
+<!-- Rest des Statistik-Codes (unverändert) -->
+<!-- Statistik-Übersicht -->
+<div class="admin-stats">
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="admin-stat-title">Besuche heute</div>
+        <div class="admin-stat-value"><?= number_format($siteStats['visits_today']); ?></div>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon"><i class="fas fa-chart-bar"></i></div>
+        <div class="admin-stat-title">Besuche gestern</div>
+        <div class="admin-stat-value"><?= number_format($siteStats['visits_yesterday']); ?></div>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon"><i class="fas fa-calendar-week"></i></div>
+        <div class="admin-stat-title">Besuche diese Woche</div>
+        <div class="admin-stat-value"><?= number_format($siteStats['visits_this_week']); ?></div>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon"><i class="fas fa-calendar-alt"></i></div>
+        <div class="admin-stat-title">Besuche diesen Monat</div>
+        <div class="admin-stat-value"><?= number_format($siteStats['visits_this_month']); ?></div>
+    </div>
+</div>
+
+<!-- Hauptdiagramm - Tägliche Besuche -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3><i class="fas fa-chart-area"></i> Besuchsentwicklung (30 Tage)</h3>
+    </div>
+    <div class="admin-card-content">
+        <canvas id="visitsHistoryChart" height="120"></canvas>
+    </div>
+</div>
+
+<!-- Statistiken pro Tageszeit -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3><i class="fas fa-clock"></i> Besuche nach Tageszeit</h3>
+    </div>
+    <div class="admin-card-content">
+        <canvas id="hourlyVisitsChart" height="100"></canvas>
+    </div>
+</div>
+
+<!-- Geräte und Browser -->
+<div class="admin-dashboard-row">
+    <div class="admin-dashboard-column">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3><i class="fas fa-mobile-alt"></i> Zugriffe nach Gerät</h3>
+            </div>
+            <div class="admin-card-content chart-container">
+                <?php if (empty($siteStats['device_stats'])): ?>
+                    <p class="admin-no-data">Keine Daten verfügbar.</p>
+                <?php else: ?>
+                    <canvas id="fullDeviceChart"></canvas>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    
+    <div class="admin-dashboard-column">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3><i class="fas fa-globe"></i> Zugriffe nach Browser</h3>
+            </div>
+            <div class="admin-card-content chart-container">
+                <?php if (empty($siteStats['browser_stats'])): ?>
+                    <p class="admin-no-data">Keine Daten verfügbar.</p>
+                <?php else: ?>
+                    <canvas id="browserChart"></canvas>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detaillierte Zugriffsstatistiken -->
+<div class="admin-dashboard-row">
+    <div class="admin-dashboard-column">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3><i class="fas fa-star"></i> Top 10 Seiten</h3>
+            </div>
+            <div class="admin-card-content">
+                <?php if (empty($siteStats['top_pages'])): ?>
+                    <p class="admin-no-data">Keine Daten verfügbar.</p>
+                <?php else: ?>
+                    <ul class="admin-stats-list">
+                        <?php 
+                        $i = 1;
+                        foreach ($siteStats['top_pages'] as $url => $visits): 
+                        ?>
+                            <li class="admin-stats-item">
+                                <span class="admin-stats-rank"><?= $i++; ?></span>
+                                <div class="admin-stats-details">
+                                    <span class="admin-stats-title"><?= htmlspecialchars($url == '/' ? 'Startseite' : $url); ?></span>
+                                    <div class="admin-stats-bar-container">
+                                        <div class="admin-stats-bar" style="width: <?= min(100, ($visits / max($siteStats['top_pages']) * 100)); ?>%"></div>
+                                    </div>
+                                </div>
+                                <span class="admin-stats-value"><?= number_format($visits); ?></span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    
+    <div class="admin-dashboard-column">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3><i class="fas fa-link"></i> Top 10 Referrer</h3>
+            </div>
+            <div class="admin-card-content">
+                <?php if (empty($siteStats['top_referrers'])): ?>
+                    <p class="admin-no-data">Keine Daten verfügbar.</p>
+                <?php else: ?>
+                    <ul class="admin-stats-list">
+                        <?php 
+                        $i = 1;
+                        foreach ($siteStats['top_referrers'] as $referrer => $visits): 
+                        ?>
+                            <li class="admin-stats-item">
+                                <span class="admin-stats-rank"><?= $i++; ?></span>
+                                <div class="admin-stats-details">
+                                    <span class="admin-stats-title"><?= htmlspecialchars($referrer); ?></span>
+                                    <div class="admin-stats-bar-container">
+                                        <div class="admin-stats-bar" style="width: <?= min(100, ($visits / max($siteStats['top_referrers']) * 100)); ?>%"></div>
+                                    </div>
+                                </div>
+                                <span class="admin-stats-value"><?= number_format($visits); ?></span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Chart === 'undefined') return;
+        
+        // Statistik: Besuchsentwicklung (letzte 30 Tage)
+        var historyCtx = document.getElementById('visitsHistoryChart').getContext('2d');
+        new Chart(historyCtx, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($historyLabels); ?>,  // Beispiel: ['01.03', '02.03', …]
+                datasets: [{
+                    label: 'Besuche',
+                    data: <?= json_encode($historyDailyData); ?>,
+                    backgroundColor: 'rgba(74, 111, 165, 0.7)',
+                    borderColor: '#4a6fa5',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+        
+        // Statistik: Stündliche Besuche
+        var hourlyCtx = document.getElementById('hourlyVisitsChart').getContext('2d');
+        new Chart(hourlyCtx, {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($hourLabels); ?>,  // Beispiel: ['00:00', '01:00', …]
+                datasets: [{
+                    label: 'Besuche',
+                    data: <?= json_encode(array_values($siteStats['hourly_stats'])); ?>,
+                    borderColor: '#4a6fa5',
+                    backgroundColor: 'rgba(74, 111, 165, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#4a6fa5'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+        
+        // Statistik: Vollständige Gerätenutzungsstatistik
+        <?php if (!empty($siteStats['device_stats'])): ?>
+        var fullDeviceCtx = document.getElementById('fullDeviceChart').getContext('2d');
+        new Chart(fullDeviceCtx, {
+            type: 'pie',
+            data: {
+                labels: <?= json_encode(array_keys($siteStats['device_stats'])); ?>,
+                datasets: [{
+                    data: <?= json_encode(array_values($siteStats['device_stats'])); ?>,
+                    backgroundColor: ['#4a6fa5', '#6c757d', '#28a745'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'right' } }
+            }
+        });
+        <?php endif; ?>
+        
+        // Statistik: Browser-Statistik
+        <?php if (!empty($siteStats['browser_stats'])): ?>
+        var browserCtx = document.getElementById('browserChart').getContext('2d');
+        new Chart(browserCtx, {
+            type: 'pie',
+            data: {
+                labels: <?= json_encode(array_keys($siteStats['browser_stats'])); ?>,
+                datasets: [{
+                    data: <?= json_encode(array_values($siteStats['browser_stats'])); ?>,
+                    backgroundColor: ['#4a6fa5', '#28a745', '#ffc107', '#dc3545', '#6c757d', '#17a2b8'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'right' } }
+            }
+        });
+        <?php endif; ?>
+    });
+</script>

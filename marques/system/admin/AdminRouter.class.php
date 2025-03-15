@@ -12,8 +12,8 @@ class AdminRouter
         'dashboard'         => 'system/dashboard',
         'navigation'        => 'system/navigation',
         'settings'          => 'system/settings',
-        'login'             => 'login',
-        'logout'            => 'logout',
+        'login'             => 'login/login',
+        'logout'            => 'login/logout',
         'pages'             => 'pages/pages',
         'page-edit'         => 'pages/page-edit',
         'page-versions'     => 'pages/page-versions',
@@ -37,8 +37,7 @@ class AdminRouter
         $page = $_GET['page'] ?? 'dashboard';
 
         if (!array_key_exists($page, $this->allowedPages)) {
-            //$page = 'dashboard';
-            throw new \Exception("{$page} nicht in $allowedPages gefunden");
+            throw new \Exception("Seite '{$page}' ist nicht erlaubt.");
         }
 
         return $this->allowedPages[$page];
