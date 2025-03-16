@@ -10,23 +10,27 @@ class CacheManager {
     protected array $memoryCache = [];
     protected static ?CacheManager $instance = null;
 
+    // Neue Properties für Index-Unterstützung
+    protected bool $useIndex;
+    protected array $index = [];
+    protected string $indexFile;
+
     /**
      * Liefert die Singleton-Instanz des CacheManagers.
-     * Falls $enabled nicht explizit übergeben wird, wird der Wert aus den Systemeinstellungen geladen.
      *
      * @param string|null $cacheDir
      * @param bool|null $enabled
+     * @param bool $useIndex Ob der Index genutzt werden soll (Standard: true)
      * @return CacheManager
      */
-    public static function getInstance(?string $cacheDir = null, ?bool $enabled = null): CacheManager {
+    public static function getInstance(?string $cacheDir = null, ?bool $enabled = null, bool $useIndex = true): CacheManager {
         if (self::$instance === null) {
             if ($enabled === null) {
-                // Lade die Systemeinstellungen über den SettingsManager
                 $settingsManager = new SettingsManager();
                 $system_settings = $settingsManager->getAllSettings();
                 $enabled = $system_settings['cache_enabled'] ?? true;
             }
-            self::$instance = new self($cacheDir, $enabled);
+            self::$instance = new self($cacheDir, $enabled, $useIndex);
         }
         return self::$instance;
     }
@@ -36,9 +40,10 @@ class CacheManager {
      *
      * @param string|null $cacheDir Pfad zum Cache-Verzeichnis
      * @param bool $enabled Ob Caching aktiviert ist
+     * @param bool $useIndex Ob der Index verwendet werden soll
      * @throws ConfigurationException Falls das Cache-Verzeichnis nicht erstellt werden kann.
      */
-    public function __construct(?string $cacheDir = null, bool $enabled = true) {
+    public function __construct(?string $cacheDir = null, bool $enabled = true, bool $useIndex = true) {
         if ($cacheDir === null) {
             $cacheDir = defined('MARQUES_CACHE_DIR') ? MARQUES_CACHE_DIR : __DIR__ . '/cache';
         }
@@ -48,6 +53,70 @@ class CacheManager {
         }
         $this->useOpcache = function_exists('opcache_get_status');
         $this->enabled = $enabled;
+        $this->useIndex = $useIndex;
+        $this->indexFile = $this->cacheDir . '/cache_index.json';
+        if ($this->useIndex) {
+            $this->loadIndex();
+        }
+    }
+
+    /**
+     * Lädt den Index aus der Indexdatei.
+     */
+    protected function loadIndex(): void {
+        if (file_exists($this->indexFile) && is_readable($this->indexFile)) {
+            $content = file_get_contents($this->indexFile);
+            $data = json_decode($content, true);
+            if (is_array($data)) {
+                $this->index = $data;
+            } else {
+                $this->index = [];
+            }
+        } else {
+            $this->index = [];
+        }
+    }
+
+    /**
+     * Speichert den Index in der Indexdatei.
+     */
+    protected function saveIndex(): void {
+        if ($this->useIndex) {
+            file_put_contents($this->indexFile, json_encode($this->index, JSON_PRETTY_PRINT));
+        }
+    }
+
+    /**
+     * Aktualisiert den Index für einen bestimmten Schlüssel und die zugehörigen Gruppen.
+     *
+     * @param string $key
+     * @param array $groups
+     */
+    protected function updateIndexForKey(string $key, array $groups): void {
+        foreach ($groups as $group) {
+            if (!isset($this->index[$group])) {
+                $this->index[$group] = [];
+            }
+            if (!in_array($key, $this->index[$group], true)) {
+                $this->index[$group][] = $key;
+            }
+        }
+        $this->saveIndex();
+    }
+
+    /**
+     * Entfernt einen Schlüssel aus dem Index.
+     *
+     * @param string $key
+     */
+    protected function removeKeyFromIndex(string $key): void {
+        foreach ($this->index as $group => $keys) {
+            if (($pos = array_search($key, $keys, true)) !== false) {
+                unset($this->index[$group][$pos]);
+                $this->index[$group] = array_values($this->index[$group]);
+            }
+        }
+        $this->saveIndex();
     }
 
     /**
@@ -96,31 +165,27 @@ class CacheManager {
     /**
      * Speichert den Inhalt im Cache.
      *
-     * Automatische Anpassung: Falls keine TTL übergeben wurde, wird basierend auf dem Schlüssel ein Standardwert verwendet:
-     * - Schlüssel beginnend mit "template_": TTL 3600 Sekunden, Gruppe "templates"
-     * - Schlüssel beginnend mit "asset_": TTL 86400 Sekunden, Gruppe "assets"
-     * - Ansonsten: TTL 3600 Sekunden
+     * Automatische Anpassung der TTL und Gruppen basierend auf dem Schlüssel.
      *
      * @param string $key Schlüssel für den Cacheeintrag.
      * @param string $content Inhalt, der gecached werden soll.
      * @param int|null $ttl Time-to-live in Sekunden.
      * @param array $groups Gruppen, denen der Cacheeintrag zugeordnet wird.
-     * @throws ConfigurationException Wenn die Cache-Datei nicht geöffnet oder gesperrt werden kann.
+     * @throws ConfigurationException
      */
     public function set(string $key, string $content, ?int $ttl = null, array $groups = []): void {
         if (!$this->enabled) {
             return;
         }
-        // Automatische Anpassung der TTL und Gruppen basierend auf dem Schlüssel
         if ($ttl === null) {
             if (strpos($key, 'template_') === 0) {
-                $ttl = 3600; // 1 Stunde für Templates
+                $ttl = 3600;
                 $groups[] = 'templates';
             } elseif (strpos($key, 'asset_') === 0) {
-                $ttl = 86400; // 24 Stunden für Assets
+                $ttl = 86400;
                 $groups[] = 'assets';
             } else {
-                $ttl = 3600; // Standard-TTL
+                $ttl = 3600;
             }
         }
         
@@ -149,6 +214,10 @@ class CacheManager {
         if ($this->useOpcache) {
             opcache_invalidate($file, true);
         }
+        // Index aktualisieren
+        if ($this->useIndex && !empty($groups)) {
+            $this->updateIndexForKey($key, $groups);
+        }
     }
 
     /**
@@ -162,6 +231,9 @@ class CacheManager {
             unlink($file);
         }
         unset($this->memoryCache[$key]);
+        if ($this->useIndex) {
+            $this->removeKeyFromIndex($key);
+        }
     }
 
     /**
@@ -175,6 +247,12 @@ class CacheManager {
             }
         }
         $this->memoryCache = [];
+        if ($this->useIndex) {
+            $this->index = [];
+            if (file_exists($this->indexFile)) {
+                unlink($this->indexFile);
+            }
+        }
     }
 
     /**
@@ -183,22 +261,31 @@ class CacheManager {
      * @param string $group
      */
     public function clearGroup(string $group): void {
-        $files = glob($this->cacheDir . '/*.cache');
-        if ($files !== false) {
-            foreach ($files as $file) {
-                $data = unserialize(file_get_contents($file));
-                if (is_array($data) && isset($data['groups']) && in_array($group, $data['groups'], true)) {
-                    unlink($file);
+        if ($this->useIndex) {
+            if (isset($this->index[$group]) && is_array($this->index[$group])) {
+                foreach ($this->index[$group] as $key) {
+                    $this->delete($key);
+                }
+                unset($this->index[$group]);
+                $this->saveIndex();
+            }
+        } else {
+            $files = glob($this->cacheDir . '/*.cache');
+            if ($files !== false) {
+                foreach ($files as $file) {
+                    $data = unserialize(file_get_contents($file));
+                    if (is_array($data) && isset($data['groups']) && in_array($group, $data['groups'], true)) {
+                        unlink($file);
+                    }
                 }
             }
         }
     }
 
     /**
-     * Generiert eine Cache-busted URL für statische Assets.
-     * Hängt einen Query-Parameter "v" mit der Dateimtime an, um sicherzustellen, dass immer die aktuellste Version geladen wird.
+     * Generiert eine cache-busted URL für statische Assets.
      *
-     * @param string $url Pfad oder URL zur Datei (relativ oder absolut)
+     * @param string $url
      * @return string
      */
     public function bustUrl(string $url): string {
@@ -215,17 +302,50 @@ class CacheManager {
         return $url;
     }
 
+    /**
+     * Gibt die Anzahl der Cache-Dateien zurück.
+     *
+     * @return int
+     */
     public function getCacheFileCount(): int {
-        $files = glob($this->cacheDir . '/*.cache');
-        return $files === false ? 0 : count($files);
+        if ($this->useIndex) {
+            $keys = [];
+            foreach ($this->index as $groupKeys) {
+                $keys = array_merge($keys, $groupKeys);
+            }
+            $uniqueKeys = array_unique($keys);
+            return count($uniqueKeys);
+        } else {
+            $files = glob($this->cacheDir . '/*.cache');
+            return $files === false ? 0 : count($files);
+        }
     }
     
+    /**
+     * Gibt die Gesamtgröße aller Cache-Dateien zurück.
+     *
+     * @return int
+     */
     public function getCacheSize(): int {
-        $files = glob($this->cacheDir . '/*.cache');
         $size = 0;
-        if ($files !== false) {
-            foreach ($files as $file) {
-                $size += filesize($file);
+        if ($this->useIndex) {
+            $keys = [];
+            foreach ($this->index as $groupKeys) {
+                $keys = array_merge($keys, $groupKeys);
+            }
+            $uniqueKeys = array_unique($keys);
+            foreach ($uniqueKeys as $key) {
+                $file = $this->getCacheFilePath($key);
+                if (file_exists($file)) {
+                    $size += filesize($file);
+                }
+            }
+        } else {
+            $files = glob($this->cacheDir . '/*.cache');
+            if ($files !== false) {
+                foreach ($files as $file) {
+                    $size += filesize($file);
+                }
             }
         }
         return $size;
