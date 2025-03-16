@@ -28,7 +28,7 @@ class TemplateVars {
         if (isset($this->data['themeManager']) && method_exists($this->data['themeManager'], 'getThemeAssetsUrl')) {
             $url = $this->data['themeManager']->getThemeAssetsUrl($path);
             // Automatisch Cachebusting durchführen:
-            $cacheManager = CacheManager::getInstance();
+            $cacheManager = AppCache::getInstance();
             return $cacheManager->bustUrl($url);
         }
         return $path;

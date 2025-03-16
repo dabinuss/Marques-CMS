@@ -77,7 +77,7 @@ class Template {
         }
         
         // Systemeinstellungen holen und ggf. anpassen
-        $settingsManager = new \Marques\Core\SettingsManager();
+        $settingsManager = new \Marques\Core\AppSettings();
         $system_settings = $settingsManager->getAllSettings();
         
         if (defined('IS_ADMIN')) {
@@ -103,7 +103,7 @@ class Template {
         
         // Caching: Erzeuge einen eindeutigen Cache-Schlüssel (ggf. erweiterbar um weitere Parameter)
         $cacheKey = 'template_' . $tpl->templateName;
-        $cacheManager = \Marques\Core\CacheManager::getInstance();
+        $cacheManager = \Marques\Core\AppCache::getInstance();
         $cachedOutput = $cacheManager->get($cacheKey);
         
         if ($cachedOutput !== null) {
@@ -132,7 +132,7 @@ class Template {
         
         // Systemeinstellungen holen, falls sie nicht übergeben wurden
         if (!isset($data['system_settings'])) {
-            $settings_manager = new \Marques\Core\SettingsManager();
+            $settings_manager = new \Marques\Core\AppSettings();
             $system_settings = $settings_manager->getAllSettings();
             
             // Base URL korrigieren (wie in render())

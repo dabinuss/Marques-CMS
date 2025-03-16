@@ -14,7 +14,7 @@ class ThemeManager {
         $this->themesPath = MARQUES_ROOT_DIR . '/themes';
         $this->configManager = AppConfig::getInstance();
         $this->loadThemes();
-        $this->settingsManager = new SettingsManager();
+        $this->settingsManager = new AppSettings();
         $this->currentTheme = $this->settingsManager->getSetting('active_theme', 'default');
     }
     
@@ -66,7 +66,7 @@ class ThemeManager {
         
         if ($result) {
             $this->currentTheme = $themeName;
-            // Auch den SettingsManager aktualisieren
+            // Auch den AppSettings aktualisieren
             $this->settingsManager->setSetting('active_theme', $themeName);
             error_log("Theme erfolgreich auf '$themeName' geändert");
         } else {

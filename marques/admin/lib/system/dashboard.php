@@ -8,7 +8,7 @@ use Marques\Core\Admin;
 use Marques\Core\BlogManager;
 use Marques\Core\PageManager;
 use Marques\Core\MediaManager;
-use Marques\Core\CacheManager;
+use Marques\Core\AppCache;
 use Marques\Core\Helper;
 use Marques\Core\ThemeManager;
 
@@ -78,15 +78,25 @@ try {
 
 // Cache-Daten ermitteln
 try {
-    $cacheManager = new CacheManager();
+    // Instanziere den Cache (hier als AppCache implementiert)
+    $cacheManager = new AppCache();
     $numCached = $cacheManager->getCacheFileCount();
     $cacheSize = $cacheManager->getCacheSize();
     $cacheSizeFormatted = Helper::formatBytes($cacheSize);
+    
+    // Neue Statistikfunktionen: Gesamte Anfragen, Trefferquote, durchschnittliche Zugriffszeit etc.
+    $cacheStats = $cacheManager->getStatistics();
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Cache-Daten: " . $e->getMessage());
     $numCached = 0;
     $cacheSize = 0;
     $cacheSizeFormatted = '0 B';
+    $cacheStats = [
+        'total_requests' => 0,
+        'cache_hits'     => 0,
+        'hit_rate'       => 0,
+        'avg_access_time'=> 0,
+    ];
 }
 
 // Prüfen, ob das Log-Verzeichnis für Zugriffsstatistiken existiert; falls nicht, anlegen

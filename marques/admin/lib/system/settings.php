@@ -15,7 +15,7 @@ $admin->requireLogin();
 // Benutzer-Objekt initialisieren
 $user = new \Marques\Core\User();
 
-// AdminSettings initialisieren (als Ersatz für den alten SettingsManager)
+// AdminSettings initialisieren (als Ersatz für den alten AppSettings)
 $settings = new \Marques\Admin\AdminSettings();
 
 // CSRF-Token generieren

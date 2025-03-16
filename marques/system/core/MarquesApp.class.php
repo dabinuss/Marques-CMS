@@ -18,7 +18,7 @@ class MarquesApp extends AppCore
 
         // AppContainer als Klassen-Property initialisieren
         $this->appcontainer = new AppContainer();
-        // Registrierung von AppSettings statt des alten SettingsManager
+        // Registrierung von AppSettings statt des alten AppSettings
         $this->appcontainer->register(AppSettings::class, AppSettings::getInstance());
         $this->appcontainer->register(User::class, new User());
 

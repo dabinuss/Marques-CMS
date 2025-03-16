@@ -88,7 +88,7 @@ $appcontainer->register('config', $systemConfig);
 
 $appcontainer->register(\Marques\Core\EventManager::class, new \Marques\Core\EventManager());
 $appcontainer->register(\Marques\Core\Logger::class, new \Marques\Core\AppLogger());
-$appcontainer->register(\Marques\Core\SettingsManager::class);
+$appcontainer->register(\Marques\Core\AppSettings::class);
 $appcontainer->register(\Marques\Core\User::class);
 
 // Global verfügbar machen
@@ -96,7 +96,7 @@ $GLOBALS['appcontainer'] = $appcontainer;
 $GLOBALS['events'] = $appcontainer->get(\Marques\Core\EventManager::class);
 
 // Systemeinstellungen laden
-$settings = $appcontainer->get(\Marques\Core\SettingsManager::class);
+$settings = $appcontainer->get(\Marques\Core\AppSettings::class);
 
 // Fehlerberichterstattung einrichten
 if ($settings->getSetting('debug', false)) {

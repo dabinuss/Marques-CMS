@@ -31,8 +31,8 @@ class FileManager {
         if (file_put_contents($filePath, $content) === false) {
             return false;
         }
-        // Cache invalidieren: Der CacheManager wird informiert, dass sich der Inhalt geändert hat.
-        $cacheManager = CacheManager::getInstance();
+        // Cache invalidieren: Der AppCache wird informiert, dass sich der Inhalt geändert hat.
+        $cacheManager = AppCache::getInstance();
         $cacheManager->delete($filePath);
         return true;
     }
@@ -60,7 +60,7 @@ class FileManager {
     public function deleteFile(string $relativePath): bool {
         $filePath = $this->getFullPath($relativePath);
         if (file_exists($filePath)) {
-            $cacheManager = CacheManager::getInstance();
+            $cacheManager = AppCache::getInstance();
             $cacheManager->delete($filePath);
             return @unlink($filePath); // Korrektur: Fehlerunterdrückung bei unlink beibehalten, um Löschfehler zu vermeiden
         }
