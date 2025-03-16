@@ -18,8 +18,9 @@ class MarquesApp extends AppCore
 
         // AppContainer als Klassen-Property initialisieren
         $this->appcontainer = new AppContainer();
-        $this->appcontainer->register(SettingsManager::class);
-        $this->appcontainer->register(User::class);
+        // Registrierung von AppSettings statt des alten SettingsManager
+        $this->appcontainer->register(AppSettings::class, AppSettings::getInstance());
+        $this->appcontainer->register(User::class, new User());
 
         $this->router = new Router();
         $this->template = new Template();
@@ -35,11 +36,11 @@ class MarquesApp extends AppCore
             exit('Direkter Zugriff ist nicht erlaubt.');
         }
 
-        $systemConfig = $this->configManager->load('system') ?: [];
-        $this->appcontainer->register('config', $systemConfig);
+        // Systemeinstellungen über AppSettings abrufen
+        $settings = $this->appcontainer->get(AppSettings::class);
 
-        // Systemeinstellungen laden
-        $settings = $this->appcontainer->get(SettingsManager::class);
+        // Optional: Registrierung der geladenen Konfigurationsdaten im Container
+        $this->appcontainer->register('config', $settings->getAllSettings());
 
         // Fehlerberichterstattung einrichten
         if ($settings->getSetting('debug', false)) {
@@ -57,12 +58,14 @@ class MarquesApp extends AppCore
         if (!defined('IS_ADMIN') && $settings->getSetting('maintenance_mode', false)) {
             $maintenance_message = $settings->getSetting('maintenance_message', 'Die Website wird aktuell gewartet.');
 
-            // User bereits in AppCore initialisiert
+            // Benutzer wird bereits in AppCore initialisiert
             if (!$this->user->isAdmin()) {
                 header('HTTP/1.1 503 Service Temporarily Unavailable');
                 header('Status: 503 Service Temporarily Unavailable');
                 header('Retry-After: 3600'); // Eine Stunde
-                echo '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wartungsmodus - ' . htmlspecialchars($settings->getSetting('site_name', 'marques CMS')) . '</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;background-color:#f8f9fa;color:#212529;margin:0;padding:0;display:flex;height:100vh;align-items:center;justify-content:center}.maintenance-container{text-align:center;max-width:600px;padding:2rem;background-color:white;border-radius:.5rem;box-shadow:0 4px 6px rgba(0,0,0,.1)}h1{color:#343a40;margin-top:0}p{font-size:1.1rem;line-height:1.6;color:#6c757d}.icon{font-size:4rem;margin-bottom:1rem;color:#007bff}</style></head><body><div class="maintenance-container"><div class="icon">⚙️</div><h1>Website wird gewartet</h1><p>' . htmlspecialchars($maintenance_message) . '</p></div></body></html>';
+                echo '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wartungsmodus - ' 
+                     . htmlspecialchars($settings->getSetting('site_name', 'marques CMS')) . '</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;background-color:#f8f9fa;color:#212529;margin:0;padding:0;display:flex;height:100vh;align-items:center;justify-content:center}.maintenance-container{text-align:center;max-width:600px;padding:2rem;background-color:white;border-radius:.5rem;box-shadow:0 4px 6px rgba(0,0,0,.1)}h1{color:#343a40;margin-top:0}p{font-size:1.1rem;line-height:1.6;color:#6c757d}.icon{font-size:4rem;margin-bottom:1rem;color:#007bff}</style></head><body><div class="maintenance-container"><div class="icon">⚙️</div><h1>Website wird gewartet</h1><p>' 
+                     . htmlspecialchars($maintenance_message) . '</p></div></body></html>';
                 exit;
             }
         }
@@ -93,7 +96,7 @@ class MarquesApp extends AppCore
         require_once $this->appPath->combine('core', 'Exceptions.inc.php');
 
         // Hilfsfunktionen für das Theme-System (bleiben global)
-        //\marques_init_default_theme();
+        // \marques_init_default_theme();
     }
 
     public function run(): void

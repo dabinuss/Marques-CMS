@@ -15,8 +15,8 @@ $admin->requireLogin();
 // Benutzer-Objekt initialisieren
 $user = new \Marques\Core\User();
 
-// Settings Manager initialisieren
-$settings = new \Marques\Core\SettingsManager();
+// AdminSettings initialisieren (als Ersatz für den alten SettingsManager)
+$settings = new \Marques\Admin\AdminSettings();
 
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {
@@ -41,11 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         switch ($group) {
             case 'general':
                 $settings->setMultipleSettings([
-                    'site_name' => $_POST['site_name'] ?? '',
+                    'site_name'        => $_POST['site_name'] ?? '',
                     'site_description' => $_POST['site_description'] ?? '',
-                    'admin_email' => $_POST['admin_email'] ?? '',
-                    'contact_email' => $_POST['contact_email'] ?? '',
-                    'contact_phone' => $_POST['contact_phone'] ?? '',
+                    'admin_email'      => $_POST['admin_email'] ?? '',
+                    'contact_email'    => $_POST['contact_email'] ?? '',
+                    'contact_phone'    => $_POST['contact_phone'] ?? '',
                 ]);
                 break;
                 
@@ -59,22 +59,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             case 'content':
                 $settings->setMultipleSettings([
-                    'posts_per_page' => (int)($_POST['posts_per_page'] ?? 10),
-                    'excerpt_length' => (int)($_POST['excerpt_length'] ?? 150),
+                    'posts_per_page'   => (int)($_POST['posts_per_page'] ?? 10),
+                    'excerpt_length'   => (int)($_POST['excerpt_length'] ?? 150),
                     'comments_enabled' => isset($_POST['comments_enabled']),
-                    'blog_url_format'   => $_POST['blog_url_format'] ?? 'date_slash',
+                    'blog_url_format'  => $_POST['blog_url_format'] ?? 'date_slash',
                 ]);
                 break;
                 
             case 'system':
                 $settings->setMultipleSettings([
-                    'debug' => isset($_POST['debug']),
-                    'cache_enabled' => isset($_POST['cache_enabled']),
-                    'maintenance_mode' => isset($_POST['maintenance_mode']),
-                    'maintenance_message' => $_POST['maintenance_message'] ?? '',
-                    'timezone' => $_POST['timezone'] ?? 'Europe/Berlin',
-                    'date_format' => $_POST['date_format'] ?? 'd.m.Y',
-                    'time_format' => $_POST['time_format'] ?? 'H:i',
+                    'debug'              => isset($_POST['debug']),
+                    'cache_enabled'      => isset($_POST['cache_enabled']),
+                    'maintenance_mode'   => isset($_POST['maintenance_mode']),
+                    'maintenance_message'=> $_POST['maintenance_message'] ?? '',
+                    'timezone'           => $_POST['timezone'] ?? 'Europe/Berlin',
+                    'date_format'        => $_POST['date_format'] ?? 'd.m.Y',
+                    'time_format'        => $_POST['time_format'] ?? 'H:i',
                 ]);
                 break;
                 
@@ -86,9 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'seo':
                 $settings->setMultipleSettings([
-                    'meta_keywords' => $_POST['meta_keywords'] ?? '',
-                    'meta_author' => $_POST['meta_author'] ?? '',
-                    'google_analytics_id' => $_POST['google_analytics_id'] ?? '',
+                    'meta_keywords'        => $_POST['meta_keywords'] ?? '',
+                    'meta_author'          => $_POST['meta_author'] ?? '',
+                    'google_analytics_id'  => $_POST['google_analytics_id'] ?? '',
                 ]);
                 break;
         }
@@ -138,7 +138,7 @@ $date_formats = [
 
 // Liste der Zeitformate
 $time_formats = [
-    'H:i' => date('H:i'),
+    'H:i'   => date('H:i'),
     'H:i:s' => date('H:i:s'),
     'g:i a' => date('g:i a'),
     'g:i A' => date('g:i A'),
