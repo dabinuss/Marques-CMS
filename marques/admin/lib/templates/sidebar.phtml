@@ -43,6 +43,18 @@ $systemConfig = $configManager->load('system') ?: [];
                 </a>
             </li>
             <li class="admin-menu-item">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=navigation'); ?>" class="admin-menu-link <?= $current_page === 'navigation' ? 'active' : ''; ?>">
+                    <span class="admin-menu-icon"><i class="fas fa-bars"></i></span>
+                    Menüs
+                </a>
+            </li>
+            <li class="admin-menu-item">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media'); ?>" class="admin-menu-link <?= $current_page === 'media' ? 'active' : ''; ?>">
+                    <span class="admin-menu-icon"><i class="fas fa-images"></i></span>
+                    Medien
+                </a>
+            </li>
+            <li class="admin-menu-item">
                 <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>" class="admin-menu-link <?= $current_page === 'blog' || $current_page === 'blog-categories' || $current_page === 'blog-tags' || $current_page === 'blog-edit' ? 'active' : ''; ?>">
                     <span class="admin-menu-icon"><i class="fas fa-blog"></i></span>
                     Blog
@@ -53,18 +65,6 @@ $systemConfig = $configManager->load('system') ?: [];
                     <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-categories'); ?>" class="admin-submenu-link <?= $current_page === 'blog-categories' ? 'active' : ''; ?>">Kategorien</a></li>
                     <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-tags'); ?>" class="admin-submenu-link <?= $current_page === 'blog-tags' ? 'active' : ''; ?>">Tags</a></li>
                 </ul>
-            </li>
-            <li class="admin-menu-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media'); ?>" class="admin-menu-link <?= $current_page === 'media' ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-images"></i></span>
-                    Medien
-                </a>
-            </li>
-            <li class="admin-menu-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=navigation'); ?>" class="admin-menu-link <?= $current_page === 'navigation' ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-bars"></i></span>
-                    Menüs
-                </a>
             </li>
             <?php if (isset($user) && $user->isAdmin()): ?>
             <li class="admin-menu-item">
