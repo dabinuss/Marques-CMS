@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($page_title); ?> - Admin-Panel - marques CMS</title>
+    <link rel="stylesheet" href="assets/css/admin-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="admin-layout">
+        
+        <!-- SIDEBAR & NAVIGATION -->
+        <?php include 'sidebar.phtml'; ?>
+        
+        <main class="admin-content">
+            <div class="admin-topbar">
+                <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
+                
+                <div class="admin-actions">
+                    <a href="users.php" class="admin-button">
+                        <span class="admin-button-icon"><i class="fas fa-arrow-left"></i></span>
+                        Zurück zur Übersicht
+                    </a>
+                </div>
+            </div>
+            
+            <?php if (!empty($success_message)): ?>
+                <div class="admin-alert success">
+                    <i class="fas fa-check-circle"></i> <?= htmlspecialchars($success_message); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($error_message)): ?>
+                <div class="admin-alert error">
+                    <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error_message); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if ($initial_setup): ?>
+                <div class="admin-alert warning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Bitte ändern Sie das Standard-Passwort ihres Admin Accounts.
+                </div>
+            <?php endif; ?>
+
+            <div class="admin-card">
+                <div class="admin-card-content">
+                    <form method="post" action="">
+                        <div class="form-group">
+                            <label for="username">Benutzername</label>
+                            <?php if ($edit_mode): ?>
+                                <input type="text" id="username" name="username" value="<?= htmlspecialchars($username); ?>" readonly class="readonly">
+                                <p class="form-hint">Der Benutzername kann nicht geändert werden.</p>
+                            <?php else: ?>
+                                <input type="text" id="username" name="username" value="<?= isset($form_username) ? htmlspecialchars($form_username) : ''; ?>" required>
+                                <p class="form-hint">Nur Buchstaben, Zahlen und Unterstriche erlaubt.</p>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="display_name">Anzeigename</label>
+                            <input type="text" id="display_name" name="display_name" value="<?= isset($userData['display_name']) ? htmlspecialchars($userData['display_name']) : (isset($display_name) ? htmlspecialchars($display_name) : ''); ?>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">Passwort <?= $edit_mode ? '(leer lassen, um nicht zu ändern)' : ''; ?></label>
+                            <input type="password" id="password" name="password" <?= $edit_mode ? '' : 'required'; ?>>
+                            <?php if ($edit_mode): ?>
+                                <p class="form-hint">Lassen Sie dieses Feld leer, wenn Sie das Passwort nicht ändern möchten.</p>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="role">Rolle</label>
+                            <select id="role" name="role">
+                                <?php foreach ($available_roles as $role_value => $role_name): ?>
+                                    <option value="<?= htmlspecialchars($role_value); ?>" <?= (isset($userData['role']) && $userData['role'] === $role_value) || (isset($role) && $role === $role_value) ? 'selected' : ''; ?>>
+                                        <?= htmlspecialchars($role_name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <?php if ($edit_mode && isset($userData['created'])): ?>
+                            <div class="form-group">
+                                <label>Erstellt am</label>
+                                <p><?= date('d.m.Y H:i', $userData['created']); ?></p>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($edit_mode && isset($userData['last_login']) && $userData['last_login'] > 0): ?>
+                            <div class="form-group">
+                                <label>Letzter Login</label>
+                                <p><?= date('d.m.Y H:i', $userData['last_login']); ?></p>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                        
+                        <div class="form-group">
+                            <button type="submit" class="admin-button">
+                                <span class="admin-button-icon"><i class="fas fa-save"></i></span>
+                                <?= $edit_mode ? 'Benutzer speichern' : 'Benutzer erstellen'; ?>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

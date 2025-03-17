@@ -25,8 +25,7 @@ class MarquesAdmin
         $this->appcontainer = new AppNode();
         $appConfig = AppConfig::getInstance();
         $this->appcontainer->register(AppConfig::class, $appConfig);
-        
-        // Registriere das User-Modell (ohne Login-Logik)
+        $this->appcontainer->register(AppLogger::class, AppLogger::getInstance());
         $this->appcontainer->register(User::class, new User());
         
         // Registriere den AdminAuthService und übergebe das bereits registrierte User-Objekt
