@@ -4,13 +4,14 @@ declare(strict_types=1);
 // dashboard.php -- Content-Datei für das Dashboard im Admin-Bereich
 
 use Marques\Core\AppConfig;
-use Marques\Core\Admin;
+use Marques\Admin\AdminAuthService;
 use Marques\Core\BlogManager;
 use Marques\Core\PageManager;
 use Marques\Core\MediaManager;
 use Marques\Core\AppCache;
 use Marques\Core\Helper;
 use Marques\Core\ThemeManager;
+use Marques\Admin\AdminStatistics;
 
 // -------------------------
 // Datenaufbereitung
@@ -27,7 +28,7 @@ $configManager = AppConfig::getInstance();
 $systemConfig = $configManager->load('system') ?: [];
 
 // Statistiken abrufen
-$admin = new Admin();
+$admin = new AdminStatistics();
 $stats = $admin->getStatistics();
 
 // Alle Benutzer für die Benutzer-Statistik abrufen

@@ -14,7 +14,6 @@ ini_set('display_errors', 1);
 
 // Basispfad definieren
 define('MARQUES_ROOT_DIR', dirname(__DIR__));
-define('IS_ADMIN', true);
 
 /*
  * Constants definition for admin | FALLBACK FOR ADMIN (DEPRECIATED CONSTANTS)

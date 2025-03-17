@@ -19,7 +19,7 @@ $systemConfig = $configManager->load('system') ?: [];
         <div class="admin-actions sidebar">
             <p class="admin-button">
                 Angemeldet als: 
-                <?= htmlspecialchars($user->getCurrentUsername()); ?>
+                <?= htmlspecialchars($user->getCurrentDisplayName()); ?>
             </p>
             <a href="../" class="admin-button" target="_blank">
                 <span class="admin-button-icon"><i class="fas fa-external-link-alt"></i></span>

@@ -9,10 +9,10 @@
  */
 
 // Benutzer-Objekt erstellen
-$user = new \Marques\Core\User();
+$authService = new \Marques\Admin\AdminAuthService();
 
 // Benutzer ausloggen
-$user->logout();
+$authService->logout();
 
 // Zur Login-Seite weiterleiten
 header('Location: login.php');

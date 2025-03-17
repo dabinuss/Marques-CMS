@@ -13,6 +13,7 @@ class MarquesApp
     private AppEvents $eventManager;
     private User $user;
     private AppPath $appPath;
+    //private AdminAuthService $authService;
 
     public function __construct()
     {
@@ -25,6 +26,7 @@ class MarquesApp
         $this->eventManager = $this->appcontainer->get(AppEvents::class);
         $this->user         = $this->appcontainer->get(User::class);
         $this->appPath      = $this->appcontainer->get(AppPath::class);
+        //$this->authService  = $this->appcontainer->get(AdminAuthService::class);
     }
 
     /**
@@ -42,6 +44,7 @@ class MarquesApp
         // Auch Router und Template als Services registrieren
         $this->appcontainer->register(Router::class, new Router());
         $this->appcontainer->register(Template::class, new Template());
+        //$this->appcontainer->register(AdminAuthService::class, new AdminAuthService());
     }
 
     public function init(): void

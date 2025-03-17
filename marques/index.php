@@ -17,7 +17,6 @@ error_reporting(E_ALL);
 
 // Basispfad definieren
 define('MARQUES_ROOT_DIR', __DIR__);
-define('IS_ADMIN', false);
 
 /*
  * Constants definition for admin | FALLBACK FOR ADMIN (DEPRECIATED CONSTANTS)

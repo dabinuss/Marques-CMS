@@ -6,7 +6,7 @@ namespace Marques\Admin;
 use Marques\Core\AppNode;
 use Marques\Core\AppConfig;
 use Marques\Core\User;
-use Marques\Core\Admin; // Für requireLogin()
+use Marques\Admin\AdminAuthService;
 use Marques\Core\AppEvents;
 use Marques\Core\AppLogger;
 
@@ -17,14 +17,27 @@ class MarquesAdmin
     private AppNode $appcontainer;
     private array $systemConfig;
     protected User $user;
+    private AdminAuthService $authService;
 
     public function __construct()
     {
-        // Kein Aufruf von parent::__construct() mehr, da AppCore entfernt wurde.
+        // Initialisiere den DI-Container
         $this->appcontainer = new AppNode();
         $appConfig = AppConfig::getInstance();
         $this->appcontainer->register(AppConfig::class, $appConfig);
-
+        
+        // Registriere das User-Modell (ohne Login-Logik)
+        $this->appcontainer->register(User::class, new User());
+        
+        // Registriere den AdminAuthService und übergebe das bereits registrierte User-Objekt
+        $this->appcontainer->register(
+            AdminAuthService::class,
+            new AdminAuthService($this->appcontainer->get(User::class))
+        );
+        
+        // Nutze den im Container registrierten AdminAuthService
+        $this->authService = $this->appcontainer->get(AdminAuthService::class);
+        
         // Admin-spezifische Klassen initialisieren
         $this->router = new AdminRouter();
         $this->template = new AdminTemplate();
@@ -41,9 +54,13 @@ class MarquesAdmin
             exit('Direkter Zugriff ist nicht erlaubt.');
         }
 
-        // Admin-Zugang prüfen
-        $admin = new Admin();
-        $admin->requireLogin();
+        // Bestimme die aktuelle Seite
+        $currentPage = $_GET['page'] ?? '';
+
+        // Nur geschützte Seiten benötigen einen Login-Check
+        if (strtolower($currentPage) !== 'login') {
+            $this->authService->requireLogin();
+        }
 
         /** @var AppConfig $appConfig */
         $appConfig = $this->appcontainer->get(AppConfig::class);

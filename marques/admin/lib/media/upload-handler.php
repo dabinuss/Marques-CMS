@@ -8,10 +8,6 @@
  * @subpackage admin
  */
 
-// Admin-Klasse initialisieren
-$admin = new \Marques\Core\Admin();
-$admin->requireLogin();
-
 // Antwort-Header setzen
 header('Content-Type: application/json');
 

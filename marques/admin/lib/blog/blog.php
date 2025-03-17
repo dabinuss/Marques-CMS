@@ -8,13 +8,6 @@
  * @subpackage admin
  */
 
-// Admin-Klasse initialisieren
-$admin = new \Marques\Core\Admin();
-$admin->requireLogin();
-
-// Benutzer-Objekt initialisieren
-$user = new \Marques\Core\User();
-
 // BlogManager initialisieren
 $blogManager = new \Marques\Core\BlogManager();
 

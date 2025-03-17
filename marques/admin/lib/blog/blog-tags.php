@@ -8,20 +8,6 @@
  * @subpackage admin
  */
 
-// Basispfad definieren
-define('MARQUES_ROOT_DIR', dirname(__DIR__));
-define('IS_ADMIN', true);
-
-// Bootstrap laden
-require_once MARQUES_ROOT_DIR . '/system/core/Bootstrap.inc.php';
-
-// Admin-Klasse initialisieren
-$admin = new \Marques\Core\Admin();
-$admin->requireLogin();
-
-// Benutzer-Objekt initialisieren
-$user = new \Marques\Core\User();
-
 // BlogManager initialisieren
 $blogManager = new \Marques\Core\BlogManager();
 $blogManager->initCatalogFiles();
