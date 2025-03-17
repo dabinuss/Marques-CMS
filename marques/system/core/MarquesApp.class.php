@@ -10,7 +10,7 @@ class MarquesApp
     private AppNode $appcontainer;
     private AppSettings $settings;
     private AppLogger $logger;
-    private EventManager $eventManager;
+    private AppEvents $eventManager;
     private User $user;
     private AppPath $appPath;
 
@@ -22,7 +22,7 @@ class MarquesApp
         $this->template     = $this->appcontainer->get(Template::class);
         $this->settings     = $this->appcontainer->get(AppSettings::class);
         $this->logger       = $this->appcontainer->get(AppLogger::class);
-        $this->eventManager = $this->appcontainer->get(EventManager::class);
+        $this->eventManager = $this->appcontainer->get(AppEvents::class);
         $this->user         = $this->appcontainer->get(User::class);
         $this->appPath      = $this->appcontainer->get(AppPath::class);
     }
@@ -37,7 +37,7 @@ class MarquesApp
         $this->appcontainer->register(AppSettings::class, AppSettings::getInstance());
         $this->appcontainer->register(User::class, new User());
         $this->appcontainer->register(AppLogger::class, AppLogger::getInstance());
-        $this->appcontainer->register(EventManager::class, new EventManager());
+        $this->appcontainer->register(AppEvents::class, new AppEvents());
         $this->appcontainer->register(AppPath::class, AppPath::getInstance());
         // Auch Router und Template als Services registrieren
         $this->appcontainer->register(Router::class, new Router());

@@ -7,7 +7,7 @@ use Marques\Core\AppNode;
 use Marques\Core\AppConfig;
 use Marques\Core\User;
 use Marques\Core\Admin; // Für requireLogin()
-use Marques\Core\EventManager;
+use Marques\Core\AppEvents;
 use Marques\Core\AppLogger;
 
 class MarquesAdmin
@@ -89,11 +89,11 @@ class MarquesAdmin
     }
 
     /**
-     * Löst ein Event über den im Container registrierten EventManager aus.
+     * Löst ein Event über den im Container registrierten AppEvents aus.
      */
     private function triggerEvent(string $event, $data = null)
     {
-        $eventManager = $this->appcontainer->get(EventManager::class);
+        $eventManager = $this->appcontainer->get(AppEvents::class);
         return $eventManager ? $eventManager->trigger($event, $data) : $data;
     }
 
