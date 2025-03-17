@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-class AppSettings extends AppCore
+class AppSettings
 {
     protected static ?AppSettings $_instance = null;
     protected array $_system_settings;
@@ -11,7 +11,6 @@ class AppSettings extends AppCore
 
     public function __construct()
     {
-        parent::__construct();
         // Direkter Zugriff auf AppConfig
         $this->appConfig = AppConfig::getInstance();
         $this->loadSettings();
@@ -104,8 +103,6 @@ class AppSettings extends AppCore
 
     /**
      * Validiert und evaluiert die geladenen Einstellungen.
-     *
-     * Hier können zusätzliche Sicherheitsprüfungen oder Anpassungen erfolgen.
      */
     protected function validateSettings(array $settings): array
     {
