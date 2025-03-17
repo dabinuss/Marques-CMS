@@ -3,13 +3,14 @@ declare(strict_types=1);
 
 namespace Marques\Admin;
 
-use Marques\Core\AppCore;
 use Marques\Core\AppNode;
 use Marques\Core\AppConfig;
 use Marques\Core\User;
 use Marques\Core\Admin; // Für requireLogin()
+use Marques\Core\EventManager;
+use Marques\Core\AppLogger;
 
-class MarquesAdmin extends AppCore
+class MarquesAdmin
 {
     private AdminRouter $router;
     private AdminTemplate $template;
@@ -19,20 +20,18 @@ class MarquesAdmin extends AppCore
 
     public function __construct()
     {
-        parent::__construct();
-
-        // Initialisiere den Container und registriere grundlegende Services
+        // Kein Aufruf von parent::__construct() mehr, da AppCore entfernt wurde.
         $this->appcontainer = new AppNode();
         $appConfig = AppConfig::getInstance();
         $this->appcontainer->register(AppConfig::class, $appConfig);
 
-        // AdminRouter und AdminTemplate initialisieren
+        // Admin-spezifische Klassen initialisieren
         $this->router = new AdminRouter();
         $this->template = new AdminTemplate();
     }
 
     /**
-     * Initialisiert den Admin-Bereich (Session, Konfiguration, Authentifizierung).
+     * Initialisiert den Admin-Bereich: Session, Authentifizierung, Konfiguration etc.
      */
     public function init(): void
     {
@@ -57,7 +56,7 @@ class MarquesAdmin extends AppCore
         $this->systemConfig = $systemConfig;
         $this->appcontainer->register('systemConfig', $this->systemConfig);
 
-        // Benutzerkonfiguration laden – falls nicht vorhanden, leeres Array als Fallback
+        // Benutzerkonfiguration laden – Fallback: leeres Array
         $userConfig = $appConfig->load('user') ?: [];
         $this->appcontainer->register(User::class, new User($userConfig));
 
@@ -76,7 +75,7 @@ class MarquesAdmin extends AppCore
     }
 
     /**
-     * Gibt globale Variablen zurück, die in allen Templates verfügbar sein sollen.
+     * Gibt globale Variablen zurück, die in allen Admin-Templates verfügbar sein sollen.
      */
     public function getGlobalVars(): array
     {
@@ -90,17 +89,39 @@ class MarquesAdmin extends AppCore
     }
 
     /**
-     * Führt die Anwendung aus.
+     * Löst ein Event über den im Container registrierten EventManager aus.
+     */
+    private function triggerEvent(string $event, $data = null)
+    {
+        $eventManager = $this->appcontainer->get(EventManager::class);
+        return $eventManager ? $eventManager->trigger($event, $data) : $data;
+    }
+
+    /**
+     * Zentrale Fehlerbehandlung: Loggt den Fehler und zeigt eine Fehlermeldung an.
+     */
+    private function handleException(\Exception $e): void
+    {
+        $logger = $this->appcontainer->get(AppLogger::class);
+        $logger->error($e->getMessage(), ['exception' => $e]);
+        http_response_code(500);
+        echo '<h1>Ein Fehler ist aufgetreten</h1>';
+        if (($this->systemConfig['debug'] ?? false) === true) {
+            echo '<pre>' . print_r($e, true) . '</pre>';
+        }
+        exit;
+    }
+
+    /**
+     * Führt den Admin-Bereich aus: Routing, Rendering etc.
      */
     public function run(): void
     {
         try {
             $this->triggerEvent('before_request');
 
-            // Ermittele den Template-Schlüssel (z. B. "dashboard", "content/pages" etc.)
             $templateKey = $this->router->route();
 
-            // Globale Variablen abrufen und Template rendern
             $vars = $this->getGlobalVars();
             $this->template->render($vars, $templateKey);
 

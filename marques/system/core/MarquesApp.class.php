@@ -3,48 +3,58 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-class MarquesApp extends AppCore
+class MarquesApp
 {
     private Router $router;
     private Template $template;
     private AppNode $appcontainer;
+    private AppSettings $settings;
+    private AppLogger $logger;
+    private EventManager $eventManager;
+    private User $user;
+    private AppPath $appPath;
 
     public function __construct()
     {
-        parent::__construct();
         $this->initContainer();
-        $this->router   = new Router();
-        $this->template = new Template();
+        // Alle Kernservices via Container abrufen
+        $this->router       = $this->appcontainer->get(Router::class);
+        $this->template     = $this->appcontainer->get(Template::class);
+        $this->settings     = $this->appcontainer->get(AppSettings::class);
+        $this->logger       = $this->appcontainer->get(AppLogger::class);
+        $this->eventManager = $this->appcontainer->get(EventManager::class);
+        $this->user         = $this->appcontainer->get(User::class);
+        $this->appPath      = $this->appcontainer->get(AppPath::class);
     }
 
     /**
-     * Initialisiert den AppNode und registriert essentielle Services.
+     * Initialisiert den DI-Container und registriert alle wesentlichen Services.
      */
     private function initContainer(): void
     {
         $this->appcontainer = new AppNode();
+        // Registrierungen – hier übergeben wir bereits fertige Instanzen oder Singletons:
         $this->appcontainer->register(AppSettings::class, AppSettings::getInstance());
         $this->appcontainer->register(User::class, new User());
+        $this->appcontainer->register(AppLogger::class, AppLogger::getInstance());
+        $this->appcontainer->register(EventManager::class, new EventManager());
+        $this->appcontainer->register(AppPath::class, AppPath::getInstance());
+        // Auch Router und Template als Services registrieren
+        $this->appcontainer->register(Router::class, new Router());
+        $this->appcontainer->register(Template::class, new Template());
     }
 
-    /**
-     * Führt die Initialisierung der Anwendung durch.
-     */
     public function init(): void
     {
         $this->startSession();
         $this->checkDirectAccess();
-        $settings = $this->loadSettings();
-        $this->configureErrorReporting($settings);
-        $this->setTimezone($settings);
-        $this->checkMaintenanceMode($settings);
+        $this->configureErrorReporting($this->settings);
+        $this->setTimezone($this->settings);
+        $this->checkMaintenanceMode($this->settings);
         $this->logUserAccess();
         $this->loadHelpers();
     }
 
-    /**
-     * Startet die Session, sofern noch nicht geschehen.
-     */
     private function startSession(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -52,9 +62,6 @@ class MarquesApp extends AppCore
         }
     }
 
-    /**
-     * Verhindert direkten Dateizugriff.
-     */
     private function checkDirectAccess(): void
     {
         if (!defined('MARQUES_ROOT_DIR')) {
@@ -62,19 +69,6 @@ class MarquesApp extends AppCore
         }
     }
 
-    /**
-     * Lädt die Systemeinstellungen und registriert sie im Container.
-     */
-    private function loadSettings(): AppSettings
-    {
-        $settings = $this->appcontainer->get(AppSettings::class);
-        $this->appcontainer->register('config', $settings->getAllSettings());
-        return $settings;
-    }
-
-    /**
-     * Konfiguriert die Fehlerberichterstattung anhand der Einstellungen.
-     */
     private function configureErrorReporting(AppSettings $settings): void
     {
         if ($settings->getSetting('debug', false)) {
@@ -86,17 +80,11 @@ class MarquesApp extends AppCore
         }
     }
 
-    /**
-     * Stellt die Zeitzone anhand der Einstellungen ein.
-     */
     private function setTimezone(AppSettings $settings): void
     {
         date_default_timezone_set($settings->getSetting('timezone', 'UTC'));
     }
 
-    /**
-     * Prüft, ob der Wartungsmodus aktiviert ist und zeigt ggf. die Wartungsseite an.
-     */
     private function checkMaintenanceMode(AppSettings $settings): void
     {
         if (!defined('IS_ADMIN') && $settings->getSetting('maintenance_mode', false)) {
@@ -104,16 +92,13 @@ class MarquesApp extends AppCore
                 $maintenanceMessage = $settings->getSetting('maintenance_message', 'Die Website wird aktuell gewartet.');
                 header('HTTP/1.1 503 Service Temporarily Unavailable');
                 header('Status: 503 Service Temporarily Unavailable');
-                header('Retry-After: 3600'); // Eine Stunde
+                header('Retry-After: 3600');
                 echo $this->renderMaintenancePage($settings, $maintenanceMessage);
                 exit;
             }
         }
     }
 
-    /**
-     * Rendert die HTML-Ausgabe für den Wartungsmodus.
-     */
     private function renderMaintenancePage(AppSettings $settings, string $maintenanceMessage): string
     {
         $siteName = htmlspecialchars($settings->getSetting('site_name', 'marques CMS'));
@@ -144,9 +129,6 @@ class MarquesApp extends AppCore
 HTML;
     }
 
-    /**
-     * Erfasst Seitenaufrufe echter Benutzer und loggt diese mithilfe von AppLogger.
-     */
     private function logUserAccess(): void
     {
         if (!defined('IS_ADMIN') && !preg_match('/(bot|crawler|spider|slurp|bingbot|googlebot)/i', $_SERVER['HTTP_USER_AGENT'] ?? '')) {
@@ -157,23 +139,16 @@ HTML;
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
                 'referrer'   => $_SERVER['HTTP_REFERER'] ?? ''
             ];
-            $logger = AppLogger::getInstance();
-            $logger->info('User Access', $logData);
+            $this->logger->info('User Access', $logData);
         }
     }
 
-    /**
-     * Anonymisiert die IP-Adresse, indem das letzte Oktett auf "0" gesetzt wird.
-     */
     private function anonymizeIp(string $ip): string
     {
         $parts = explode('.', $ip);
         return (count($parts) === 4) ? "{$parts[0]}.{$parts[1]}.{$parts[2]}.0" : $ip;
     }
 
-    /**
-     * Ermittelt die aktuelle URL des Requests.
-     */
     private function getCurrentUrl(): string
     {
         $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
@@ -182,30 +157,38 @@ HTML;
         return "{$protocol}://{$host}{$uri}";
     }
 
-    /**
-     * Lädt benötigte Helper-Funktionen.
-     */
     private function loadHelpers(): void
     {
+        // Beispielhafter Aufruf – hier wird über den AppPath der Pfad zur Exceptions.inc.php ermittelt.
         require_once $this->appPath->combine('core', 'Exceptions.inc.php');
     }
 
-    /**
-     * Führt die Anwendungslogik aus.
-     */
     public function run(): void
     {
         try {
-            $this->triggerEvent('before_request');
+            $this->eventManager->trigger('before_request');
             $route = $this->router->processRequest();
-            $route = $this->triggerEvent('after_routing', $route);
+            $route = $this->eventManager->trigger('after_routing', $route);
             $content = new Content();
             $pageData = $content->getPage($route['path']);
-            $pageData = $this->triggerEvent('before_render', $pageData);
+            $pageData = $this->eventManager->trigger('before_render', $pageData);
             $this->template->render($pageData);
-            $this->triggerEvent('after_render');
+            $this->eventManager->trigger('after_render');
         } catch (\Exception $e) {
             $this->handleException($e);
         }
+    }
+
+    private function handleException(\Exception $e): void
+    {
+        $this->logger->error($e->getMessage(), [
+            'exception' => $e,
+        ]);
+        http_response_code(500);
+        echo '<h1>Ein Fehler ist aufgetreten</h1>';
+        if ($this->settings->getSetting('debug', false)) {
+            echo '<pre>' . print_r($e, true) . '</pre>';
+        }
+        exit;
     }
 }
