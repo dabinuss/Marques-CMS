@@ -8,28 +8,37 @@
  * @subpackage admin
  */
 
+// HTTP Security Headers setzen
+header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'");
+header("X-Frame-Options: DENY");
+header("X-Content-Type-Options: nosniff");
+
 session_start();
 
 // AppConfig initialisieren
 $configManager = \Marques\Core\AppConfig::getInstance();
-
-// Konfiguration laden
 $system_config = $configManager->load('system') ?: [];
 
-// CSRF-Token generieren, falls nicht vorhanden
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
-
-// Erstelle das User-Modell und den AuthService
+// Einbinden der benötigten Klassen
 use Marques\Core\User;
 use Marques\Admin\AdminAuthService;
 
 $user = new User();
 $authService = new AdminAuthService($user);
 
-// Wenn Benutzer bereits eingeloggt ist, zum Dashboard weiterleiten
+// Verwende den existierenden CSRF-Token oder generiere einen, falls noch nicht vorhanden
+$csrf_token = $authService->generateCsrfToken();
+
+// Bestimme, ob die Standardpasswort-Meldung für den Admin angezeigt werden soll
+$showAdminDefaultPassword = false;
+$users = $configManager->load('users') ?: [];
+if (isset($users['admin'])) {
+    if (empty($users['admin']['password']) || (isset($users['admin']['first_login']) && $users['admin']['first_login'] === true)) {
+        $showAdminDefaultPassword = true;
+    }
+}
+
+// Falls bereits eingeloggt, leite zum Dashboard weiter
 if ($authService->isLoggedIn()) {
     header('Location: index.php');
     exit;
@@ -39,25 +48,22 @@ $error = '';
 $username = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // CSRF-Token prüfen
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    // CSRF-Token validieren
+    if (!isset($_POST['csrf_token']) || !$authService->validateCsrfToken($_POST['csrf_token'])) {
         $error = 'Ungültige Anfrage. Bitte versuchen Sie es erneut.';
     } else {
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
         
-        // Versuche, den Benutzer einzuloggen
         if ($authService->login($username, $password)) {
-            // Neues CSRF-Token nach Login generieren
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            // Nach erfolgreichem Login den CSRF-Token beibehalten oder erneuern (optional)
+            // $authService->generateCsrfToken();
             
-            // Falls beim Admin der erste Login erfolgt und initial_login gesetzt wurde, weiterleiten zur Passwortänderung
             if (isset($_SESSION['marques_user']['initial_login']) && $_SESSION['marques_user']['initial_login'] === true) {
                 header('Location: user-edit.php?username=admin&initial_setup=true');
                 exit;
             }
             
-            // Erfolgreicher Login, weiterleiten zum Dashboard
             header('Location: index.php');
             exit;
         } else {

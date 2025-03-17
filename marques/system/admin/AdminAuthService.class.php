@@ -8,23 +8,12 @@ use Marques\Core\AppConfig;
 
 class AdminAuthService
 {
-    /**
-     * @var User
-     */
     private User $userModel;
-
-    /**
-     * @var array
-     */
     private array $systemConfig;
+    private string $loginAttemptsFile;
 
-    /**
-     * Konstruktor.
-     * Übergibt als Abhängigkeit ein User-Modell, das ausschließlich für Datenmanagement zuständig ist.
-     */
     public function __construct(User $userModel)
     {
-        // Stelle sicher, dass eine Session läuft.
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -32,12 +21,104 @@ class AdminAuthService
         $this->userModel = $userModel;
         $configManager = AppConfig::getInstance();
         $this->systemConfig = $configManager->load('system') ?: [];
+        $this->loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
+        $this->initLoginAttemptsLog();
     }
 
     /**
-     * Prüft, ob der Benutzer in der aktuellen Session eingeloggt ist.
-     *
-     * @return bool True, wenn eingeloggt
+     * Initialisiert die Log-Datei für Login-Versuche.
+     */
+    private function initLoginAttemptsLog(): void
+    {
+        if (!file_exists($this->loginAttemptsFile)) {
+            $dir = dirname($this->loginAttemptsFile);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            file_put_contents($this->loginAttemptsFile, json_encode([]));
+        }
+    }
+
+    /**
+     * Liefert alle Login-Versuche der aktuellen IP in den letzten 3600 Sekunden.
+     */
+    private function getLoginAttempts(string $ip): array
+    {
+        $this->initLoginAttemptsLog();
+        $content = file_get_contents($this->loginAttemptsFile);
+        $attempts = json_decode($content, true);
+        if (!is_array($attempts)) {
+            return [];
+        }
+        return array_filter($attempts, function($attempt) use ($ip) {
+            return isset($attempt['timestamp']) 
+                && $attempt['timestamp'] > (time() - 3600)
+                && isset($attempt['ip']) 
+                && $attempt['ip'] === $ip;
+        });
+    }
+
+    /**
+     * Loggt einen Login-Versuch.
+     */
+    private function logLoginAttempt(string $username, bool $success): void
+    {
+        $this->initLoginAttemptsLog();
+        $content = file_get_contents($this->loginAttemptsFile);
+        $attempts = !empty($content) ? json_decode($content, true) : [];
+        if (!is_array($attempts)) {
+            $attempts = [];
+        }
+        $attempts[] = [
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
+            'username' => $username,
+            'timestamp' => time(),
+            'success' => $success
+        ];
+        file_put_contents($this->loginAttemptsFile, json_encode($attempts));
+    }
+
+    /**
+     * Überprüft, ob die Anzahl der fehlgeschlagenen Versuche für die aktuelle IP unter dem Limit liegt.
+     */
+    public function checkRateLimit(): bool
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $attempts = $this->getLoginAttempts($ip);
+        $failed = array_filter($attempts, function($attempt) {
+            return $attempt['success'] === false;
+        });
+        return count($failed) < 5;
+    }
+
+    /**
+     * Generiert einen neuen CSRF-Token und speichert ihn in der Session.
+     */
+    public function generateCsrfToken(): string {
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_token'];
+    }
+
+    /**
+     * Validiert den übergebenen CSRF-Token anhand des in der Session gespeicherten.
+     */
+    public function validateCsrfToken(string $token): bool
+    {
+        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+    }
+
+    /**
+     * Regeneriert die Session-ID, um Session Fixation zu verhindern.
+     */
+    public function regenerateSession(): void
+    {
+        session_regenerate_id(true);
+    }
+
+    /**
+     * Prüft, ob ein Benutzer in der aktuellen Session eingeloggt ist.
      */
     public function isLoggedIn(): bool
     {
@@ -45,8 +126,7 @@ class AdminAuthService
     }
 
     /**
-     * Erzwingt, dass der Benutzer eingeloggt ist.
-     * Leitet bei fehlendem Login zur Login-Seite weiter, außer wenn wir uns bereits auf dieser befinden.
+     * Erzwingt den Login: Falls kein Benutzer eingeloggt ist, wird zur Login-Seite umgeleitet.
      */
     public function requireLogin(): void
     {
@@ -59,22 +139,23 @@ class AdminAuthService
 
     /**
      * Versucht, einen Benutzer anhand von Benutzername und Passwort anzumelden.
-     * Bei Erfolg wird die Session gesetzt.
-     *
-     * @param string $username
-     * @param string $password
-     * @return bool True bei erfolgreichem Login
+     * Zusätzlich wird Rate-Limiting beachtet.
      */
     public function login(string $username, string $password): bool
     {
-        // Hole alle Benutzer – die User-Klasse liefert hier alle Daten als Array.
-        $allUsers = $this->userModel->getAllUsers(); // Siehe neue User-Klasse unten
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        if (!$this->checkRateLimit()) {
+            return false; // Login blockiert wegen zu vieler fehlgeschlagener Versuche
+        }
+
+        $allUsers = $this->userModel->getAllUsers(); // Erwartet ein Array aller Benutzer (ohne sensible Daten)
         if (!isset($allUsers[$username])) {
+            $this->logLoginAttempt($username, false);
             return false;
         }
         $user = $allUsers[$username];
 
-        // Behandlung für den Admin bei erstem Login (Standardpasswort)
+        // Behandlung für Admin beim ersten Login (Standardpasswort)
         if ($username === 'admin' && (empty($user['password']) || ($user['first_login'] ?? false))) {
             if ($password === 'admin') {
                 $_SESSION['marques_user'] = [
@@ -84,13 +165,17 @@ class AdminAuthService
                     'last_login'   => time(),
                     'initial_login'=> true
                 ];
+                $this->regenerateSession();
+                $this->logLoginAttempt($username, true);
                 return true;
             }
+            $this->logLoginAttempt($username, false);
             return false;
         }
 
         // Normale Passwortprüfung
         if (empty($user['password']) || !password_verify($password, $user['password'])) {
+            $this->logLoginAttempt($username, false);
             return false;
         }
 
@@ -100,6 +185,8 @@ class AdminAuthService
             'role'         => $user['role'],
             'last_login'   => time()
         ];
+        $this->regenerateSession();
+        $this->logLoginAttempt($username, true);
         return true;
     }
 
@@ -113,8 +200,6 @@ class AdminAuthService
 
     /**
      * Gibt das aktuell in der Session gespeicherte Benutzer-Array zurück.
-     *
-     * @return array|null
      */
     public function getUser(): ?array
     {

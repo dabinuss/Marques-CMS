@@ -54,18 +54,13 @@ class MarquesAdmin
             exit('Direkter Zugriff ist nicht erlaubt.');
         }
 
-        // Bestimme die aktuelle Seite
         $currentPage = $_GET['page'] ?? '';
-
-        // Nur geschützte Seiten benötigen einen Login-Check
         if (strtolower($currentPage) !== 'login') {
             $this->authService->requireLogin();
         }
 
         /** @var AppConfig $appConfig */
         $appConfig = $this->appcontainer->get(AppConfig::class);
-
-        // Systemkonfiguration laden; falls nicht vorhanden, Default-Einstellungen nutzen
         $systemConfig = $appConfig->load('system');
         if (empty($systemConfig)) {
             $systemConfig = $appConfig->getDefaultSettings();
@@ -73,11 +68,9 @@ class MarquesAdmin
         $this->systemConfig = $systemConfig;
         $this->appcontainer->register('systemConfig', $this->systemConfig);
 
-        // Benutzerkonfiguration laden – Fallback: leeres Array
         $userConfig = $appConfig->load('user') ?: [];
         $this->appcontainer->register(User::class, new User($userConfig));
 
-        // Fehlerberichterstattung und Zeitzone konfigurieren
         if (($this->systemConfig['debug'] ?? false) === true) {
             error_reporting(E_ALL);
             ini_set('display_errors', 1);
@@ -87,7 +80,6 @@ class MarquesAdmin
         }
         date_default_timezone_set($this->systemConfig['timezone'] ?? 'UTC');
 
-        // Authentifizierten Benutzer aus dem Container holen
         $this->user = $this->appcontainer->get(User::class);
     }
 

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <title>Admin Login - marques CMS</title>
     <link rel="stylesheet" href="assets/css/login-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
@@ -46,11 +46,11 @@
                 </div>
             </div>
             
-            <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
-            
             <button type="submit" class="submit-button">
                 <i class="fas fa-sign-in-alt"></i> Anmelden
             </button>
+
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         </form>
         
         <div class="login-footer">
