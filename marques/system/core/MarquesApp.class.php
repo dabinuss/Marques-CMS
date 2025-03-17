@@ -7,7 +7,7 @@ class MarquesApp extends AppCore
 {
     private Router $router;
     private Template $template;
-    private AppContainer $appcontainer;
+    private AppNode $appcontainer;
 
     public function __construct()
     {
@@ -18,11 +18,11 @@ class MarquesApp extends AppCore
     }
 
     /**
-     * Initialisiert den AppContainer und registriert essentielle Services.
+     * Initialisiert den AppNode und registriert essentielle Services.
      */
     private function initContainer(): void
     {
-        $this->appcontainer = new AppContainer();
+        $this->appcontainer = new AppNode();
         $this->appcontainer->register(AppSettings::class, AppSettings::getInstance());
         $this->appcontainer->register(User::class, new User());
     }

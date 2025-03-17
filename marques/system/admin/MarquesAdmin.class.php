@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Marques\Admin;
 
 use Marques\Core\AppCore;
-use Marques\Core\AppContainer;
+use Marques\Core\AppNode;
 use Marques\Core\AppConfig;
 use Marques\Core\User;
 use Marques\Core\Admin; // Für requireLogin()
@@ -13,7 +13,7 @@ class MarquesAdmin extends AppCore
 {
     private AdminRouter $router;
     private AdminTemplate $template;
-    private AppContainer $appcontainer;
+    private AppNode $appcontainer;
     private array $systemConfig;
     protected User $user;
 
@@ -22,7 +22,7 @@ class MarquesAdmin extends AppCore
         parent::__construct();
 
         // Initialisiere den Container und registriere grundlegende Services
-        $this->appcontainer = new AppContainer();
+        $this->appcontainer = new AppNode();
         $appConfig = AppConfig::getInstance();
         $this->appcontainer->register(AppConfig::class, $appConfig);
 
