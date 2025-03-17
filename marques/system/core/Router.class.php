@@ -41,44 +41,47 @@ class Router {
      * @throws NotFoundException Wenn die Route nicht gefunden wird
      */
     public function processRequest(): array {
-        $requestUri = $this->getRequestUri();
-        $systemConfig = $this->_configManager->load('system') ?: [];
-        $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'date_slash';
-        
         // Standardroute
         $routeData = [
-            'path' => 'home',
+            'path'   => 'home',
             'params' => [],
-            'query' => $_GET
+            'query'  => $_GET
         ];
-        
-        if ($requestUri !== '' && $requestUri !== '/') {
+    
+        // Falls der GET-Parameter "page" vorhanden ist, diesen als Pfad nutzen
+        if (isset($_GET['page']) && !empty($_GET['page'])) {
+            $path = trim($_GET['page'], '/');
+        } else {
+            // Andernfalls, den URI-Pfad aus $_SERVER['REQUEST_URI'] nutzen
+            $requestUri = $this->getRequestUri();
             $path = parse_url($requestUri, PHP_URL_PATH);
             $path = trim($path, '/');
-            
-            // Asset-Pfade ausschließen
+        }
+    
+        if ($path !== '' && $path !== '/') {
+            // Assets ausschließen
             if (strpos($path, 'themes/') === 0 || strpos($path, 'assets/') === 0) {
                 throw new NotFoundException("Statischer Asset-Pfad: " . htmlspecialchars($path));
             }
-            
+            // Validierung des Pfads
             if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $path)) {
                 throw new NotFoundException("Ungültiger Pfad: " . htmlspecialchars($path));
             }
             
+            $systemConfig = $this->_configManager->load('system') ?: [];
+            $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'date_slash';
             $isBlogPost = false;
+            
+            // Blog-Routen prüfen
             switch ($blogUrlFormat) {
                 case 'internal':
-                    // Erwartete URL: blog/{id} (z.B. blog/000-25C)
                     if (preg_match('/^blog\/([0-9]{3}-[0-9]{2}[A-L])$/', $path, $matches)) {
                         $routeData['path'] = 'blog';
                         $routeData['params'] = ['id' => $matches[1]];
-                        // Hier könnte optional das URL-Mapping geladen werden, um z.B. Redirects vorzunehmen
                         $isBlogPost = true;
                     }
                     break;
-                    
                 case 'date_slash':
-                    // Erwartet: blog/YYYY/MM/DD/slug
                     if (preg_match('/^blog\/(\d{4})\/(\d{2})\/(\d{2})\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
                         $routeData['path'] = 'blog';
                         $routeData['params'] = [
@@ -93,18 +96,14 @@ class Router {
                         $isBlogPost = true;
                     }
                     break;
-                    
                 case 'post_name':
-                    // Erwartet: blog/slug
                     if (preg_match('/^blog\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
                         $routeData['path'] = 'blog';
                         $routeData['params'] = ['slug' => $matches[1]];
                         $isBlogPost = true;
                     }
                     break;
-                    
                 case 'year_month':
-                    // Erwartet: blog/YYYY/MM/slug
                     if (preg_match('/^blog\/(\d{4})\/(\d{2})\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
                         $routeData['path'] = 'blog';
                         $routeData['params'] = [
@@ -115,9 +114,7 @@ class Router {
                         $isBlogPost = true;
                     }
                     break;
-                    
                 default:
-                    // Fallback: Versuche internal
                     if (preg_match('/^blog\/([0-9]{3}-[0-9]{2}[A-L])$/', $path, $matches)) {
                         $routeData['path'] = 'blog';
                         $routeData['params'] = ['id' => $matches[1]];
@@ -125,7 +122,7 @@ class Router {
                     }
             }
             
-            // Alternative Blog-bezogene Routen (Kategorie, Archiv)
+            // Alternative Blog-Routen (Kategorie, Archiv) oder Standardseite
             if (!$isBlogPost) {
                 if (preg_match('/^blog\/category\/([a-zA-Z0-9\-_]+)$/', $path, $matches)) {
                     $routeData['path'] = 'blog-category';
@@ -150,6 +147,7 @@ class Router {
         
         return $routeData;
     }
+    
     
     /**
      * Prüft, ob eine Route existiert

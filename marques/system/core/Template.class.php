@@ -52,14 +52,12 @@ class Template {
      * @throws \Exception Wenn das Template nicht gefunden wird
      */
     public function render(array $data): void {
-        // Template-Namen abrufen
         $templateName = $data['template'] ?? 'page';
         
         if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $templateName)) {
             throw new \Exception("Ungültiger Template-Name: " . htmlspecialchars($templateName));
         }
         
-        // Template-Dateipfade ermitteln
         $templateFile = $this->templatePath . '/' . $templateName . '.tpl.php';
         if (!file_exists($templateFile)) {
             $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
@@ -76,7 +74,6 @@ class Template {
             }
         }
         
-        // Systemeinstellungen holen und ggf. anpassen
         $settingsManager = new \Marques\Core\AppSettings();
         $system_settings = $settingsManager->getAllSettings();
         
@@ -90,7 +87,6 @@ class Template {
             }
         }
         
-        // Theme-Manager instanziieren und in die Daten übernehmen
         $themeManager = new ThemeManager();
         $data['themeManager'] = $themeManager;
         $data['templateFile'] = $templateFile;
@@ -98,11 +94,11 @@ class Template {
         $data['templateName'] = $templateName;
         $data['config'] = $this->_config;
         
-        // Erstelle ein TemplateVars-Objekt, das alle Daten kapselt
         $tpl = new TemplateVars($data);
         
-        // Caching: Erzeuge einen eindeutigen Cache-Schlüssel (ggf. erweiterbar um weitere Parameter)
-        $cacheKey = 'template_' . $tpl->templateName;
+        // Hier wird der Cache-Schlüssel erweitert, um den Seiteninhalt zu differenzieren:
+        $cacheKey = 'template_' . $tpl->templateName . '_' . ($tpl->id ?? md5($tpl->content));
+        
         $cacheManager = \Marques\Core\AppCache::getInstance();
         $cachedOutput = $cacheManager->get($cacheKey);
         
@@ -112,11 +108,10 @@ class Template {
             ob_start();
             include $baseTemplateFile;
             $output = ob_get_clean();
-            // Cache speichern, z. B. mit einer TTL von 1 Stunde und der Gruppe "templates"
             $cacheManager->set($cacheKey, $output, 3600, ['templates']);
             echo $output;
         }
-    }    
+    }
     
     
     /**
