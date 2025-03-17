@@ -11,12 +11,6 @@
 // AdminSettings initialisieren (als Ersatz für den alten AppSettings)
 $settings = new \Marques\Admin\AdminSettings();
 
-// CSRF-Token generieren
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
-
 // Meldungsvariablen
 $success_message = '';
 $error_message = '';

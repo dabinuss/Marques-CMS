@@ -79,7 +79,7 @@
                 foreach ($posts as $post):
 
                     // Erzeuge die URL für den aktuellen Beitrag:
-                    $blogUrl = Helper::generateBlogUrl($post);
+                    $blogUrl = \Marques\Core\Helper::generateBlogUrl($post);
                     ?>
                     <tr>
                         <td><?= htmlspecialchars($post['title'] ?? 'Kein Titel'); ?></td>  <!-- Korrektur: Fallback für Titel -->

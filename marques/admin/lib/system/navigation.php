@@ -15,12 +15,6 @@ $navManager = new \Marques\Core\NavigationManager();
 $configManager = \Marques\Core\AppConfig::getInstance();
 $system_config = $configManager->load('system') ?: [];
 
-// CSRF-Token generieren
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
-
 // Erfolgsmeldung und Fehlermeldung initialisieren
 $success_message = '';
 $error_message = '';
