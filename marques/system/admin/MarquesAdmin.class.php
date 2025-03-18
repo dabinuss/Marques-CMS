@@ -16,8 +16,9 @@ class MarquesAdmin
     private AdminTemplate $template;
     private AppNode $appcontainer;
     private array $systemConfig;
-    protected User $user;
     private AdminAuthService $authService;
+    protected User $user;
+    public $csrf_token;
 
     public function __construct()
     {
@@ -47,7 +48,9 @@ class MarquesAdmin
      */
     public function init(): void
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $_SESSION['csrf_token'] = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(32));
+        $this->csrf_token = $_SESSION['csrf_token'];
 
         if (!defined('MARQUES_ROOT_DIR')) {
             exit('Direkter Zugriff ist nicht erlaubt.');
@@ -93,6 +96,7 @@ class MarquesAdmin
             'system_config' => $this->systemConfig,
             'user'          => $this->user,
             'username'      => $this->user->getCurrentDisplayName(),
+            'csrf_token'    => $this->csrf_token,
         ];
     }
 

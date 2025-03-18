@@ -50,11 +50,11 @@
                     <a href="<?= \Marques\Core\Helper::appQueryParam('tab=seo'); ?>" class="admin-tab <?= $active_tab === 'seo' ? 'active' : ''; ?>">
                         <i class="fas fa-search"></i> SEO
                     </a>
-                </div>
+            </div>
                 
                 <div class="admin-card-content">
                     <form method="post" action="">
-                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                         <input type="hidden" name="settings_group" value="<?= htmlspecialchars($active_tab); ?>">
                         
                         <?php if ($active_tab === 'general'): ?>
