@@ -23,7 +23,7 @@ spl_autoload_register(function (string $class): void {
     $className = array_pop($parts);
     $namespacePath = strtolower(implode('/', $parts));
     
-    $basePath = MARQUES_ROOT_DIR . '/system/' . $namespacePath . '/';
+    $basePath = MARQUES_ROOT_DIR . '/lib/' . $namespacePath . '/';
     $paths = [
         $basePath . $className . '.class.php',
         $basePath . strtolower($className) . '.class.php', // Fallback

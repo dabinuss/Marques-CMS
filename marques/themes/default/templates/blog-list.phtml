@@ -4,7 +4,7 @@ declare(strict_types=1);
 error_reporting(E_ALL);
 
 // Falls noch nicht vorhanden, initialisieren wir die nötigen Werte:
-$tpl->config = $tpl->config ?? require MARQUES_CONFIG_DIR . '/system.config.php';
+$tpl->config = $tpl->config ?? require MARQUES_CONFIG_DIR . '/lib.config.php';
 $blogManager = $blogManager ?? new \Marques\Core\BlogManager();
 
 // URL-Parameter übernehmen

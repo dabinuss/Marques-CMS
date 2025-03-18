@@ -125,16 +125,16 @@ class AdminTemplate extends AppTemplate {
      * zur Verfügung, ohne explizite Zuweisung zum $vars-Array.
      *
      * @param array  $vars     Variablen, die an das Template übergeben werden.
-     * @param string $template Relativer Pfad zum Content-Template (Default: /system/dashboard).
+     * @param string $template Relativer Pfad zum Content-Template (Default: /lib/dashboard).
      *
      * @throws \Exception Falls die Content- oder Layout-Datei nicht gefunden wird.
      */
-    public function render(array $vars = [], string $template = '/system/dashboard'): void {
+    public function render(array $vars = [], string $template = '/lib/dashboard'): void {
         // Admin-spezifische Kennzeichnung
         $vars['is_admin'] = true;
 
         // Ermittlung der Pfade:
-        // Content-Datei, z. B. "/system/dashboard.php"
+        // Content-Datei, z. B. "/lib/dashboard.php"
         $contentFile = $this->contentBase . $template . '.php';
         // Layout-Datei, z. B. "dashboard.phtml" (Basename des Templates)
         $layoutFile  = $this->templatePath . '/' . basename($template) . '.phtml';

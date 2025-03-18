@@ -21,7 +21,7 @@ if (!defined('MARQUES_ROOT_DIR')) {
 
 // Konstanten definieren
 define('MARQUES_VERSION', '0.3.0'); // FALLBACK
-define('MARQUES_SYSTEM_DIR', MARQUES_ROOT_DIR . '/system');
+define('MARQUES_SYSTEM_DIR', MARQUES_ROOT_DIR . '/lib');
 define('MARQUES_CONFIG_DIR', MARQUES_ROOT_DIR . '/config');
 define('MARQUES_CONTENT_DIR', MARQUES_ROOT_DIR . '/content');
 define('MARQUES_TEMPLATE_DIR', MARQUES_ROOT_DIR . '/templates'); /* DEPRECIATED */

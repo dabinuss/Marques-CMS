@@ -55,12 +55,12 @@ class AppPath
         
         $this->paths = [
             'root'      => $root,
-            'core'      => $root . '/system/core',
+            'core'      => $root . '/lib/core',
             'logs'      => $root . '/logs',
             'config'    => $root . '/config',
             'content'   => $root . '/content',
             'templates' => $root . '/templates',
-            'cache'     => $root . '/system/cache',
+            'cache'     => $root . '/lib/cache',
             'admin'     => $root . '/admin',
             'themes'    => $root . '/themes',
         ];
