@@ -38,7 +38,7 @@ class Router {
      * Verarbeitet die aktuelle Anfrage und bestimmt die Route
      *
      * @return array Routeninformationen einschließlich Pfad, Parameter usw.
-     * @throws NotFoundException Wenn die Route nicht gefunden wird
+     * @throws AppExceptions Wenn die Route nicht gefunden wird
      */
     public function processRequest(): array {
         // Standardroute
@@ -61,13 +61,14 @@ class Router {
         if ($path !== '' && $path !== '/') {
             // Assets ausschließen
             if (strpos($path, 'themes/') === 0 || strpos($path, 'assets/') === 0) {
-                throw new NotFoundException("Statischer Asset-Pfad: " . htmlspecialchars($path));
+                throw new \Marques\Core\AppExceptions("Statischer Asset-Pfad: " . htmlspecialchars($path), 404);
             }
+
             // Validierung des Pfads
             if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $path)) {
-                throw new NotFoundException("Ungültiger Pfad: " . htmlspecialchars($path));
+                throw new \Marques\Core\AppExceptions("Ungültiger Pfad: " . htmlspecialchars($path), 404);
             }
-            
+
             $systemConfig = $this->_configManager->load('system') ?: [];
             $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'date_slash';
             $isBlogPost = false;
@@ -91,7 +92,7 @@ class Router {
                             'slug'  => $matches[4]
                         ];
                         if (!checkdate((int)$matches[2], (int)$matches[3], (int)$matches[1])) {
-                            throw new NotFoundException("Ungültiges Datum im Blog-Pfad");
+                            throw new \Marques\Core\AppExceptions("Ungültiges Datum im Blog-Pfad", 404);
                         }
                         $isBlogPost = true;
                     }
@@ -131,8 +132,8 @@ class Router {
                     $routeData['path'] = 'blog-archive';
                     $routeData['params'] = ['year' => $matches[1], 'month' => $matches[2]];
                     if ($matches[1] < 2000 || $matches[1] > 2100 || $matches[2] < 1 || $matches[2] > 12) {
-                        throw new NotFoundException("Ungültiger Zeitraum im Blog-Archiv");
-                    }
+                        throw new \Marques\Core\AppExceptions("Ungültiger Zeitraum im Blog-Archiv", 404);
+                    }                    
                 } elseif ($path === 'blog') {
                     $routeData['path'] = 'blog-index';
                 } else {
@@ -142,8 +143,8 @@ class Router {
         }
         
         if (!$this->routeExists($routeData['path'], $routeData['params'] ?? [])) {
-            throw new NotFoundException("Seite nicht gefunden: " . $routeData['path']);
-        }
+            throw new \Marques\Core\AppExceptions("Seite nicht gefunden: " . $routeData['path'], 404);
+        }        
         
         return $routeData;
     }

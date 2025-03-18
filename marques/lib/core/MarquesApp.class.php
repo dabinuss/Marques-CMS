@@ -55,7 +55,7 @@ class MarquesApp
         $this->setTimezone($this->settings);
         $this->checkMaintenanceMode($this->settings);
         $this->logUserAccess();
-        $this->loadHelpers();
+        // $this->loadHelpers();
     }
 
     private function startSession(): void
@@ -163,7 +163,7 @@ HTML;
     private function loadHelpers(): void
     {
         // Beispielhafter Aufruf – hier wird über den AppPath der Pfad zur Exceptions.inc.php ermittelt.
-        require_once $this->appPath->combine('core', 'Exceptions.inc.php');
+        // require_once $this->appPath->combine('core', 'Exceptions.inc.php');
     }
 
     public function run(): void

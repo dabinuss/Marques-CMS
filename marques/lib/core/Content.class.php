@@ -35,7 +35,7 @@ class Content {
      *
      * @param string $path Seitenpfad
      * @return array Seitendaten
-     * @throws NotFoundException Wenn die Seite nicht gefunden wird
+     * @throws AppExceptions Wenn die Seite nicht gefunden wird
      */
     public function getPage(string $path): array {
         if (empty($path)) {
@@ -67,12 +67,12 @@ class Content {
         
         // Prüfen, ob Datei existiert
         if (!file_exists($filePath)) {
-            throw new NotFoundException("Seite nicht gefunden: " . $path);
+            throw new \Marques\Core\AppExceptions("Seite nicht gefunden: " . $path, 404);
         }
-        
+
         // Prüfen, ob Datei lesbar ist
         if (!is_readable($filePath)) {
-            throw new \Marques\Core\PermissionException("Keine Leserechte für: " . $path);
+            throw new \Marques\Core\AppExceptions("Keine Leserechte für: " . $path, 403);
         }
         
         try {
@@ -107,7 +107,7 @@ class Content {
      * @param string $path Blog-Beitragspfad
      * @param array $params Route-Parameter
      * @return array Blog-Beitragsdaten
-     * @throws NotFoundException Wenn der Blog-Beitrag nicht gefunden wird
+     * @throws AppExceptions Wenn der Blog-Beitrag nicht gefunden wird
      */
     private function getBlogPost($path, $params = []) {
         // Blog-Manager initialisieren
@@ -176,7 +176,7 @@ class Content {
             
             if (!$post) {
                 error_log("Blog-Post nicht gefunden! Parameter: " . print_r($params, true));
-                throw new NotFoundException("Blog-Beitrag nicht gefunden");
+                throw new \Marques\Core\AppExceptions("Blog-Beitrag nicht gefunden", 404);
             }
             
             error_log("Blog-Post gefunden: " . print_r($post['title'], true));
@@ -198,7 +198,7 @@ class Content {
         }
         
         error_log("Ungültiger Blog-Pfad: " . $path . ", Parameter: " . print_r($params, true));
-        throw new NotFoundException("Ungültiger Blog-Pfad");
+        throw new \Marques\Core\AppExceptions("Ungültiger Blog-Pfad", 404);
     }
 
     /**

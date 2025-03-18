@@ -1,6 +1,6 @@
 <?php
 use Marques\Core\AppLogger;
-use Marques\Core\AppUnhandledExceptions;
+use Marques\Core\AppExceptions;
 use Marques\Core\AppConfig;
 
 /**
@@ -18,7 +18,7 @@ set_exception_handler(function (\Throwable $e) {
     ]);
 
     // HTTP-Statuscode ermitteln
-    $statusCode = ($e instanceof AppUnhandledExceptions) ? $e->getStatusCode() : 500;
+    $statusCode = ($e instanceof AppExceptions) ? $e->getStatusCode() : 500;
     http_response_code($statusCode);
 
     // Debug-Modus aus der Konfiguration holen
