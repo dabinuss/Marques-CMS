@@ -229,7 +229,7 @@ function marques_init_default_theme() {
         
         // Kopiere die bestehenden Templates ins neue Theme-Verzeichnis
         if (is_dir(MARQUES_TEMPLATE_DIR)) {
-            $templateFiles = glob(MARQUES_TEMPLATE_DIR . '/*.tpl.php');
+            $templateFiles = glob(MARQUES_TEMPLATE_DIR . '/*.phtml');
             foreach ($templateFiles as $templateFile) {
                 $fileName = basename($templateFile);
                 copy($templateFile, $defaultThemePath . '/templates/' . $fileName);
@@ -238,7 +238,7 @@ function marques_init_default_theme() {
             // Partials-Verzeichnis
             if (is_dir(MARQUES_TEMPLATE_DIR . '/partials')) {
                 mkdir($defaultThemePath . '/templates/partials', 0755, true);
-                $partialFiles = glob(MARQUES_TEMPLATE_DIR . '/partials/*.tpl.php');
+                $partialFiles = glob(MARQUES_TEMPLATE_DIR . '/partials/*.phtml');
                 foreach ($partialFiles as $partialFile) {
                     $fileName = basename($partialFile);
                     copy($partialFile, $defaultThemePath . '/templates/partials/' . $fileName);

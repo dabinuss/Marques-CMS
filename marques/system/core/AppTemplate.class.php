@@ -1,82 +1,84 @@
 <?php
 declare(strict_types=1);
 
-/**
- * marques CMS - Template Klasse
- * 
- * Behandelt Template-Rendering.
- *
- * @package marques
- * @subpackage core
- */
-
 namespace Marques\Core;
 
-class Template {
+class AppTemplate {
     /**
      * @var array Systemkonfiguration
      */
-    private $_config;
-    private $_navManager = null;
-
+    protected array $_config;
+    /**
+     * @var NavigationManager|null NavigationManager-Instanz (wird bei Bedarf erstellt)
+     */
+    protected ?NavigationManager $_navManager = null;
     /**
      * @var string Pfad zum Template-Verzeichnis
      */
-    private $templatePath; // Vorab deklarieren
-    
-    /**
-     * Konstruktor
-     */
+    protected string $templatePath;
+
     public function __construct() {
-        $configManager = \Marques\Core\AppConfig::getInstance();
+        // Systemkonfiguration laden
+        $configManager = AppConfig::getInstance();
         $this->_config = $configManager->load('system') ?: [];
 
+        // Standard-Template-Pfad aus dem ThemeManager
         $themeManager = new ThemeManager();
         $this->templatePath = $themeManager->getThemePath('templates');
     }
 
-    // Methode für Template-Assets
-    public function themeUrl($path = '') {
+    /**
+     * Liefert die URL zu Theme-Assets.
+     *
+     * @param string $path Optionaler Unterordner
+     * @return string
+     */
+    public function themeUrl(string $path = ''): string {
         static $themeManager = null;
         if ($themeManager === null) {
             $themeManager = new ThemeManager();
         }
         return $themeManager->getThemeAssetsUrl($path);
     }
-    
+
     /**
-     * Rendert ein Template mit Daten
+     * Rendert ein Template mit den übergebenen Daten.
      *
-     * @param array $data Daten, die an das Template übergeben werden
-     * @return void
-     * @throws \Exception Wenn das Template nicht gefunden wird
+     * Erwartet, dass im $data-Array unter 'template' der Name des Templates (ohne Endung) übergeben wird.
+     *
+     * @param array $data
+     * @throws \Exception
      */
     public function render(array $data): void {
         $templateName = $data['template'] ?? 'page';
-        
+
         if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $templateName)) {
             throw new \Exception("Ungültiger Template-Name: " . htmlspecialchars($templateName));
         }
-        
-        $templateFile = $this->templatePath . '/' . $templateName . '.tpl.php';
+
+        // Suche nach dem Template im definierten Pfad mit der Endung .phtml
+        $templateFile = $this->templatePath . '/' . $templateName . '.phtml';
         if (!file_exists($templateFile)) {
-            $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
+            $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.phtml';
             if (!file_exists($templateFile)) {
-                throw new \Exception("Template nicht gefunden: " . $templateName);
+                throw new \Exception("Template nicht gefunden: " . $templateName . " (" . $this->templatePath . ")");
             }
         }
-        
-        $baseTemplateFile = $this->templatePath . '/base.tpl.php';
+
+        // Basis-Template (Layout) laden
+        $baseTemplateFile = $this->templatePath . '/base.phtml';
         if (!file_exists($baseTemplateFile)) {
-            $baseTemplateFile = MARQUES_TEMPLATE_DIR . '/base.tpl.php';
+            $baseTemplateFile = MARQUES_TEMPLATE_DIR . '/base.phtml';
             if (!file_exists($baseTemplateFile)) {
-                throw new \Exception("Basis-Template nicht gefunden");
+                throw new \Exception("Basis-Template nicht gefunden: " . $baseTemplateFile . " (" . $this->templatePath . ")");
             }
         }
-        
-        $settingsManager = new \Marques\Core\AppSettings();
+
+        // Systemeinstellungen laden
+        $settingsManager = new AppSettings();
         $system_settings = $settingsManager->getAllSettings();
-        
+
+        // Basis-URL anpassen, falls IS_ADMIN definiert ist
         if (defined('IS_ADMIN')) {
             if (strpos($system_settings['base_url'], '/admin') === false) {
                 $system_settings['base_url'] = rtrim($system_settings['base_url'], '/') . '/admin';
@@ -86,22 +88,23 @@ class Template {
                 $system_settings['base_url'] = preg_replace('|/admin$|', '', $system_settings['base_url']);
             }
         }
-        
+
+        // Zusätzliche Daten für das Template bereitstellen
         $themeManager = new ThemeManager();
-        $data['themeManager'] = $themeManager;
-        $data['templateFile'] = $templateFile;
+        $data['themeManager']   = $themeManager;
+        $data['templateFile']   = $templateFile;
         $data['system_settings'] = $system_settings;
-        $data['templateName'] = $templateName;
-        $data['config'] = $this->_config;
-        
+        $data['templateName']   = $templateName;
+        $data['config']         = $this->_config;
+
+        // Erzeugen von Template-Variablen
         $tpl = new TemplateVars($data);
-        
-        // Hier wird der Cache-Schlüssel erweitert, um den Seiteninhalt zu differenzieren:
+
+        // Cache-Schlüssel generieren
         $cacheKey = 'template_' . $tpl->templateName . '_' . ($tpl->id ?? md5($tpl->content));
-        
-        $cacheManager = \Marques\Core\AppCache::getInstance();
+        $cacheManager = AppCache::getInstance();
         $cachedOutput = $cacheManager->get($cacheKey);
-        
+
         if ($cachedOutput !== null) {
             echo $cachedOutput;
         } else {
@@ -112,25 +115,19 @@ class Template {
             echo $output;
         }
     }
-    
-    
+
     /**
-     * Bindet ein Partial-Template ein
+     * Bindet ein Partial-Template ein.
      *
      * @param string $partialName Name des Partial-Templates
-     * @param array $data Daten, die an das Partial übergeben werden
-     * @return void
+     * @param array  $data          Daten, die an das Partial übergeben werden
      */
-    public function includePartial($partialName, $data = []) {
-        // Konfiguration für Templates verfügbar machen
+    public function includePartial(string $partialName, array $data = []): void {
         $config = $this->_config;
-        
-        // Systemeinstellungen holen, falls sie nicht übergeben wurden
         if (!isset($data['system_settings'])) {
-            $settings_manager = new \Marques\Core\AppSettings();
+            $settings_manager = new AppSettings();
             $system_settings = $settings_manager->getAllSettings();
-            
-            // Base URL korrigieren (wie in render())
+
             if (defined('IS_ADMIN')) {
                 if (strpos($system_settings['base_url'], '/admin') === false) {
                     $system_settings['base_url'] = rtrim($system_settings['base_url'], '/') . '/admin';
@@ -140,19 +137,14 @@ class Template {
                     $system_settings['base_url'] = preg_replace('|/admin$|', '', $system_settings['base_url']);
                 }
             }
-            
-            // Systemeinstellungen zu den Daten hinzufügen
             $data['system_settings'] = $system_settings;
         }
-        
-        // Daten zu Variablen extrahieren für einfache Verwendung im Template
+
         extract($data);
-        
-        // Das Partial-Template aus dem Theme-Verzeichnis einbinden
-        $partialFile = $this->templatePath . '/partials/' . $partialName . '.tpl.php';
+
+        $partialFile = $this->templatePath . '/partials/' . $partialName . '.phtml';
         if (!file_exists($partialFile)) {
-            // Fallback auf Standard-Template-Verzeichnis
-            $partialFile = MARQUES_TEMPLATE_DIR . '/partials/' . $partialName . '.tpl.php';
+            $partialFile = MARQUES_TEMPLATE_DIR . '/partials/' . $partialName . '.phtml';
             if (file_exists($partialFile)) {
                 include $partialFile;
             } else {
@@ -164,32 +156,29 @@ class Template {
     }
 
     /**
-     * Gibt den NavigationManager zurück oder erstellt ihn, falls er noch nicht existiert
+     * Gibt den NavigationManager zurück oder erstellt ihn, falls noch nicht vorhanden.
      *
      * @return NavigationManager
      */
     public function getNavigationManager() {
         if ($this->_navManager === null) {
-            $this->_navManager = new \Marques\Core\NavigationManager();
+            $this->_navManager = new NavigationManager();
         }
         return $this->_navManager;
     }
 
     /**
-     * Prüft, ob ein Template existiert
+     * Prüft, ob ein Template existiert.
      *
-     * @param string $templateName Template-Name
-     * @return bool True, wenn das Template existiert
+     * @param string $templateName
+     * @return bool
      */
-    public function exists($templateName) {
-        // Zuerst im Theme-Verzeichnis suchen
-        $templateFile = $this->templatePath . '/' . $templateName . '.tpl.php';
+    public function exists(string $templateName): bool {
+        $templateFile = $this->templatePath . '/' . $templateName . '.phtml';
         if (file_exists($templateFile)) {
             return true;
         }
-        
-        // Fallback auf Standard-Template-Verzeichnis
-        $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.tpl.php';
+        $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.phtml';
         return file_exists($templateFile);
     }
 }

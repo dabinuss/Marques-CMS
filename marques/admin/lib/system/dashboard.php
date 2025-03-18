@@ -362,3 +362,5 @@ if (!empty($siteStats['daily_stats'])) {
         $dailyData[] = $count;
     }
 }
+
+$adminStatistics = new \Marques\Admin\AdminStatistics();

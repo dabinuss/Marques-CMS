@@ -1,398 +1,286 @@
 <!DOCTYPE html>
 <html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($page_title); ?> - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
-    <link rel="stylesheet" href="assets/css/admin-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <!-- Chart.js für Statistik-Diagramme -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><?= htmlspecialchars($page_title); ?> - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+  <link rel="stylesheet" href="assets/css/admin-style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <!-- Chart.js für Statistik-Diagramme -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="admin-layout">
 
-        <!-- SIDEBAR & NAVIGATION -->
-        <?php include 'sidebar.phtml'; ?>
-        
-        <main class="admin-content">
-            <div class="admin-topbar">
-                <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
-                
-                <div class="admin-actions">
-                    <?php if ($page === 'pages'): ?>
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" class="admin-button">
-                        <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
-                        Neue Seite
-                    </a>
-                    <?php elseif ($page === 'blog'): ?>
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-button">
-                        <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
-                        Neuer Beitrag
-                    </a>
-                    <?php elseif ($page === 'media'): ?>
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>" class="admin-button">
-                        <span class="admin-button-icon"><i class="fas fa-upload"></i></span>
-                        Hochladen
-                    </a>
-                    <?php endif; ?>
-                    <a href="../" class="admin-button" target="_blank">
-                        <span class="admin-button-icon"><i class="fas fa-external-link-alt"></i></span>
-                        Website ansehen
-                    </a>
-                </div>
-            </div>
+  <div class="admin-layout">
+    <!-- SIDEBAR & NAVIGATION -->
+    <?php include 'sidebar.phtml'; ?>
+    
+    <main class="admin-content">
 
-            <!-- 1. Reihe: Welcome | Quick Actions -->
-            <div class="admin-dashboard-row">
-                <!-- Linke Spalte: Willkommensbereich mit Hinweisen -->
-                <div class="admin-dashboard-column">
-                    <div class="admin-welcome">
-                        <h3>Willkommen, <?= htmlspecialchars($username); ?>!</h3>
-                        <p>
-                            Heute ist <?= date('l, d. F Y', time()); ?>. 
-                            Sie haben sich zuletzt am <?= date('d.m.Y \u\m H:i', $_SESSION['marques_user']['last_login']); ?> Uhr angemeldet.
-                        </p>
-                        
-                        <?php if($system_config['maintenance_mode']): ?>
-                        <div class="admin-alert error">
-                            <i class="fas fa-exclamation-triangle"></i> Die Website befindet sich im Wartungsmodus und ist für normale Besucher nicht erreichbar.
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if($system_config['debug']): ?>
-                        <div class="admin-alert warning">
-                            <i class="fas fa-bug"></i> Der Debug-Modus ist aktiviert. Für die Produktivumgebung sollte dieser deaktiviert werden.
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php 
-                        /*
-                        foreach($system_config['write_permissions'] as $dir => $writable): ?>
-                            <?php if(!$writable): ?>
-                            <div class="admin-alert error">
-                                <i class="fas fa-lock"></i> Keine Schreibberechtigung für <?= htmlspecialchars($dir); ?>-Verzeichnis!
-                            </div>
-                            <?php endif; ?>
-                        <?php endforeach; 
-                        */
-                        ?>
-                    </div>
-                </div>
-                
-                <!-- Rechte Spalte: Schnellzugriff -->
-                <div class="admin-dashboard-column">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h3><i class="fas fa-bolt"></i> Schnellzugriff</h3>
-                        </div>
-                        <div class="admin-card-content">
-                            <div class="admin-quick-actions">
-                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" class="admin-quick-action">
-                                    <i class="fas fa-file-alt"></i>
-                                    <span>Neue Seite</span>
-                                </a>
-                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-quick-action">
-                                    <i class="fas fa-blog"></i>
-                                    <span>Neuer Beitrag</span>
-                                </a>
-                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>" class="admin-quick-action">
-                                    <i class="fas fa-upload"></i>
-                                    <span>Medien hochladen</span>
-                                </a>
-                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=settings'); ?>" class="admin-quick-action">
-                                    <i class="fas fa-cog"></i>
-                                    <span>Einstellungen</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      <div class="admin-topbar">
+        <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
+        <div class="admin-actions">
+          <?php if ($page === 'pages'): ?>
+          <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" class="admin-button">
+            <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
+            Neue Seite
+          </a>
+          <?php elseif ($page === 'blog'): ?>
+          <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-button">
+            <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
+            Neuer Beitrag
+          </a>
+          <?php elseif ($page === 'media'): ?>
+          <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>" class="admin-button">
+            <span class="admin-button-icon"><i class="fas fa-upload"></i></span>
+            Hochladen
+          </a>
+          <?php endif; ?>
+          <a href="../" class="admin-button" target="_blank">
+            <span class="admin-button-icon"><i class="fas fa-external-link-alt"></i></span>
+            Website ansehen
+          </a>
+        </div>
+      </div>
+  
+      <!-- 1. Reihe: Welcome | Quick Actions -->
+      <div class="admin-dashboard-row">
+        <div class="admin-dashboard-column">
+          <div class="admin-welcome">
+            <h3>Willkommen, <?= htmlspecialchars($username); ?>!</h3>
+            <p>
+              Heute ist <?= date('l, d. F Y', time()); ?>. 
+              Sie haben sich zuletzt am <?= date('d.m.Y \u\m H:i', $_SESSION['marques_user']['last_login']); ?> Uhr angemeldet.
+            </p>
+            <?php if($system_config['maintenance_mode']): ?>
+            <div class="admin-alert error">
+              <i class="fas fa-exclamation-triangle"></i> Die Website befindet sich im Wartungsmodus und ist für normale Besucher nicht erreichbar.
             </div>
-            
-            <!-- Neuer Bereich: Cache-Informationen -->
-            <div class="admin-dashboard-row">
-                <div class="admin-dashboard-column">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h3><i class="fas fa-database"></i> Cache-Informationen</h3>
-                        </div>
-                        <div class="admin-card-content">
-                            <p><strong>Caching aktiviert:</strong> <?= $system_config['cache_enabled'] ? 'Ja' : 'Nein'; ?></p>
-                            <p><strong>Anzahl Cache-Dateien:</strong> <?= $numCached; ?></p>
-                            <p><strong>Cache-Größe:</strong> <?= $cacheSizeFormatted; ?></p>
-                            <a href="clear-cache.php" class="admin-button-small">Cache leeren</a>
-                        </div>
-                    </div>
-                </div>
+            <?php endif; ?>
+            <?php if($system_config['debug']): ?>
+            <div class="admin-alert warning">
+              <i class="fas fa-bug"></i> Der Debug-Modus ist aktiviert. Bitte deaktiviere ihn in der Produktionsumgebung.
             </div>
-            
-            <!-- 2. Reihe: Statistik-Karten | Besuchs-Diagramm -->
-            <div class="admin-dashboard-row">
-                <!-- Linke Spalte: Alle Statistik-Karten -->
-                <div class="admin-dashboard-column">
-                    <!-- Besuchsstatistik-Karten -->
-                    <div class="admin-stats">
-                        <div class="admin-stat-card">
-                            <div class="admin-stat-icon"><i class="fas fa-chart-line"></i></div>
-                            <div class="admin-stat-title">Besuche heute</div>
-                            <div class="admin-stat-value"><?= number_format($siteStats['visits_today']); ?></div>
-                            <div class="admin-stat-trend">
-                                <?php 
-                                $change = $siteStats['visits_yesterday'] > 0 ? 
-                                    (($siteStats['visits_today'] - $siteStats['visits_yesterday']) / $siteStats['visits_yesterday'] * 100) : 
-                                    100;
-                                $icon = $change >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
-                                $class = $change >= 0 ? 'positive' : 'negative';
-                                ?>
-                                <span class="<?= $class; ?>">
-                                    <i class="fas <?= $icon; ?>"></i> 
-                                    <?= abs(round($change)); ?>% vs. gestern
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="admin-stat-card">
-                            <div class="admin-stat-icon"><i class="fas fa-users"></i></div>
-                            <div class="admin-stat-title">Besuche Woche</div>
-                            <div class="admin-stat-value"><?= number_format($siteStats['visits_this_week']); ?></div>
-                            <div class="admin-stat-action">
-                                <a href="#" class="admin-stat-link">Details <i class="fas fa-chevron-right"></i></a>
-                            </div>
-                        </div>
-                        
-                        <div class="admin-stat-card">
-                            <div class="admin-stat-icon"><i class="fas fa-file-alt"></i></div>
-                            <div class="admin-stat-title">Seiten</div>
-                            <div class="admin-stat-value"><?= $stats['pages']; ?></div>
-                            <div class="admin-stat-action">
-                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>">Verwalten <i class="fas fa-chevron-right"></i></a>
-                            </div>
-                        </div>
-                        
-                        <div class="admin-stat-card">
-                            <div class="admin-stat-icon"><i class="fas fa-blog"></i></div>
-                            <div class="admin-stat-title">Blog-Beiträge</div>
-                            <div class="admin-stat-value"><?= $stats['blog_posts']; ?></div>
-                            <div class="admin-stat-action">
-                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>">Verwalten <i class="fas fa-chevron-right"></i></a>
-                            </div>
-                        </div>
-                        
-                        <div class="admin-stat-card">
-                            <div class="admin-stat-icon"><i class="fas fa-images"></i></div>
-                            <div class="admin-stat-title">Mediendateien</div>
-                            <div class="admin-stat-value"><?= $stats['media_files']; ?></div>
-                            <div class="admin-stat-action">
-                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media'); ?>">Verwalten <i class="fas fa-chevron-right"></i></a>
-                            </div>
-                        </div>
-                        
-                        <div class="admin-stat-card">
-                            <div class="admin-stat-icon"><i class="fas fa-users"></i></div>
-                            <div class="admin-stat-title">Benutzer</div>
-                            <div class="admin-stat-value"><?= count($allUsers ?? []); ?></div>
-                            <div class="admin-stat-action">
-                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=users'); ?>">Verwalten <i class="fas fa-chevron-right"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Rechte Spalte: Besuchs-Diagramm -->
-                <div class="admin-dashboard-column">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h3><i class="fas fa-chart-bar"></i> Besucherstatistik (letzte 14 Tage)</h3>
-                        </div>
-                        <div class="admin-card-content">
-                            <canvas id="visitsChart" height="250"></canvas>
-                        </div>
-                    </div>
-                </div>
+            <?php endif; ?>
+          </div>
+        </div>
+        <div class="admin-dashboard-column">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3><i class="fas fa-bolt"></i> Schnellzugriff</h3>
             </div>
-            
-            <!-- 3. Reihe: Neueste Aktivitäten | Neueste Blog-Beiträge -->
-            <div class="admin-dashboard-row">
-                <!-- Linke Spalte: Neueste Aktivitäten -->
-                <div class="admin-dashboard-column">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h3><i class="fas fa-history"></i> Neueste Aktivitäten</h3>
-                        </div>
-                        <div class="admin-card-content">
-                            <?php if (empty($recentActivity)): ?>
-                                <p class="admin-no-data">Keine kürzlichen Aktivitäten gefunden.</p>
-                            <?php else: ?>
-                                <ul class="admin-activity-list">
-                                    <?php foreach ($recentActivity as $activity): ?>
-                                        <li class="admin-activity-item">
-                                            <span class="admin-activity-icon">
-                                                <i class="fas fa-<?= $activity['icon']; ?>"></i>
-                                            </span>
-                                            <div class="admin-activity-details">
-                                                <a href="<?= $activity['url']; ?>" class="admin-activity-title">
-                                                    <?= htmlspecialchars($activity['title']); ?>
-                                                </a>
-                                                <span class="admin-activity-date">
-                                                    <?= date('d.m.Y H:i', strtotime($activity['date'])); ?>
-                                                </span>
-                                            </div>
-                                            <span class="admin-activity-type">
-                                                <?= $activity['type'] === 'page' ? 'Seite' : 'Beitrag'; ?>
-                                            </span>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Rechte Spalte: Neueste Blog-Beiträge -->
-                <div class="admin-dashboard-column">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h3><i class="fas fa-newspaper"></i> Neueste Blog-Beiträge</h3>
-                        </div>
-                        <div class="admin-card-content">
-                            <?php if (empty($recentPosts)): ?>
-                                <p class="admin-no-data">Keine Blog-Beiträge vorhanden.</p>
-                            <?php else: ?>
-                                <table class="admin-table admin-table-mini">
-                                    <thead>
-                                        <tr>
-                                            <th>Titel</th>
-                                            <th>Datum</th>
-                                            <th>Status</th>
-                                            <th>Aktionen</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($recentPosts as $post): ?>
-                                            <tr>
-                                                <td><?= htmlspecialchars($post['title']); ?></td>
-                                                <td><?= date('d.m.Y', strtotime($post['date'])); ?></td>
-                                                <td>
-                                                    <span class="status-badge status-<?= $post['status']; ?>">
-                                                        <?= ucfirst($post['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td class="admin-table-actions">
-                                                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit&id=' . $post['id']); ?>" class="admin-table-action" title="Bearbeiten">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <a href="../blog/<?= $post['slug']; ?>" target="_blank" class="admin-table-action" title="Ansehen">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                                <div class="admin-card-footer">
-                                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>" class="admin-button-small">Alle Blog-Beiträge anzeigen</a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
+            <div class="admin-card-content">
+              <div class="admin-quick-actions">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" class="admin-quick-action">
+                  <i class="fas fa-file-alt"></i>
+                  <span>Neue Seite</span>
+                </a>
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-quick-action">
+                  <i class="fas fa-blog"></i>
+                  <span>Neuer Beitrag</span>
+                </a>
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>" class="admin-quick-action">
+                  <i class="fas fa-upload"></i>
+                  <span>Medien hochladen</span>
+                </a>
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=settings'); ?>" class="admin-quick-action">
+                  <i class="fas fa-cog"></i>
+                  <span>Einstellungen</span>
+                </a>
+              </div>
             </div>
-            
-            <!-- 4. Reihe: Zusätzliche Inhalte (Top-Seiten, Gerätenutzung, Systeminfo) -->
-            <div class="admin-dashboard-row">
-                <!-- Linke Spalte: Systeminfo -->
-                <div class="admin-dashboard-column">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h3><i class="fas fa-server"></i> Systeminformationen</h3>
-                        </div>
-                        <div class="admin-card-content">
-                            <table class="admin-system-info">
-                                <tr>
-                                    <td><i class="fas fa-code"></i> PHP-Version:</td>
-                                    <td><?= $stats['php_version']; ?></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="fas fa-tag"></i> marques CMS-Version:</td>
-                                    <td><?= $stats['marques_version']; ?></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="fas fa-hdd"></i> Speichernutzung:</td>
-                                    <td><?= $stats['disk_usage']; ?></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="fas fa-clock"></i> Serverzeit:</td>
-                                    <td><?= date('d.m.Y H:i:s'); ?></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="fas fa-sitemap"></i> Kategorien/Tags:</td>
-                                    <td><?= count($categories ?? []); ?> / <?= count($tags ?? []); ?></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Mittlere Spalte: Top-Seiten -->
-                <div class="admin-dashboard-column">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h3><i class="fas fa-star"></i> Beliebteste Seiten</h3>
-                        </div>
-                        <div class="admin-card-content">
-                            <?php if (empty($siteStats['top_pages'])): ?>
-                                <p class="admin-no-data">Keine Daten verfügbar.</p>
-                            <?php else: ?>
-                                <ul class="admin-stats-list">
-                                    <?php 
-                                    $i = 1;
-                                    foreach ($siteStats['top_pages'] as $url => $visits): 
-                                        if ($i > 5) break; // Nur die Top 5 anzeigen
-                                    ?>
-                                        <li class="admin-stats-item">
-                                            <span class="admin-stats-rank"><?= $i++; ?></span>
-                                            <div class="admin-stats-details">
-                                                <span class="admin-stats-title"><?= htmlspecialchars($url == '/' ? 'Startseite' : $url); ?></span>
-                                                <div class="admin-stats-bar-container">
-                                                    <div class="admin-stats-bar" style="width: <?= min(100, ($visits / max($siteStats['top_pages']) * 100)); ?>%"></div>
-                                                </div>
-                                            </div>
-                                            <span class="admin-stats-value"><?= number_format($visits); ?></span>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                                <div class="admin-card-footer">
-                                    <a href="#" class="admin-button-small">Alle Statistiken anzeigen</a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Rechte Spalte: Gerätenutzung -->
-                <div class="admin-dashboard-column">
-                    <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h3><i class="fas fa-mobile-alt"></i> Gerätenutzung</h3>
-                        </div>
-                        <div class="admin-card-content chart-container">
-                            <?php if (empty($siteStats['device_stats'])): ?>
-                                <p class="admin-no-data">Keine Daten verfügbar.</p>
-                            <?php else: ?>
-                                <canvas id="deviceChart"></canvas>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Neuer Bereich: Cache-Informationen -->
+      <div class="admin-dashboard-row">
+        <div class="admin-dashboard-column">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3><i class="fas fa-database"></i> Cache-Informationen</h3>
             </div>
-        </main>
-    </div>
-
-    <script>
-    // PHP-Daten werden als globale Variable definiert
-        window.siteStats = <?= json_encode($siteStats); ?>;
-    </script>
-    <script src="assets/js/chart-setup.js"></script>
+            <div class="admin-card-content">
+              <p><strong>Caching aktiviert:</strong> <?= $system_config['cache_enabled'] ? 'Ja' : 'Nein'; ?></p>
+              <p><strong>Anzahl Cache-Dateien:</strong> <?= $numCached; ?></p>
+              <p><strong>Cache-Größe:</strong> <?= $cacheSizeFormatted; ?></p>
+              <a href="clear-cache.php" class="admin-button-small">Cache leeren</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 2. Reihe: Statistik-Karten | Besuchs-Diagramm -->
+      <div class="admin-dashboard-row">
+        <div class="admin-dashboard-column">
+          <div class="admin-stats">
+            <!-- Hier können deine Statistik-Karten eingebunden werden -->
+          </div>
+        </div>
+        <div class="admin-dashboard-column">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3><i class="fas fa-chart-bar"></i> Besucherstatistik (letzte 14 Tage)</h3>
+            </div>
+            <div class="admin-card-content">
+              <canvas id="visitsChart" height="250"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 3. Reihe: Neueste Aktivitäten | Neueste Blog-Beiträge -->
+      <div class="admin-dashboard-row">
+        <div class="admin-dashboard-column">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3><i class="fas fa-history"></i> Neueste Aktivitäten</h3>
+            </div>
+            <div class="admin-card-content">
+              <?php if (empty($recentActivity)): ?>
+                <p class="admin-no-data">Keine kürzlichen Aktivitäten gefunden.</p>
+              <?php else: ?>
+                <ul class="admin-activity-list">
+                  <?php foreach ($recentActivity as $activity): ?>
+                    <li class="admin-activity-item">
+                      <span class="admin-activity-icon">
+                        <i class="fas fa-<?= $activity['icon']; ?>"></i>
+                      </span>
+                      <div class="admin-activity-details">
+                        <a href="<?= $activity['url']; ?>" class="admin-activity-title">
+                          <?= htmlspecialchars($activity['title']); ?>
+                        </a>
+                        <span class="admin-activity-date">
+                          <?= date('d.m.Y H:i', strtotime($activity['date'])); ?>
+                        </span>
+                      </div>
+                      <span class="admin-activity-type">
+                        <?= $activity['type'] === 'page' ? 'Seite' : 'Beitrag'; ?>
+                      </span>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+        <div class="admin-dashboard-column">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3><i class="fas fa-newspaper"></i> Neueste Blog-Beiträge</h3>
+            </div>
+            <div class="admin-card-content">
+              <?php if (empty($recentPosts)): ?>
+                <p class="admin-no-data">Keine Blog-Beiträge vorhanden.</p>
+              <?php else: ?>
+                <table class="admin-table admin-table-mini">
+                  <thead>
+                    <tr>
+                      <th>Titel</th>
+                      <th>Datum</th>
+                      <th>Status</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($recentPosts as $post): ?>
+                      <tr>
+                        <td><?= htmlspecialchars($post['title']); ?></td>
+                        <td><?= date('d.m.Y', strtotime($post['date'])); ?></td>
+                        <td>
+                          <span class="status-badge status-<?= $post['status']; ?>">
+                            <?= ucfirst($post['status']); ?>
+                          </span>
+                        </td>
+                        <td class="admin-table-actions">
+                          <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit&id=' . $post['id']); ?>" class="admin-table-action" title="Bearbeiten">
+                            <i class="fas fa-edit"></i>
+                          </a>
+                          <a href="../blog/<?= $post['slug']; ?>" target="_blank" class="admin-table-action" title="Ansehen">
+                            <i class="fas fa-eye"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+                <div class="admin-card-footer">
+                  <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>" class="admin-button-small">Alle Blog-Beiträge anzeigen</a>
+                </div>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 4. Reihe: Systeminfo, Beliebteste Seiten, Gerätenutzung -->
+      <div class="admin-dashboard-row">
+        <div class="admin-dashboard-column">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3><i class="fas fa-server"></i> Systeminformationen</h3>
+            </div>
+            <div class="admin-card-content">
+              <?= $adminStatistics->renderSystemInfoHTML(); ?>
+            </div>
+          </div>
+        </div>
+        <div class="admin-dashboard-column">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3><i class="fas fa-star"></i> Beliebteste Seiten</h3>
+            </div>
+            <div class="admin-card-content">
+              <?php if (empty($siteStats['top_pages'])): ?>
+                <p class="admin-no-data">Keine Daten verfügbar.</p>
+              <?php else: ?>
+                <ul class="admin-stats-list">
+                  <?php 
+                  $i = 1;
+                  foreach ($siteStats['top_pages'] as $url => $visits): 
+                    if ($i > 5) break;
+                  ?>
+                    <li class="admin-stats-item">
+                      <span class="admin-stats-rank"><?= $i++; ?></span>
+                      <div class="admin-stats-details">
+                        <span class="admin-stats-title"><?= htmlspecialchars($url === '/' ? 'Startseite' : $url); ?></span>
+                        <div class="admin-stats-bar-container">
+                          <div class="admin-stats-bar" style="width: <?= min(100, ($visits / max($siteStats['top_pages']) * 100)); ?>%"></div>
+                        </div>
+                      </div>
+                      <span class="admin-stats-value"><?= number_format($visits); ?></span>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
+                <div class="admin-card-footer">
+                  <a href="#" class="admin-button-small">Alle Statistiken anzeigen</a>
+                </div>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+        <div class="admin-dashboard-column">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3><i class="fas fa-mobile-alt"></i> Gerätenutzung</h3>
+            </div>
+            <div class="admin-card-content chart-container">
+              <?php if (empty($siteStats['device_stats'])): ?>
+                <p class="admin-no-data">Keine Daten verfügbar.</p>
+              <?php else: ?>
+                <canvas id="deviceChart"></canvas>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script>
+    // PHP-Daten als globale Variable
+    window.siteStats = <?= json_encode($siteStats); ?>;
+  </script>
+  <script src="assets/js/chart-setup.js"></script>
 </body>
 </html>

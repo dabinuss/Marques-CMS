@@ -6,7 +6,7 @@ namespace Marques\Core;
 class MarquesApp
 {
     private Router $router;
-    private Template $template;
+    private AppTemplate $template;
     private AppNode $appcontainer;
     private AppSettings $settings;
     private AppLogger $logger;
@@ -20,7 +20,7 @@ class MarquesApp
         $this->initContainer();
         // Alle Kernservices via Container abrufen
         $this->router       = $this->appcontainer->get(Router::class);
-        $this->template     = $this->appcontainer->get(Template::class);
+        $this->template     = $this->appcontainer->get(AppTemplate::class);
         $this->settings     = $this->appcontainer->get(AppSettings::class);
         $this->logger       = $this->appcontainer->get(AppLogger::class);
         $this->eventManager = $this->appcontainer->get(AppEvents::class);
@@ -43,7 +43,7 @@ class MarquesApp
         $this->appcontainer->register(AppPath::class, AppPath::getInstance());
         // Auch Router und Template als Services registrieren
         $this->appcontainer->register(Router::class, new Router());
-        $this->appcontainer->register(Template::class, new Template());
+        $this->appcontainer->register(AppTemplate::class, new AppTemplate());
         //$this->appcontainer->register(AdminAuthService::class, new AdminAuthService());
     }
 
