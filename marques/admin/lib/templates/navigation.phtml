@@ -58,7 +58,7 @@
                     <h3>Neuen Menüpunkt hinzufügen (<?= $activeMenuTitle; ?>)</h3>
                 </div>
                 
-                <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                 <input type="hidden" name="action" value="add_item">
                 <input type="hidden" name="menu_type" value="<?= $activeMenu; ?>">
                 
@@ -143,7 +143,7 @@
                                     </button>
                                     
                                     <form method="post" style="display:inline;" onsubmit="return confirm('Möchten Sie diesen Menüpunkt wirklich löschen?')">
-                                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                                         <input type="hidden" name="action" value="delete_item">
                                         <input type="hidden" name="menu_type" value="<?= $activeMenu; ?>">
                                         <input type="hidden" name="menu_item_id" value="<?= htmlspecialchars($item['id']); ?>">
@@ -159,7 +159,7 @@
                 
                 <!-- Formular zum Speichern der Sortierreihenfolge -->
                 <form method="post" id="reorder-form">
-                    <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="action" value="reorder_menu">
                     <input type="hidden" name="menu_type" value="<?= $activeMenu; ?>">
                     <input type="hidden" name="menu_order" id="menu-order" value="">
@@ -173,7 +173,7 @@
                     <h2>Menüpunkt bearbeiten</h2>
                     
                     <form method="post" id="edit-form">
-                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                         <input type="hidden" name="action" value="update_item">
                         <input type="hidden" name="menu_type" value="<?= $activeMenu; ?>">
                         <input type="hidden" name="menu_item_id" id="edit-menu-item-id" value="">

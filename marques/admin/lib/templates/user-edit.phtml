@@ -96,7 +96,7 @@
                             </div>
                         <?php endif; ?>
                         
-                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                         
                         <div class="form-group">
                             <button type="submit" class="admin-button">

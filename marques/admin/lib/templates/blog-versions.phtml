@@ -113,7 +113,7 @@
                     
                     <div class="version-actions">
                         <form method="post">
-                            <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                             <input type="hidden" name="action" value="restore">
                             <input type="hidden" name="version_id" value="<?= htmlspecialchars($version_metadata['version_id']); ?>">
                             <button type="submit" class="admin-button">
@@ -209,7 +209,7 @@
             <div class="modal-actions">
                 <button id="cancelRestore" class="admin-button modal-close">Abbrechen</button>
                 <form id="restoreForm" method="post" style="display: inline;">
-                    <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="action" value="restore">
                     <input type="hidden" name="version_id" id="restoreVersionId">
                     <button type="submit" class="admin-button">Wiederherstellen</button>
@@ -229,7 +229,7 @@
             <div class="modal-actions">
                 <button id="cancelDelete" class="admin-button modal-close">Abbrechen</button>
                 <form id="deleteForm" method="post" style="display: inline;">
-                    <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="version_id" id="deleteVersionId">
                     <button type="submit" class="admin-button modal-delete">Löschen</button>

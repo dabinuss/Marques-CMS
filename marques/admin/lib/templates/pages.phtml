@@ -99,7 +99,7 @@
                 <form id="deleteForm" method="post" style="display: inline;">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="page_id" id="deletePageId">
-                    <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                     <button type="submit" class="admin-button modal-delete">Löschen</button>
                 </form>
             </div>

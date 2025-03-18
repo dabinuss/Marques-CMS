@@ -99,7 +99,7 @@
                                             <form method="post" action="" onsubmit="return confirm('Möchten Sie den Benutzer <?= htmlspecialchars($username); ?> wirklich löschen?');" style="display: inline;">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="username" value="<?= htmlspecialchars($username); ?>">
-                                                <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                                                 <button type="submit" class="action-btn delete" title="Löschen">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>

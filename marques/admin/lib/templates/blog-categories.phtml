@@ -105,7 +105,7 @@
             </div>
             <div class="admin-card-content">
                 <form method="post" class="add-form form-group">
-                    <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="action" value="add">
                     <input type="text" name="category_name" class="form-control" placeholder="Kategoriename" required>
                     <button type="submit" class="admin-button">
@@ -132,7 +132,7 @@
                                 <div class="category-actions">
                                     <!-- Bearbeitungsformular -->
                                     <form method="post" style="display:inline;" class="form-group">
-                                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                                         <input type="hidden" name="action" value="rename">
                                         <input type="hidden" name="old_name" value="<?= htmlspecialchars($name); ?>">
                                         <input type="text" name="new_name" class="form-control" value="<?= htmlspecialchars($name); ?>" required>
@@ -143,7 +143,7 @@
 
                                     <!-- Löschformular -->
                                     <form method="post" style="display:inline;" class="form-group" onsubmit="return confirm('Wirklich löschen? Die Kategorie wird aus allen zugehörigen Beiträgen entfernt.')">
-                                        <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="category_name" value="<?= htmlspecialchars($name); ?>">
                                         <button type="submit" class="admin-button admin-button-danger">

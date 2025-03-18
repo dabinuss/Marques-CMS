@@ -46,7 +46,7 @@
             <!-- Upload-Formular -->
             <form method="post" enctype="multipart/form-data" class="media-upload-form">
                 <input type="hidden" name="action" value="upload">
-                <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                 
                 <div class="media-upload-input">
                     <label for="media" class="form-label">Medium hochladen</label>
@@ -128,7 +128,7 @@
                 <form id="deleteForm" method="post" style="display: inline;">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="media_id" id="deleteMediaId">
-                    <input type="hidden" name="csrf_token" value="<?= $csrf_token; ?>">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                     <button type="submit" class="admin-button modal-delete">Löschen</button>
                 </form>
             </div>
