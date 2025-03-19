@@ -5,7 +5,7 @@ namespace Marques\Core;
 
 class MarquesApp
 {
-    private Router $router;
+    private AppRouter $router;
     private AppTemplate $template;
     private AppNode $appcontainer;
     private AppSettings $settings;
@@ -19,7 +19,7 @@ class MarquesApp
     {
         $this->initContainer();
         // Alle Kernservices via Container abrufen
-        $this->router       = $this->appcontainer->get(Router::class);
+        $this->router       = $this->appcontainer->get(AppRouter::class);
         $this->template     = $this->appcontainer->get(AppTemplate::class);
         $this->settings     = $this->appcontainer->get(AppSettings::class);
         $this->logger       = $this->appcontainer->get(AppLogger::class);
@@ -41,10 +41,11 @@ class MarquesApp
         $this->appcontainer->register(AppLogger::class, AppLogger::getInstance());
         $this->appcontainer->register(AppEvents::class, new AppEvents());
         $this->appcontainer->register(AppPath::class, AppPath::getInstance());
-        // Auch Router und Template als Services registrieren
-        $this->appcontainer->register(Router::class, new Router());
+
+        // Registriere den neuen Router – hier wird er mit dem DI-Container und der Persistenz-Option erstellt.
+        $this->appcontainer->register(AppRouter::class, new AppRouter($this->appcontainer, true));
+
         $this->appcontainer->register(AppTemplate::class, new AppTemplate());
-        //$this->appcontainer->register(AdminAuthService::class, new AdminAuthService());
     }
 
     public function init(): void
@@ -166,16 +167,18 @@ HTML;
         // require_once $this->appPath->combine('core', 'Exceptions.inc.php');
     }
 
-    public function run(): void
-    {
+    public function run(): void {
         try {
             $this->eventManager->trigger('before_request');
-            $route = $this->router->processRequest();
-            $route = $this->eventManager->trigger('after_routing', $route);
+            $routeInfo = $this->router->processRequest();
+            $this->eventManager->trigger('after_routing', $routeInfo);
+            
+            // Übergib die Route-Parameter an die Content-Klasse
             $content = new Content();
-            $pageData = $content->getPage($route['path']);
+            $pageData = $content->getPage($routeInfo['path'], $routeInfo['params'] ?? []);
             $pageData = $this->eventManager->trigger('before_render', $pageData);
             $this->template->render($pageData);
+            
             $this->eventManager->trigger('after_render');
         } catch (\Exception $e) {
             $this->handleException($e);

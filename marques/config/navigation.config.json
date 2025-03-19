@@ -2,25 +2,25 @@
     "main_menu": [
         {
             "title": "Startseite",
-            "url": "https:\/\/faktenfront.de\/",
+            "url": "",
             "target": "_self",
             "id": "menu_67c77d642d185"
         },
         {
             "title": "Blog",
-            "url": "https:\/\/faktenfront.de\/blog",
+            "url": "blog-list",
             "target": "_self",
             "id": "menu_67c77d642d187"
         },
         {
             "title": "\u00dcber uns",
-            "url": "https:\/\/faktenfront.de\/about",
+            "url": "about",
             "target": "_self",
             "id": "menu_67c77d642d188"
         },
         {
             "title": "Kontakt",
-            "url": "https:\/\/faktenfront.de\/contact",
+            "url": "contact",
             "target": "_self",
             "id": "menu_67c77d642d189"
         }

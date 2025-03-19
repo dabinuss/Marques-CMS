@@ -37,69 +37,51 @@ class Content {
      * @return array Seitendaten
      * @throws AppExceptions Wenn die Seite nicht gefunden wird
      */
-    public function getPage(string $path): array {
+    public function getPage(string $path, array $routeParams = []): array {
         if (empty($path)) {
             throw new \InvalidArgumentException("Ungültiger Seitenpfad");
         }
         
-        // Prüfen, ob Seite im Cache ist
         if (isset($this->_cache[$path])) {
             return $this->_cache[$path];
         }
         
-        // Route-Parameter aus globaler Variable holen
-        $params = isset($GLOBALS['route']['params']) ? $GLOBALS['route']['params'] : [];
-        
-        // Debug-Ausgabe für Fehlersuche
+        // Debug-Ausgabe
         error_log("getPage aufgerufen mit path: " . $path);
-        error_log("Route-Parameter: " . print_r($params, true));
-        
-        // Bestimmen, ob es sich um einen Blog-Beitrag oder eine spezielle Blog-Seite handelt
+        error_log("Route-Parameter: " . print_r($routeParams, true));
+
         if ($path === 'blog') {
-            // Parameter explizit übergeben
-            return $this->getBlogPost($path, $params);
-        } elseif ($path === 'blog-index' || $path === 'blog-category' || $path === 'blog-archive') {
-            return $this->getBlogList($path);
+            return $this->getBlogPost($path, $routeParams);
+        } elseif (in_array($path, ['blog-list', 'blog-category', 'blog-archive'])) {
+            return $this->getBlogList($path, $routeParams);
         }
         
-        // Reguläre Seite
         $filePath = MARQUES_CONTENT_DIR . '/pages/' . $path . '.md';
-        
-        // Prüfen, ob Datei existiert
         if (!file_exists($filePath)) {
             throw new \Marques\Core\AppExceptions("Seite nicht gefunden: " . $path, 404);
         }
-
-        // Prüfen, ob Datei lesbar ist
         if (!is_readable($filePath)) {
             throw new \Marques\Core\AppExceptions("Keine Leserechte für: " . $path, 403);
         }
         
         try {
-            // Datei lesen und parsen
             $content = file_get_contents($filePath);
             if ($content === false) {
                 throw new \Exception("Fehler beim Lesen der Datei: " . $path);
             }
-            
             $pageData = $this->parseContentFile($content);
         } catch (\Exception $e) {
             throw new \Exception("Fehler beim Parsen der Inhalte: " . $e->getMessage());
         }
         
-        // Template-Info hinzufügen, falls nicht gesetzt
         if (!isset($pageData['template'])) {
             $pageData['template'] = 'page';
         }
-        
-        // Pfad zu Daten hinzufügen
         $pageData['path'] = $path;
-        
-        // Ergebnis cachen
         $this->_cache[$path] = $pageData;
         
         return $pageData;
-    }
+    }    
     
     /**
      * Holt einen Blog-Beitrag
@@ -205,38 +187,40 @@ class Content {
      * Holt eine Blog-Übersichtsseite (Liste, Kategorie, Archiv)
      *
      * @param string $path Blog-Listenpfad
+     * @param array $params Route-Parameter
      * @return array Blog-Listendaten
      */
-    private function getBlogList($path) {
-        $params = $GLOBALS['route']['params'] ?? [];
-        $query = $GLOBALS['route']['query'] ?? [];
-        
+    private function getBlogList(string $path, array $params = []): array {
+        // Für Query-Parameter kannst Du alternativ auch $GLOBALS['route']['query'] vermeiden,
+        // indem Du diese ebenfalls als Parameter übergibst.
+        $query = []; // z.B. aus $params oder einer separaten Übergabe
+
         $title = 'Blog';
         $description = 'Alle Blog-Beiträge';
-        
+
         // Kategorie-Filter
         if ($path === 'blog-category' && isset($params['category'])) {
             $title = 'Blog - Kategorie: ' . htmlspecialchars($params['category']);
             $description = 'Blog-Beiträge in der Kategorie ' . htmlspecialchars($params['category']);
         }
-        
+
         // Archiv-Filter
         if ($path === 'blog-archive' && isset($params['year'], $params['month'])) {
             $month_name = date('F', mktime(0, 0, 0, (int)$params['month'], 1, (int)$params['year']));
             $title = 'Blog - Archiv: ' . $month_name . ' ' . $params['year'];
             $description = 'Blog-Beiträge aus ' . $month_name . ' ' . $params['year'];
         }
-        
+
         $pageData = [
-            'title' => $title,
-            'content' => '',
+            'title'       => $title,
+            'content'     => '',
             'description' => $description,
-            'template' => 'blog-list',
-            'path' => $path,
-            'params' => $params,
-            'query' => $query
+            'template'    => 'blog-list',
+            'path'        => $path,
+            'params'      => $params,
+            'query'       => $query
         ];
-        
+
         return $pageData;
     }
     
