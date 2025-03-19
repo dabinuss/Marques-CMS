@@ -11,7 +11,9 @@ Marques CMS is designed to lay the foundation for a modern, user-friendly CMS—
 ## Requirements
 
 Marques requires no databases, packages, or server environments. It works on simple web hosting services. Therefore, there are no specific requirements.
-- **No requirements** other than web space
+- **No special requirements**
+- PHP Version 8 (only tested at)
+- Webspace
 
 ## Installation
 
