@@ -1,10 +1,7 @@
 <?php
 declare(strict_types=1);
 
-// dashboard.php -- Content-Datei für das Dashboard im Admin-Bereich
-
 use Marques\Core\AppConfig;
-use Marques\Admin\AdminAuthService;
 use Marques\Core\BlogManager;
 use Marques\Core\PageManager;
 use Marques\Core\MediaManager;
@@ -27,33 +24,34 @@ if (isset($system_config['debug']) && $system_config['debug']) {
 $configManager = AppConfig::getInstance();
 $systemConfig = $configManager->load('system') ?: [];
 
-// Statistiken abrufen
-$admin = new AdminStatistics();
-$stats = $admin->getStatistics();
+// Statistiken und Systeminformationen (inkl. Ratings) abrufen
+$adminStats   = new AdminStatistics();
+$stats        = $adminStats->getStatistics();
+$systemInfo   = $adminStats->getSystemInfoArray();
 
 // Alle Benutzer für die Benutzer-Statistik abrufen
-$userManager = isset($system_config['user_manager_class']) ? 
-    new $system_config['user_manager_class']() : 
+$userManager = isset($system_config['user_manager_class']) ?
+    new $system_config['user_manager_class']() :
     new \Marques\Core\User();
 $allUsers = method_exists($userManager, 'getAllUsers') ? $userManager->getAllUsers() : [];
 
 // Blog-Manager initialisieren
 try {
-    $blogManager = new BlogManager();
-    $categories = $blogManager->getCategories();
-    $tags = $blogManager->getTags();
-    $recentPosts = $blogManager->getAllPosts(5, 0);
+    $blogManager  = new BlogManager();
+    $categories   = $blogManager->getCategories();
+    $tags         = $blogManager->getTags();
+    $recentPosts  = $blogManager->getAllPosts(5, 0);
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Blog-Daten: " . $e->getMessage());
-    $categories = [];
-    $tags = [];
+    $categories  = [];
+    $tags        = [];
     $recentPosts = [];
 }
 
 // Page-Manager initialisieren
 try {
     $pageManager = new PageManager();
-    $pages = $pageManager->getAllPages();
+    $pages       = $pageManager->getAllPages();
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Seiten: " . $e->getMessage());
     $pages = [];
@@ -62,7 +60,7 @@ try {
 // Media-Manager initialisieren
 try {
     $mediaManager = new MediaManager();
-    $mediaFiles = $mediaManager->getAllMedia();
+    $mediaFiles   = $mediaManager->getAllMedia();
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Mediendateien: " . $e->getMessage());
     $mediaFiles = [];
@@ -70,8 +68,8 @@ try {
 
 // Theme-Manager zum Laden des Template-Pfads für Assets
 try {
-    $themeManager = new ThemeManager();
-    $templatePath = $themeManager->getThemePath('assets');
+    $themeManager  = new ThemeManager();
+    $templatePath  = $themeManager->getThemePath('assets');
 } catch (\Exception $e) {
     error_log("Fehler beim Laden des Template-Pfads: " . $e->getMessage());
     $templatePath = 'assets';
@@ -79,20 +77,17 @@ try {
 
 // Cache-Daten ermitteln
 try {
-    // Instanziere den Cache (hier als AppCache implementiert)
-    $cacheManager = new AppCache();
-    $numCached = $cacheManager->getCacheFileCount();
-    $cacheSize = $cacheManager->getCacheSize();
+    $cacheManager       = new AppCache();
+    $numCached          = $cacheManager->getCacheFileCount();
+    $cacheSize          = $cacheManager->getCacheSize();
     $cacheSizeFormatted = Helper::formatBytes($cacheSize);
-    
-    // Neue Statistikfunktionen: Gesamte Anfragen, Trefferquote, durchschnittliche Zugriffszeit etc.
-    $cacheStats = $cacheManager->getStatistics();
+    $cacheStats         = $cacheManager->getStatistics();
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Cache-Daten: " . $e->getMessage());
-    $numCached = 0;
-    $cacheSize = 0;
+    $numCached          = 0;
+    $cacheSize          = 0;
     $cacheSizeFormatted = '0 B';
-    $cacheStats = [
+    $cacheStats         = [
         'total_requests' => 0,
         'cache_hits'     => 0,
         'hit_rate'       => 0,
@@ -114,7 +109,6 @@ if (!is_dir($statsDir)) {
  * @return array Statistik-Daten
  */
 function loadSiteStatistics(): array {
-    // Standardwerte für Statistiken
     $stats = [
         'total_visits'     => 0,
         'visits_today'     => 0,
@@ -126,8 +120,8 @@ function loadSiteStatistics(): array {
         'browser_stats'    => [],
         'device_stats'     => [
             'Desktop' => 0,
-            'Mobile' => 0,
-            'Tablet' => 0
+            'Mobile'  => 0,
+            'Tablet'  => 0
         ],
         'hourly_stats'     => array_fill(0, 24, 0),
         'daily_stats'      => []
@@ -143,35 +137,32 @@ function loadSiteStatistics(): array {
     $startOfWeek  = date('Y-m-d', strtotime('this week'));
     $startOfMonth = date('Y-m-d', strtotime('first day of this month'));
     
-    // Funktionen für Gerät- und Browser-Erkennung
     $detectDevice = function($userAgent) {
-        $userAgent = strtolower($userAgent);
-        if (strpos($userAgent, 'mobile') !== false || strpos($userAgent, 'android') !== false) {
-            return (strpos($userAgent, 'tablet') !== false) ? 'Tablet' : 'Mobile';
+        $ua = strtolower($userAgent);
+        if (strpos($ua, 'mobile') !== false || strpos($ua, 'android') !== false) {
+            return (strpos($ua, 'tablet') !== false) ? 'Tablet' : 'Mobile';
         }
         return 'Desktop';
     };
     
     $detectBrowser = function($userAgent) {
-        $userAgent = strtolower($userAgent);
-        if (strpos($userAgent, 'firefox') !== false) return 'Firefox';
-        if (strpos($userAgent, 'chrome') !== false) return 'Chrome';
-        if (strpos($userAgent, 'safari') !== false) return 'Safari';
-        if (strpos($userAgent, 'edge') !== false) return 'Edge';
-        if (strpos($userAgent, 'opera') !== false || strpos($userAgent, 'opr') !== false) return 'Opera';
-        if (strpos($userAgent, 'msie') !== false || strpos($userAgent, 'trident') !== false) return 'Internet Explorer';
+        $ua = strtolower($userAgent);
+        if (strpos($ua, 'firefox') !== false) return 'Firefox';
+        if (strpos($ua, 'chrome') !== false) return 'Chrome';
+        if (strpos($ua, 'safari') !== false) return 'Safari';
+        if (strpos($ua, 'edge') !== false) return 'Edge';
+        if (strpos($ua, 'opera') !== false || strpos($ua, 'opr') !== false) return 'Opera';
+        if (strpos($ua, 'msie') !== false || strpos($ua, 'trident') !== false) return 'Internet Explorer';
         return 'Andere';
     };
     
-    // Statistiken der letzten 30 Tage verarbeiten
     for ($i = 0; $i < 30; $i++) {
-        $date = date('Y-m-d', strtotime("-$i days"));
+        $date    = date('Y-m-d', strtotime("-$i days"));
         $logFile = $statsDir . '/' . $date . '.log';
         
         if (file_exists($logFile)) {
             $lines = @file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             if ($lines === false) {
-                error_log("Konnte Statistik-Datei nicht lesen: $logFile");
                 continue;
             }
             
@@ -193,18 +184,15 @@ function loadSiteStatistics(): array {
                 $stats['visits_this_month'] += $dailyCount;
             }
             
-            // Detaillierte Statistiken aus den Logzeilen extrahieren
             foreach ($lines as $line) {
                 $data = @json_decode($line, true);
                 if (!$data) continue;
                 
-                // Stundenbezogene Statistik
                 if (isset($data['time'])) {
                     $hour = (int) date('G', strtotime($data['time']));
                     $stats['hourly_stats'][$hour]++;
                 }
                 
-                // Seiten-Statistik
                 if (isset($data['url'])) {
                     $url = parse_url($data['url'], PHP_URL_PATH) ?: '/';
                     if (!isset($stats['top_pages'][$url])) {
@@ -213,7 +201,6 @@ function loadSiteStatistics(): array {
                     $stats['top_pages'][$url]++;
                 }
                 
-                // Referrer-Statistik
                 if (isset($data['referrer']) && !empty($data['referrer'])) {
                     $referrer = parse_url($data['referrer'], PHP_URL_HOST);
                     if ($referrer) {
@@ -224,7 +211,6 @@ function loadSiteStatistics(): array {
                     }
                 }
                 
-                // Browser- und Geräte-Statistik
                 if (isset($data['user_agent'])) {
                     $browser = $detectBrowser($data['user_agent']);
                     if (!isset($stats['browser_stats'][$browser])) {
@@ -240,12 +226,10 @@ function loadSiteStatistics(): array {
                 }
             }
         } else {
-            // Stelle sicher, dass wir einen Eintrag für jeden Tag haben (für Charts)
             $stats['daily_stats'][$date] = 0;
         }
     }
     
-    // Sortieren und aufbereiten der Ergebnisse
     arsort($stats['top_pages']);
     $stats['top_pages'] = array_slice($stats['top_pages'], 0, 10, true);
     
@@ -255,18 +239,15 @@ function loadSiteStatistics(): array {
     arsort($stats['browser_stats']);
     arsort($stats['device_stats']);
     
-    // Daily stats chronologisch sortieren für Charts
     ksort($stats['daily_stats']);
     
     return $stats;
 }
 
-// Zugriffsstatistiken laden mit Fehlerbehandlung
 try {
     $siteStats = loadSiteStatistics();
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Zugriffsstatistiken: " . $e->getMessage());
-    // Standardwerte für Statistiken
     $siteStats = [
         'total_visits'     => 0,
         'visits_today'     => 0,
@@ -306,7 +287,7 @@ $page_titles = [
 ];
 $page_title = $page_titles[$page] ?? 'Dashboard';
 
-// Letzte Aktivitäten erfassen mit besserer Fehlerbehandlung
+// Letzte Aktivitäten erfassen
 $recentActivity = [];
 
 if (!empty($pages) && is_array($pages)) {
@@ -326,7 +307,6 @@ if (!empty($pages) && is_array($pages)) {
 if (!empty($recentPosts) && is_array($recentPosts)) {
     foreach ($recentPosts as $post) {
         if (!isset($post['title'])) continue;
-        
         $recentActivity[] = [
             'type'  => 'post',
             'title' => $post['title'],
@@ -337,30 +317,22 @@ if (!empty($recentPosts) && is_array($recentPosts)) {
     }
 }
 
-// Aktivitäten nach Datum sortieren
 usort($recentActivity, function($a, $b) {
     return strtotime($b['date']) - strtotime($a['date']);
 });
 $recentActivity = array_slice($recentActivity, 0, 10);
 
-// Daten für Charts vorbereiten
-$days = 14; // 14 Tage anzeigen für das Besucherdiagramm
+// Daten für Charts vorbereiten (14 Tage Besucherstatistik)
+$days = 7;
 $dailyData = [];
 $labels = [];
 
-// Besucherstatistik für die letzten 14 Tage vorbereiten
 if (!empty($siteStats['daily_stats'])) {
     $dailyStats = $siteStats['daily_stats'];
-    // Sicherstellen, dass wir in chronologischer Reihenfolge ausgeben
     ksort($dailyStats);
-    
-    // Nur die letzten 14 Tage nehmen
     $dailyStats = array_slice($dailyStats, -$days, $days, true);
-    
     foreach ($dailyStats as $date => $count) {
-        $labels[] = date('d.m', strtotime($date));
+        $labels[]   = date('d.m', strtotime($date));
         $dailyData[] = $count;
     }
 }
-
-$adminStatistics = new \Marques\Admin\AdminStatistics();

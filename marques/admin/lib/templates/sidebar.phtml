@@ -7,89 +7,106 @@ $configManager = \Marques\Core\AppConfig::getInstance();
 $systemConfig = $configManager->load('system') ?: [];
 ?>
 
-<aside class="admin-sidebar">
-
-    <div class="admin-sidebar-header">
-        <h1 class="admin-brand">
-            <a href="index.php">
-                <img src="<?= \Marques\Core\Helper::getSiteUrl('admin/assets/images/logo-text-bg.jpg'); ?>" alt="marques CMS" />
-            </a>
-            <!-- marques CMS -->
-        </h1>
-        <div class="admin-actions sidebar">
-            <p class="admin-button">
-                Angemeldet als: 
+<aside>
+    <div class="sidebar" style="height:100%;">
+        <div class="sidebar-header">
+            <div class="logo">
+                <a href="index.php">
+                    <img src="<?= \Marques\Core\Helper::getSiteUrl('admin/assets/images/logo-text-bg.jpg'); ?>"
+                        alt="marques CMS" />
+                </a>
+                <!-- marques CMS -->
+            </div>
+            <p>
+                <small>Angemeldet als:</small> 
                 <?= htmlspecialchars($user->getCurrentDisplayName()); ?>
             </p>
-            <a href="../" class="admin-button" target="_blank">
-                <span class="admin-button-icon"><i class="fas fa-external-link-alt"></i></span>
-                Website ansehen
-            </a>
         </div>
-    </div>
-
-    <nav>
-        <ul class="admin-menu">
-            <li class="admin-menu-item">
-                <a href="index.php" class="admin-menu-link <?= (!isset($current_page) || $current_page === '' || $current_page === 'dashboard') ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-tachometer-alt"></i></span>
+        <nav class="nav-menu">
+            <div class="nav-item">
+                <a href="index.php"
+                    class="nav-link <?= (!isset($current_page) || $current_page === '' || $current_page === 'dashboard') ? 'active' : ''; ?>">
+                    <?= $this->renderIcon('gauge', 'nav-menu-icon', '24'); ?>
                     Dashboard
                 </a>
-            </li>
-            <li class="admin-menu-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>" class="admin-menu-link <?= $current_page === 'pages' || $current_page === 'page-edit' ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-file-alt"></i></span>
+            </div>
+            <div class="nav-item">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>"
+                    class="nav-link <?= $current_page === 'pages' || $current_page === 'page-edit' ? 'active' : ''; ?>">
+                    <?= $this->renderIcon('files', 'nav-menu-icon', '24'); ?>
                     Seiten
                 </a>
-            </li>
-            <li class="admin-menu-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=navigation'); ?>" class="admin-menu-link <?= $current_page === 'navigation' ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-bars"></i></span>
+            </div>
+            <div class="nav-item">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=navigation'); ?>"
+                    class="nav-link <?= $current_page === 'navigation' ? 'active' : ''; ?>">
+                    <?= $this->renderIcon('menu-3', 'nav-menu-icon', '24'); ?>
                     Menüs
                 </a>
-            </li>
-            <li class="admin-menu-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media'); ?>" class="admin-menu-link <?= $current_page === 'media' ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-images"></i></span>
+            </div>
+            <div class="nav-item">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media'); ?>"
+                    class="nav-link <?= $current_page === 'media' ? 'active' : ''; ?>">
+                    <?= $this->renderIcon('library-photo', 'nav-menu-icon', '24'); ?>
                     Medien
                 </a>
-            </li>
-            <li class="admin-menu-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>" class="admin-menu-link <?= $current_page === 'blog' || $current_page === 'blog-categories' || $current_page === 'blog-tags' || $current_page === 'blog-edit' ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-blog"></i></span>
+            </div>
+            <div class="nav-item">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>"
+                    class="nav-link <?= $current_page === 'blog' || $current_page === 'blog-categories' || $current_page === 'blog-tags' || $current_page === 'blog-edit' ? 'active' : ''; ?>">
+                    <?= $this->renderIcon('news', 'nav-menu-icon', '24'); ?>
                     Blog
                 </a>
-                <ul class="admin-submenu">
-                    <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>" class="admin-submenu-link <?= $current_page === 'blog' ? 'active' : ''; ?>">Alle Beiträge</a></li>
-                    <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-submenu-link <?= $current_page === 'blog-edit' ? 'active' : ''; ?>">Neuer Beitrag</a></li>
-                    <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-categories'); ?>" class="admin-submenu-link <?= $current_page === 'blog-categories' ? 'active' : ''; ?>">Kategorien</a></li>
-                    <li><a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-tags'); ?>" class="admin-submenu-link <?= $current_page === 'blog-tags' ? 'active' : ''; ?>">Tags</a></li>
-                </ul>
-            </li>
-            <?php if (isset($user) && $user->isAdmin()): ?>
-            <li class="admin-menu-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=users'); ?>" class="admin-menu-link <?= $current_page === 'users' || $current_page === 'user-edit' ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-users"></i></span>
+                <div class="nav-sub-item">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>"
+                        class="nav-link <?= $current_page === 'blog' ? 'active' : ''; ?>">
+                        <?= $this->renderIcon('point', 'nav-menu-icon', '14'); ?>
+                        Alle Beiträge
+                    </a>
+                </div>
+                <div class="nav-sub-item">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>"
+                        class="nav-link <?= $current_page === 'blog-edit' ? 'active' : ''; ?>">
+                        <?= $this->renderIcon('point', 'nav-menu-icon', '14'); ?>
+                        Neuer Beitrag
+                    </a>
+                </div>
+                <div class="nav-sub-item">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-categories'); ?>"
+                        class="nav-link <?= $current_page === 'blog-categories' ? 'active' : ''; ?>">
+                        <?= $this->renderIcon('point', 'nav-menu-icon', '14'); ?>
+                        Kategorien
+                    </a>
+                </div>
+                <div class="nav-sub-item">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-tags'); ?>"
+                        class="nav-link <?= $current_page === 'blog-tags' ? 'active' : ''; ?>">
+                        <?= $this->renderIcon('point', 'nav-menu-icon', '14'); ?>
+                        Tags
+                    </a>
+                </div>
+            </div>
+            <div class="nav-item">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=users'); ?>"
+                    class="nav-link <?= $current_page === 'users' || $current_page === 'user-edit' ? 'active' : ''; ?>">
+                    <?= $this->renderIcon('users-group', 'nav-menu-icon', '24'); ?>
                     Benutzer
                 </a>
-            </li>
-            <li class="admin-menu-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=settings'); ?>" class="admin-menu-link <?= $current_page === 'settings' ? 'active' : ''; ?>">
-                    <span class="admin-menu-icon"><i class="fas fa-cog"></i></span>
+            </div>
+            <div class="nav-item">
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=settings'); ?>"
+                    class="nav-link <?= $current_page === 'settings' ? 'active' : ''; ?>">
+                    <?= $this->renderIcon('adjustments-cog', 'nav-menu-icon', '24'); ?>
                     Einstellungen
                 </a>
-            </li>
-            <?php endif; ?>
-        </ul>
-    </nav>
-
-    <div class="admin-logout">
-        <a href="?page=logout" class="admin-logout-link">
-            <i class="fas fa-sign-out-alt"></i> Abmelden
-        </a>
-        <div class="admin-version">
-            marques CMS v<?= MARQUES_VERSION; ?>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="?page=logout" class="admin-logout-link">
+                <?= $this->renderIcon('currency-quetzal', 'nav-menu-icon', '24'); ?>
+                Abmelden
+            </a>
+            <p>marques CMS v<?= MARQUES_VERSION; ?></p>
         </div>
     </div>
-
 </aside>

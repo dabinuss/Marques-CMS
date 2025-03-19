@@ -263,12 +263,10 @@ class AppConfig {
             'version' => MARQUES_VERSION,
             'maintenance' => false,
             'maintenance_message' => 'Die Website wird aktuell gewartet. Bitte versuchen Sie es später erneut.',
-            'comments_enabled' => false,
 
             // Admin-Einstellungen
             'admin_language' => 'de',
             'admin_email' => '',
-            'contact_phone' => '',
 
             // Kontaktinformationen
             'contact_email' => '',

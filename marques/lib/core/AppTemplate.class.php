@@ -17,6 +17,8 @@ class AppTemplate {
      */
     protected string $templatePath;
 
+    protected ?AppPath $appPath = null;
+
     public function __construct() {
         // Systemkonfiguration laden
         $configManager = AppConfig::getInstance();
@@ -25,6 +27,8 @@ class AppTemplate {
         // Standard-Template-Pfad aus dem ThemeManager
         $themeManager = new ThemeManager();
         $this->templatePath = $themeManager->getThemePath('templates');
+
+        $this->appPath = AppPath::getInstance();
     }
 
     /**
@@ -181,4 +185,60 @@ class AppTemplate {
         $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.phtml';
         return file_exists($templateFile);
     }
+
+    /* 
+     * Funktion zum Rendern des SVG-Icons mit Custom Class
+     * 
+     * @param string $iconName
+     * @param string $customClass
+     * @return string
+     */
+    public function renderIcon(string $iconName, string $customClass = 'stat-icon', ?string $size = null): string {
+        $iconPath = $this->appPath->combine('admin', 'assets/icons') . '/' . $iconName . '.svg';
+        
+        if (file_exists($iconPath)) {
+            $svg = file_get_contents($iconPath);
+            
+            // Entferne die Attribute width, height und fill (alle immer)
+            $svg = preg_replace('/\s+(width|height)="[^"]*"/i', '', $svg);
+            
+            // Bestehende Klassen erhalten und die custom class zusätzlich anhängen:
+            if (preg_match('/<svg\s[^>]*class="/i', $svg)) {
+                $svg = preg_replace(
+                    '/(<svg\s[^>]*class=")([^"]*)(")/i',
+                    '$1$2 ' . $customClass . '$3',
+                    $svg,
+                    1
+                );
+            } else {
+                $svg = preg_replace('/<svg\b/i', '<svg class="' . $customClass . '"', $svg, 1);
+            }
+            
+            // Wenn ein $size-Wert angegeben ist, füge ein style-Attribut ein,
+            // das width und height (gleichmäßig) festlegt.
+            if ($size !== null) {
+                // Falls bereits ein style-Attribut existiert, hänge die Größe einfach an:
+                if (preg_match('/<svg\s[^>]*style="/i', $svg)) {
+                    $svg = preg_replace(
+                        '/(<svg\s[^>]*style=")([^"]*)(")/i',
+                        '$1$2 width:' . $size . '; height:' . $size . ';$3',
+                        $svg,
+                        1
+                    );
+                } else {
+                    // Andernfalls füge ein neues style-Attribut ein
+                    $svg = preg_replace(
+                        '/<svg\b/i',
+                        '<svg style="width:' . $size . '; height:' . $size . ';"',
+                        $svg,
+                        1
+                    );
+                }
+            }
+            
+            return $svg;
+        }
+        
+        return '<!-- Icon nicht gefunden: ' . htmlspecialchars($iconName) . ' -->';
+    }    
 }

@@ -1,286 +1,370 @@
 <!DOCTYPE html>
 <html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= htmlspecialchars($page_title); ?> - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
-  <link rel="stylesheet" href="assets/css/admin-style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <!-- Chart.js für Statistik-Diagramme -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($page_title); ?> - Admin-Panel -
+        <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <link rel="stylesheet" href="assets/css/marques-panel-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <!-- Chart.js für Statistik-Diagramme -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
+    <div class="container">
+        <!-- SIDEBAR & NAVIGATION -->
+        <?php include 'sidebar.phtml'; ?>
 
-  <div class="admin-layout">
-    <!-- SIDEBAR & NAVIGATION -->
-    <?php include 'sidebar.phtml'; ?>
-    
-    <main class="admin-content">
-
-      <div class="admin-topbar">
-        <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
-        <div class="admin-actions">
-          <?php if ($page === 'pages'): ?>
-          <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" class="admin-button">
-            <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
-            Neue Seite
-          </a>
-          <?php elseif ($page === 'blog'): ?>
-          <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-button">
-            <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
-            Neuer Beitrag
-          </a>
-          <?php elseif ($page === 'media'): ?>
-          <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>" class="admin-button">
-            <span class="admin-button-icon"><i class="fas fa-upload"></i></span>
-            Hochladen
-          </a>
-          <?php endif; ?>
-          <a href="../" class="admin-button" target="_blank">
-            <span class="admin-button-icon"><i class="fas fa-external-link-alt"></i></span>
-            Website ansehen
-          </a>
-        </div>
-      </div>
-  
-      <!-- 1. Reihe: Welcome | Quick Actions -->
-      <div class="admin-dashboard-row">
-        <div class="admin-dashboard-column">
-          <div class="admin-welcome">
-            <h3>Willkommen, <?= htmlspecialchars($username); ?>!</h3>
-            <p>
-              Heute ist <?= date('l, d. F Y', time()); ?>. 
-              Sie haben sich zuletzt am <?= date('d.m.Y \u\m H:i', $_SESSION['marques_user']['last_login']); ?> Uhr angemeldet.
-            </p>
-            <?php if($system_config['maintenance_mode']): ?>
-            <div class="admin-alert error">
-              <i class="fas fa-exclamation-triangle"></i> Die Website befindet sich im Wartungsmodus und ist für normale Besucher nicht erreichbar.
-            </div>
-            <?php endif; ?>
-            <?php if($system_config['debug']): ?>
-            <div class="admin-alert warning">
-              <i class="fas fa-bug"></i> Der Debug-Modus ist aktiviert. Bitte deaktiviere ihn in der Produktionsumgebung.
-            </div>
-            <?php endif; ?>
-          </div>
-        </div>
-        <div class="admin-dashboard-column">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3><i class="fas fa-bolt"></i> Schnellzugriff</h3>
-            </div>
-            <div class="admin-card-content">
-              <div class="admin-quick-actions">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" class="admin-quick-action">
-                  <i class="fas fa-file-alt"></i>
-                  <span>Neue Seite</span>
-                </a>
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-quick-action">
-                  <i class="fas fa-blog"></i>
-                  <span>Neuer Beitrag</span>
-                </a>
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>" class="admin-quick-action">
-                  <i class="fas fa-upload"></i>
-                  <span>Medien hochladen</span>
-                </a>
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=settings'); ?>" class="admin-quick-action">
-                  <i class="fas fa-cog"></i>
-                  <span>Einstellungen</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Neuer Bereich: Cache-Informationen -->
-      <div class="admin-dashboard-row">
-        <div class="admin-dashboard-column">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3><i class="fas fa-database"></i> Cache-Informationen</h3>
-            </div>
-            <div class="admin-card-content">
-              <p><strong>Caching aktiviert:</strong> <?= $system_config['cache_enabled'] ? 'Ja' : 'Nein'; ?></p>
-              <p><strong>Anzahl Cache-Dateien:</strong> <?= $numCached; ?></p>
-              <p><strong>Cache-Größe:</strong> <?= $cacheSizeFormatted; ?></p>
-              <a href="clear-cache.php" class="admin-button-small">Cache leeren</a>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 2. Reihe: Statistik-Karten | Besuchs-Diagramm -->
-      <div class="admin-dashboard-row">
-        <div class="admin-dashboard-column">
-          <div class="admin-stats">
-            <!-- Hier können deine Statistik-Karten eingebunden werden -->
-          </div>
-        </div>
-        <div class="admin-dashboard-column">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3><i class="fas fa-chart-bar"></i> Besucherstatistik (letzte 14 Tage)</h3>
-            </div>
-            <div class="admin-card-content">
-              <canvas id="visitsChart" height="250"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 3. Reihe: Neueste Aktivitäten | Neueste Blog-Beiträge -->
-      <div class="admin-dashboard-row">
-        <div class="admin-dashboard-column">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3><i class="fas fa-history"></i> Neueste Aktivitäten</h3>
-            </div>
-            <div class="admin-card-content">
-              <?php if (empty($recentActivity)): ?>
-                <p class="admin-no-data">Keine kürzlichen Aktivitäten gefunden.</p>
-              <?php else: ?>
-                <ul class="admin-activity-list">
-                  <?php foreach ($recentActivity as $activity): ?>
-                    <li class="admin-activity-item">
-                      <span class="admin-activity-icon">
-                        <i class="fas fa-<?= $activity['icon']; ?>"></i>
-                      </span>
-                      <div class="admin-activity-details">
-                        <a href="<?= $activity['url']; ?>" class="admin-activity-title">
-                          <?= htmlspecialchars($activity['title']); ?>
-                        </a>
-                        <span class="admin-activity-date">
-                          <?= date('d.m.Y H:i', strtotime($activity['date'])); ?>
-                        </span>
-                      </div>
-                      <span class="admin-activity-type">
-                        <?= $activity['type'] === 'page' ? 'Seite' : 'Beitrag'; ?>
-                      </span>
-                    </li>
-                  <?php endforeach; ?>
-                </ul>
-              <?php endif; ?>
-            </div>
-          </div>
-        </div>
-        <div class="admin-dashboard-column">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3><i class="fas fa-newspaper"></i> Neueste Blog-Beiträge</h3>
-            </div>
-            <div class="admin-card-content">
-              <?php if (empty($recentPosts)): ?>
-                <p class="admin-no-data">Keine Blog-Beiträge vorhanden.</p>
-              <?php else: ?>
-                <table class="admin-table admin-table-mini">
-                  <thead>
-                    <tr>
-                      <th>Titel</th>
-                      <th>Datum</th>
-                      <th>Status</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php foreach ($recentPosts as $post): ?>
-                      <tr>
-                        <td><?= htmlspecialchars($post['title']); ?></td>
-                        <td><?= date('d.m.Y', strtotime($post['date'])); ?></td>
-                        <td>
-                          <span class="status-badge status-<?= $post['status']; ?>">
-                            <?= ucfirst($post['status']); ?>
-                          </span>
-                        </td>
-                        <td class="admin-table-actions">
-                          <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit&id=' . $post['id']); ?>" class="admin-table-action" title="Bearbeiten">
-                            <i class="fas fa-edit"></i>
-                          </a>
-                          <a href="../blog/<?= $post['slug']; ?>" target="_blank" class="admin-table-action" title="Ansehen">
-                            <i class="fas fa-eye"></i>
-                          </a>
-                        </td>
-                      </tr>
-                    <?php endforeach; ?>
-                  </tbody>
-                </table>
-                <div class="admin-card-footer">
-                  <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>" class="admin-button-small">Alle Blog-Beiträge anzeigen</a>
+        <main class="main-content">
+            <div class="header">
+                <h1><?= htmlspecialchars($page_title); ?></h1>
+                <div class="header-actions">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" alt="Neue Seite"
+                        class="admin-button">
+                        <button class="btn">
+                            <?= $this->renderIcon('notebook', '', '24'); ?>
+                        </button>
+                    </a>
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" alt="Neuer Beitrag"
+                        class="admin-button">
+                        <button class="btn">
+                            <?= $this->renderIcon('pencil-plus', '', '24'); ?>
+                        </button>
+                    </a>
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>"
+                        class="admin-button" alt="Hochladen">
+                        <button class="btn">
+                            <?= $this->renderIcon('file-upload', '', '24'); ?>
+                        </button>
+                    </a>
+                    <a href="../" class="admin-button" alt="Website ansehen" target="_blank">
+                        <button class="btn">
+                            <?= $this->renderIcon('world-star', '', '24'); ?>
+                            Website ansehen
+                        </button>
+                    </a>
                 </div>
-              <?php endif; ?>
             </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 4. Reihe: Systeminfo, Beliebteste Seiten, Gerätenutzung -->
-      <div class="admin-dashboard-row">
-        <div class="admin-dashboard-column">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3><i class="fas fa-server"></i> Systeminformationen</h3>
-            </div>
-            <div class="admin-card-content">
-              <?= $adminStatistics->renderSystemInfoHTML(); ?>
-            </div>
-          </div>
-        </div>
-        <div class="admin-dashboard-column">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3><i class="fas fa-star"></i> Beliebteste Seiten</h3>
-            </div>
-            <div class="admin-card-content">
-              <?php if (empty($siteStats['top_pages'])): ?>
-                <p class="admin-no-data">Keine Daten verfügbar.</p>
-              <?php else: ?>
-                <ul class="admin-stats-list">
-                  <?php 
-                  $i = 1;
-                  foreach ($siteStats['top_pages'] as $url => $visits): 
-                    if ($i > 5) break;
-                  ?>
-                    <li class="admin-stats-item">
-                      <span class="admin-stats-rank"><?= $i++; ?></span>
-                      <div class="admin-stats-details">
-                        <span class="admin-stats-title"><?= htmlspecialchars($url === '/' ? 'Startseite' : $url); ?></span>
-                        <div class="admin-stats-bar-container">
-                          <div class="admin-stats-bar" style="width: <?= min(100, ($visits / max($siteStats['top_pages']) * 100)); ?>%"></div>
+
+            <!-- Main Grid-Container -->
+            <div class="grid-container">
+                <!-- Welcome Box -->
+                <div class="box primary col-2">
+                    <div class="admin-welcome">
+                        <h3>Willkommen, <?= htmlspecialchars($username); ?>!</h3>
+                        <p>
+                            Heute ist <?= date('l, d. F Y', time()); ?>.
+                            Sie haben sich zuletzt am
+                            <?= date('d.m.Y \u\m H:i', $_SESSION['marques_user']['last_login']); ?> Uhr angemeldet.
+                        </p>
+                        <?php if ($system_config['maintenance_mode']): ?>
+                            <div class="alert error">
+                                <i class="fas fa-exclamation-triangle"></i> Die Website befindet sich im Wartungsmodus.
+                            </div>
+                        <?php endif; ?>
+                        <?php if ($system_config['debug']): ?>
+                            <div class="alert warning">
+                                <i class="fas fa-bug"></i> Debug-Modus ist aktiviert.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Stat Cards (Beispielhafte statische Karten) -->
+                <div class="stat-card primary col-1">
+                    <?= $this->renderIcon('trending-up', 'stat-icon'); ?>
+                    <div class="stat-value">15.200</div>
+                    <div class="stat-label">Seitenaufrufe</div>
+                    <div class="stat-trend trend-positive">
+                        <?= $this->renderIcon('trending-up', '', '16'); ?>
+                        <span>8.1% seit letzter Woche</span>
+                    </div>
+                </div>
+                <div class="stat-card success col-1">
+                    <?= $this->renderIcon('user-share', 'stat-icon'); ?>
+                    <div class="stat-value">2.381</div>
+                    <div class="stat-label">Aktive Benutzer</div>
+                    <div class="stat-trend trend-positive">
+                        <?= $this->renderIcon('trending-up', '', '16'); ?>
+                        <span>4.2% seit letztem Monat</span>
+                    </div>
+                </div>
+                <div class="stat-card warning col-1">
+                    <?= $this->renderIcon('trending-up', 'stat-icon'); ?>
+                    <div class="stat-value">4.2%</div>
+                    <div class="stat-label">Conversion-Rate</div>
+                    <div class="stat-trend trend-negative">
+                        <?= $this->renderIcon('trending-down', '', '16'); ?>
+                        <span>1.5% seit letztem Monat</span>
+                    </div>
+                </div>
+                <div class="stat-card danger col-1">
+                    <?= $this->renderIcon('history-toggle', 'stat-icon'); ?>
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">Neue Inhalte</div>
+                    <div class="stat-trend trend-positive">
+                        <?= $this->renderIcon('trending-up', '', '16'); ?>
+                        <span>3 mehr als gestern</span>
+                    </div>
+                </div>
+
+                <!-- Zeilenumbruch -->
+                <div class="grid-break"></div>
+
+                <!-- Besucherstatistik -->
+                <div class="box col-4">
+                    <div class="box-header">
+                        <h3 class="box-title">Besucherstatistik <small>(14 Tage)</small></h3>
+                        <div class="box-actions">
+                            <button class="box-action">
+                                <svg viewBox="0 0 24 24" width="18" height="18">
+                                    <path
+                                        d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                </svg>
+                            </button>
                         </div>
-                      </div>
-                      <span class="admin-stats-value"><?= number_format($visits); ?></span>
-                    </li>
-                  <?php endforeach; ?>
-                </ul>
-                <div class="admin-card-footer">
-                  <a href="#" class="admin-button-small">Alle Statistiken anzeigen</a>
+                    </div>
+                    <div class="box-content">
+                        <div class="chart-placeholder">
+                            <canvas id="visitsChart"></canvas>
+                        </div>
+                    </div>
                 </div>
-              <?php endif; ?>
+
+                <!-- Cachestatus -->
+                <div class="box col-2">
+                    <div class="box-header">
+                        <h3 class="box-title">Cachestatus</h3>
+                        <div class="box-actions">
+                            <button class="box-action">
+                                <svg viewBox="0 0 24 24" width="18" height="18">
+                                    <path
+                                        d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="box-content">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Status</td>
+                                        <td><?= $system_config['cache_enabled'] ? 'Aktiviert' : 'Deaktiviert'; ?></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Anzahl Cache-Dateien</td>
+                                        <td><?= $numCached; ?></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Insgesamt Cache-Größe</td>
+                                        <td><?= $cacheSizeFormatted; ?></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <button class="btn">
+                                                <a href="#" class="admin-button" target="_blank">
+                                                    Cache leeren
+                                                </a>
+                                            </button>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="box col-2">
+                    <div class="box-header">
+                        <h3 class="box-title">Aktivitäten</h3>
+                        <div class="box-actions">
+                            <button class="box-action">
+                                <svg viewBox="0 0 24 24" width="18" height="18">
+                                    <path
+                                        d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="box-content">
+                        <?php if (empty($recentActivity)): ?>
+                            <p class="admin-no-data">Keine kürzlichen Aktivitäten gefunden.</p>
+                        <?php else: ?>
+                            <?php foreach ($recentActivity as $activity): ?>
+                                <div style="display: flex; gap: 1rem; align-items: flex-start">
+                                    <div
+                                        style="background-color: var(--light-gray); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                        <svg viewBox="0 0 24 24" width="24" height="24" fill="var(--text-secondary)">
+                                            <path
+                                                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 500; color: var(--text-primary)">
+                                            <?= $activity['type'] === 'page' ? 'Seite' : 'Beitrag'; ?>
+                                        </div>
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary)">
+                                            ein Inhalt wurde veröffentlicht
+                                        </div>
+                                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.3rem;">
+                                            <?= date('d.m.Y H:i', strtotime($activity['date'])); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Neueste Blog-Inhalte -->
+                <div class="box col-4">
+                    <div class="box-header">
+                        <h3 class="box-title">Neueste Blog-Inhalte</h3>
+                        <div class="box-actions">
+                            <button class="box-action">
+                                <svg viewBox="0 0 24 24" width="18" height="18">
+                                    <path
+                                        d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="box-content">
+                        <div class="table-container">
+                            <?php if (empty($recentPosts)): ?>
+                                <p class="admin-no-data">Keine Blog-Beiträge vorhanden.</p>
+                            <?php else: ?>
+                                <table>
+                                    <colgroup>
+                                        <col class="tbl-col-4">
+                                        <col class="tbl-col-1">
+                                        <col class="tbl-col-2">
+                                        <col class="tbl-col-1">
+                                        <col class="tbl-col-1">
+                                        <col class="tbl-col-1">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th>Titel</th>
+                                            <th>Autor</th>
+                                            <th>Kategorie</th>
+                                            <th>Status</th>
+                                            <th>Datum</th>
+                                            <th>Aktionen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recentPosts as $post): ?>
+                                            <tr>
+                                                <td><?= htmlspecialchars($post['title']); ?></td>
+                                                <td><?= $post['author']; ?></td>
+                                                <td><?= htmlspecialchars(implode(', ', $post['categories'])); ?></td>
+                                                <td>
+                                                    <span class="badge badge-<?= $post['status']; ?>">
+                                                        <?= ucfirst($post['status']); ?>
+                                                    </span>
+                                                </td>
+                                                <td><?= date('d.m.Y', strtotime($post['date'])); ?></td>
+                                                <td>
+                                                    <div class="box-actions">
+                                                        <button class="box-action">
+                                                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                                                <path
+                                                                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button class="box-action">
+                                                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                                                <path
+                                                                    d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Systemstatus (mit Systeminformationen inkl. Einstufungen) -->
+                <div class="box scrollable col-6">
+                    <div class="box-header">
+                        <h3 class="box-title">Systemstatus</h3>
+                        <div class="box-actions">
+                            <button class="box-action">
+                                <svg viewBox="0 0 24 24" width="18" height="18">
+                                    <path
+                                        d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="box-content">
+                        <?php if (!empty($systemInfo)): ?>
+                            <?php foreach ($systemInfo as $groupTitle => $groupData): ?>
+                                <h3><?= htmlspecialchars($groupTitle); ?></h3>
+                                <div class="table-container">
+                                    <table>
+                                        <colgroup>
+                                            <col class="tbl-col-1">
+                                            <col class="tbl-col-1">
+                                            <col class="tbl-col-6">
+                                        </colgroup>
+                                        <thead>
+                                            <tr>
+                                                <th>Parameter</th>
+                                                <th>Kompatiblität</th>
+                                                <th>Wert</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($groupData as $parameter => $info): ?>
+                                                <tr>
+                                                    <td><?= htmlspecialchars($parameter); ?></td>
+                                                    <td><?= is_array($info) && isset($info['rating']) ? htmlspecialchars($info['rating']) : ''; ?>
+                                                    </td>
+                                                    <td><?= is_array($info) ? htmlspecialchars($info['value']) : htmlspecialchars($info); ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p>Keine Systeminformationen verfügbar.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-        <div class="admin-dashboard-column">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <h3><i class="fas fa-mobile-alt"></i> Gerätenutzung</h3>
-            </div>
-            <div class="admin-card-content chart-container">
-              <?php if (empty($siteStats['device_stats'])): ?>
-                <p class="admin-no-data">Keine Daten verfügbar.</p>
-              <?php else: ?>
-                <canvas id="deviceChart"></canvas>
-              <?php endif; ?>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-  
-  <script>
-    // PHP-Daten als globale Variable
-    window.siteStats = <?= json_encode($siteStats); ?>;
-  </script>
-  <script src="assets/js/chart-setup.js"></script>
+            <!-- End Grid-Container -->
+        </main>
+    </div>
+
+    <script>
+        window.siteStats = <?= json_encode($siteStats); ?>;
+    </script>
+    <script src="assets/js/chart-setup.js"></script>
 </body>
+
 </html>

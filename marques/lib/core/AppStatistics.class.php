@@ -3,13 +3,6 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-/**
- * Class AppStatistics
- *
- * Sammelt und liefert Basisstatistiken, die im Frontend benötigt werden.
- *
- * @package Marques\Core
- */
 class AppStatistics {
     /**
      * Enthält die gesammelten Statistik-Daten.
@@ -46,8 +39,8 @@ class AppStatistics {
     /**
      * Zählt Dateien in einem Verzeichnis.
      *
-     * @param string $dir Verzeichnis
-     * @return int Anzahl der Dateien
+     * @param string $dir Verzeichnis.
+     * @return int Anzahl der Dateien.
      */
     protected function countFiles(string $dir): int {
         if (!is_dir($dir)) {
@@ -63,8 +56,7 @@ class AppStatistics {
      * @return int
      */
     protected function countBlogPosts(): int {
-        // Hier könnte eine Instanz eines BlogManagers zum Einsatz kommen.
-        // Für Demonstrationszwecke wird ein Platzhalterwert zurückgegeben.
+        // Beispielhafte Implementierung – hier sollte echte Logik stehen.
         return 42;
     }
 
@@ -91,7 +83,7 @@ class AppStatistics {
     /**
      * Berechnet die Festplattenbelegung.
      *
-     * @return string Formatierte Größe
+     * @return string Formatierte Größe.
      */
     protected function getDiskUsage(): string {
         $totalSize = 0;
@@ -127,5 +119,26 @@ class AppStatistics {
      */
     public function getStatistics(): array {
         return $this->stats;
+    }
+
+    /**
+     * Liefert zusätzliche Statistiken, die für das Frontend nützlich sein könnten.
+     *
+     * @return array Frontend-spezifische Statistiken.
+     */
+    public function getFrontendStatistics(): array {
+        $frontendStats = $this->stats; // Basisstatistiken
+
+        // Beispiel: Durchschnittliche Länge der Blog-Excerpts berechnen.
+        $blogManager = new \Marques\Core\BlogManager();
+        $posts = $blogManager->getAllPosts();
+        $totalExcerptLength = 0;
+        $count = count($posts);
+        foreach ($posts as $post) {
+            $totalExcerptLength += strlen($post['excerpt'] ?? '');
+        }
+        $frontendStats['average_blog_excerpt_length'] = $count > 0 ? round($totalExcerptLength / $count, 2) : 0;
+
+        return $frontendStats;
     }
 }

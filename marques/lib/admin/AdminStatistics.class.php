@@ -4,94 +4,194 @@ declare(strict_types=1);
 namespace Marques\Admin;
 
 use Marques\Core\AppStatistics;
+use Marques\Core\User;
+use Marques\Core\PageManager;
+use Marques\Core\BlogManager;
+use Marques\Core\MediaManager;
 
 /**
  * Class AdminStatistics
  *
- * Erweitert die AppStatistics um Verwaltungsfunktionen:
- * - Aktualisieren von Statistik-Einstellungen
- * - Löschen von Statistik-Daten
- * - Bereitstellung eines administrativen Überblicks
- * - Sammlung von System- und Serverinformationen
- *
  * @package Marques\Admin
  */
 class AdminStatistics extends AppStatistics {
-    /**
-     * Systeminformationen zur Darstellung im Admin-Bereich
-     */
     protected array $systemInfo = [];
+    
+    protected array $thresholds = [
+        'memory_limit' => [
+            'min' => 64 * 1024 * 1024,    // Mindestens 64MB
+            'recommended' => 128 * 1024 * 1024, // Empfohlen 128MB
+        ],
+        'max_execution_time' => [
+            'min' => 30,   // Mindestens 30 Sekunden
+            'recommended' => 60, // Empfohlen 60 Sekunden
+        ],
+        'upload_max_filesize' => [
+            'min' => 8 * 1024 * 1024,    // Mindestens 8MB
+            'recommended' => 16 * 1024 * 1024, // Empfohlen 16MB
+        ],
+        'php_version' => [
+            'min' => '7.4.0',    // Mindestens PHP 7.4
+            'recommended' => '8.0.0', // Empfohlen PHP 8.0+
+        ],
+    ];
+    
+    protected array $warnings = [];
 
     /**
      * Konstruktor.
-     * Ruft den Konstruktor der Elternklasse auf und initialisiert Systeminformationen.
+     * 
+     * @param array $customThresholds Optionale benutzerdefinierte Schwellenwerte
      */
-    public function __construct() {
+    public function __construct(array $customThresholds = []) {
         parent::__construct();
+        
+        if (!empty($customThresholds)) {
+            $this->updateThresholds($customThresholds);
+        }
+        
         $this->collectSystemInfo();
-    }
-
-    /**
-     * Sammelt wichtige Systeminformationen für den Admin-Bereich
-     */
-    protected function collectSystemInfo(): void {
-        // PHP-Informationen
-        $this->systemInfo['php_version'] = PHP_VERSION;
-        $this->systemInfo['php_sapi'] = PHP_SAPI;
-        $this->systemInfo['memory_limit'] = ini_get('memory_limit');
-        $this->systemInfo['max_execution_time'] = ini_get('max_execution_time');
-        $this->systemInfo['post_max_size'] = ini_get('post_max_size');
-        $this->systemInfo['upload_max_filesize'] = ini_get('upload_max_filesize');
-        
-        // Erweiterungen und Module
-        $this->systemInfo['loaded_extensions'] = implode(', ', get_loaded_extensions());
-        $this->systemInfo['disabled_functions'] = ini_get('disable_functions') ?: 'Keine';
-        
-        // Server-Informationen
-        $this->systemInfo['server_software'] = $_SERVER['SERVER_SOFTWARE'] ?? 'Unbekannt';
-        $this->systemInfo['server_os'] = PHP_OS_FAMILY;
-        $this->systemInfo['server_protocol'] = $_SERVER['SERVER_PROTOCOL'] ?? 'Unbekannt';
-        
-        // Zeiteinstellungen
-        $this->systemInfo['timezone'] = date_default_timezone_get();
-        $this->systemInfo['server_time'] = date('Y-m-d H:i:s');
-        
-        // Performance-Indikatoren
-        $this->systemInfo['memory_peak_usage'] = $this->formatBytes(memory_get_peak_usage(true));
-        $this->systemInfo['opcache_enabled'] = function_exists('opcache_get_status') ? 'Ja' : 'Nein';
-        
-        // Datenbank-Informationen, falls verfügbar
-        if (extension_loaded('mysqli') || extension_loaded('pdo_mysql')) {
-            $this->systemInfo['mysql_support'] = 'Verfügbar';
-        } else {
-            $this->systemInfo['mysql_support'] = 'Nicht verfügbar';
-        }
-        
-        // GD-Bibliothek für Bildverarbeitung
-        if (extension_loaded('gd')) {
-            $gdInfo = gd_info();
-            $this->systemInfo['gd_version'] = $gdInfo['GD Version'] ?? 'Verfügbar';
-        } else {
-            $this->systemInfo['gd_version'] = 'Nicht verfügbar';
-        }
+        $this->collectAllStatistics();
+        $this->checkSystemWarnings();
     }
     
     /**
-     * Formatiert Bytes in lesbare Größen (KB, MB, GB)
+     * Aktualisiert die Schwellenwerte für Bewertungen.
      * 
-     * @param int $bytes Anzahl der Bytes
-     * @param int $precision Nachkommastellen
-     * @return string Formatierte Größenangabe
+     * @param array $customThresholds Neue Schwellenwerte
+     * @return bool Erfolg oder Misserfolg
+     */
+    public function updateThresholds(array $customThresholds): bool {
+        foreach ($customThresholds as $key => $values) {
+            if (isset($this->thresholds[$key])) {
+                $this->thresholds[$key] = array_merge($this->thresholds[$key], $values);
+            } else {
+                $this->thresholds[$key] = $values;
+            }
+        }
+        
+        $this->collectSystemInfo();
+        $this->checkSystemWarnings();
+        
+        return true;
+    }
+
+    /**
+     * Sammelt wichtige Systeminformationen für den Admin-Bereich.
+     */
+    protected function collectSystemInfo(): void {
+        // PHP-Informationen
+        $this->addSystemInfo('php_version', PHP_VERSION, $this->rateValue('php_version', PHP_VERSION));
+        $this->addSystemInfo('php_sapi', PHP_SAPI);
+        $this->addSystemInfo('memory_limit', ini_get('memory_limit'), 
+                            $this->rateValue('memory_limit', ini_get('memory_limit')));
+        $this->addSystemInfo('max_execution_time', ini_get('max_execution_time'), 
+                            $this->rateValue('max_execution_time', ini_get('max_execution_time')));
+        $this->addSystemInfo('post_max_size', ini_get('post_max_size'));
+        $this->addSystemInfo('upload_max_filesize', ini_get('upload_max_filesize'), 
+                            $this->rateValue('upload_max_filesize', ini_get('upload_max_filesize')));
+        
+        // Erweiterungen und Module
+        $this->addSystemInfo('loaded_extensions', implode(', ', get_loaded_extensions()));
+        $this->addSystemInfo('disabled_functions', ini_get('disable_functions') ?: 'Keine');
+        
+        // Server-Informationen
+        $this->addSystemInfo('server_software', $_SERVER['SERVER_SOFTWARE'] ?? 'Unbekannt');
+        $this->addSystemInfo('server_os', PHP_OS_FAMILY);
+        $this->addSystemInfo('server_protocol', $_SERVER['SERVER_PROTOCOL'] ?? 'Unbekannt');
+        
+        // Zeiteinstellungen
+        $this->addSystemInfo('timezone', date_default_timezone_get());
+        $this->addSystemInfo('server_time', date('Y-m-d H:i:s'));
+        
+        // Performance-Indikatoren
+        $this->addSystemInfo('memory_peak_usage', $this->formatBytes(memory_get_peak_usage(true)));
+        
+        $opcacheEnabled = function_exists('opcache_get_status') ? 'Ja' : 'Nein';
+        $this->addSystemInfo('opcache_enabled', $opcacheEnabled, 
+                           ($opcacheEnabled === 'Nein') ? 'nicht optimal' : 'gut');
+        
+        // Datenbank-Informationen
+        $this->addSystemInfo('mysql_support', 
+                           (extension_loaded('mysqli') || extension_loaded('pdo_mysql')) ? 'Verfügbar' : 'Nicht verfügbar');
+        
+        // GD-Bibliothek für Bildverarbeitung
+        $this->addSystemInfo('gd_version', 
+                           extension_loaded('gd') ? (gd_info()['GD Version'] ?? 'Verfügbar') : 'Nicht verfügbar');
+    }
+
+    /**
+     * Hilfsmethode zum Hinzufügen von Systeminformationen
+     * 
+     * @param string $key Schlüssel der Information
+     * @param mixed $value Wert der Information
+     * @param string $rating Optionale Bewertung
+     */
+    protected function addSystemInfo(string $key, $value, string $rating = ''): void {
+        $this->systemInfo[$key] = [
+            'value' => $value,
+            'rating' => $rating
+        ];
+    }
+
+    /**
+     * Generische Methode zur Bewertung von Werten
+     * 
+     * @param string $type Typ des zu bewertenden Werts
+     * @param mixed $value Wert zur Bewertung
+     * @return string Bewertung
+     */
+    protected function rateValue(string $type, $value): string {
+        if (!isset($this->thresholds[$type])) {
+            return '';
+        }
+        
+        switch ($type) {
+            case 'memory_limit':
+            case 'upload_max_filesize':
+                $bytes = $this->convertToBytes((string)$value);
+                if ($bytes < $this->thresholds[$type]['min']) {
+                    return 'nicht optimal';
+                } elseif ($bytes < $this->thresholds[$type]['recommended']) {
+                    return 'so lala';
+                }
+                return 'gut';
+                
+            case 'max_execution_time':
+                $seconds = (int)$value;
+                if ($seconds < $this->thresholds[$type]['min']) {
+                    return 'nicht optimal';
+                } elseif ($seconds < $this->thresholds[$type]['recommended']) {
+                    return 'so lala';
+                }
+                return 'gut';
+                
+            case 'php_version':
+                if (version_compare($value, $this->thresholds[$type]['min'], '<')) {
+                    return 'nicht optimal';
+                } elseif (version_compare($value, $this->thresholds[$type]['recommended'], '<')) {
+                    return 'so lala';
+                }
+                return 'gut';
+                
+            default:
+                return '';
+        }
+    }
+
+    /**
+     * Formatiert Bytes in lesbare Größen (KB, MB, GB).
+     * 
+     * @param int $bytes Anzahl der Bytes.
+     * @param int $precision Nachkommastellen.
+     * @return string Formatierte Größenangabe.
      */
     protected function formatBytes(int $bytes, int $precision = 2): string {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
         $bytes = max($bytes, 0);
         $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
         $pow = min($pow, count($units) - 1);
-        
         $bytes /= pow(1024, $pow);
-        
         return round($bytes, $precision) . ' ' . $units[$pow];
     }
 
@@ -102,9 +202,6 @@ class AdminStatistics extends AppStatistics {
      * @return bool True, wenn die Aktualisierung erfolgreich war.
      */
     public function updateSettings(array $newSettings): bool {
-        // Beispielhafte Implementierung:
-        // Hier könnte man Einstellungen in einer Datenbank oder Konfigurationsdatei speichern.
-        // Für die Demonstration werden die neuen Einstellungen in die Statistik-Daten integriert.
         $this->stats = array_merge($this->stats, $newSettings);
         return true;
     }
@@ -115,20 +212,65 @@ class AdminStatistics extends AppStatistics {
      * @return bool True, wenn das Löschen erfolgreich war.
      */
     public function deleteStatistics(): bool {
-        // Beispielhafte Löschlogik:
         $this->stats = [];
         return true;
     }
 
     /**
+     * Sammelt zusätzliche Statistik-Daten aus verschiedenen Bereichen.
+     *
+     * @return array Zusätzliche Statistiken.
+     */
+    protected function collectAdditionalStatistics(): array {
+        $additionalStats = [];
+
+        // Benutzerstatistik
+        $user = new User();
+        $additionalStats['total_users'] = count($user->getAllUsers());
+
+        // Seitenstatistik
+        $pageManager = new PageManager();
+        $additionalStats['total_pages'] = count($pageManager->getAllPages());
+
+        // Blog-Posts Statistik
+        $blogManager = new BlogManager();
+        $additionalStats['total_blog_posts'] = count($blogManager->getAllPosts());
+
+        // Mediendateien Statistik
+        $mediaManager = new MediaManager();
+        $additionalStats['total_media'] = count($mediaManager->getAllMedia());
+
+        // Server Load Average (falls verfügbar)
+        $additionalStats['server_load'] = function_exists('sys_getloadavg')
+            ? implode(', ', sys_getloadavg())
+            : 'n/a';
+
+        return $additionalStats;
+    }
+
+    /**
+     * Vereinigt Basisstatistiken und zusätzliche Statistiken.
+     */
+    protected function collectAllStatistics(): void {
+        $this->stats = array_merge($this->stats, $this->collectAdditionalStatistics());
+    }
+
+    /**
      * Gibt eine zusammenfassende Übersicht der Statistik-Daten zurück.
      *
-     * @return string Formatierte Zusammenfassung
+     * @return string Formatierte Zusammenfassung.
      */
     public function getAdminSummary(): string {
         $summary = "Admin Summary:\n";
         foreach ($this->stats as $key => $value) {
-            $summary .= ucfirst($key) . ": " . $value . "\n";
+            if (is_array($value)) {
+                $summary .= ucfirst(str_replace('_', ' ', $key)) . ":\n";
+                foreach ($value as $subKey => $subValue) {
+                    $summary .= "  " . ucfirst(str_replace('_', ' ', $subKey)) . ": " . $subValue . "\n";
+                }
+            } else {
+                $summary .= ucfirst(str_replace('_', ' ', $key)) . ": " . $value . "\n";
+            }
         }
         return $summary;
     }
@@ -136,138 +278,158 @@ class AdminStatistics extends AppStatistics {
     /**
      * Gibt alle gesammelten Systeminformationen zurück.
      * 
-     * @return array Alle System- und Serverinformationen
+     * @return array Alle System- und Serverinformationen.
      */
     public function getSystemInfo(): array {
         return $this->systemInfo;
     }
     
     /**
-     * Prüft potenzielle Probleme und gibt Warnungen zurück.
-     * 
-     * @return array Liste von Warnungen und Empfehlungen
+     * Prüft potenzielle Probleme und speichert Warnungen.
      */
-    public function getSystemWarnings(): array {
-        $warnings = [];
+    protected function checkSystemWarnings(): void {
+        $this->warnings = [];
         
-        // Speicherlimit prüfen
-        $memoryLimit = $this->convertToBytes($this->systemInfo['memory_limit']);
-        if ($memoryLimit < 64 * 1024 * 1024) { // Weniger als 64MB
-            $warnings[] = "Niedriges Speicherlimit ({$this->systemInfo['memory_limit']}). Minimum 64MB empfohlen.";
+        $this->checkThresholdWarning(
+            'memory_limit', 
+            $this->systemInfo['memory_limit']['value'], 
+            "Niedriges Speicherlimit ({$this->systemInfo['memory_limit']['value']}). Minimum {$this->formatBytes($this->thresholds['memory_limit']['min'])} empfohlen."
+        );
+        
+        $this->checkThresholdWarning(
+            'max_execution_time', 
+            $this->systemInfo['max_execution_time']['value'], 
+            "Kurze maximale Ausführungszeit ({$this->systemInfo['max_execution_time']['value']}s). Für Admin-Operationen mindestens {$this->thresholds['max_execution_time']['min']}s empfohlen."
+        );
+        
+        $this->checkThresholdWarning(
+            'upload_max_filesize', 
+            $this->systemInfo['upload_max_filesize']['value'], 
+            "Kleine maximale Upload-Größe ({$this->systemInfo['upload_max_filesize']['value']}). Minimum {$this->formatBytes($this->thresholds['upload_max_filesize']['min'])} empfohlen."
+        );
+        
+        $this->checkThresholdWarning(
+            'php_version', 
+            PHP_VERSION, 
+            "Veraltete PHP-Version. PHP {$this->thresholds['php_version']['min']} oder höher wird empfohlen."
+        );
+        
+        if ($this->systemInfo['opcache_enabled']['value'] === 'Nein') {
+            $this->warnings[] = "OPCache ist nicht aktiviert. Aktivieren Sie OPCache für bessere Performance.";
         }
-        
-        // Max. Ausführungszeit prüfen
-        if ((int)$this->systemInfo['max_execution_time'] < 30) {
-            $warnings[] = "Kurze maximale Ausführungszeit ({$this->systemInfo['max_execution_time']}s). Für Admin-Operationen mindestens 30s empfohlen.";
-        }
-        
-        // Upload-Größe prüfen
-        $uploadMax = $this->convertToBytes($this->systemInfo['upload_max_filesize']);
-        if ($uploadMax < 8 * 1024 * 1024) { // Weniger als 8MB
-            $warnings[] = "Kleine maximale Upload-Größe ({$this->systemInfo['upload_max_filesize']}). Minimum 8MB empfohlen.";
-        }
-        
-        // PHP-Version prüfen
-        if (version_compare(PHP_VERSION, '7.4.0', '<')) {
-            $warnings[] = "Veraltete PHP-Version. PHP 7.4 oder höher wird empfohlen.";
-        }
-        
-        // OPCache prüfen
-        if ($this->systemInfo['opcache_enabled'] === 'Nein') {
-            $warnings[] = "OPCache ist nicht aktiviert. Aktivieren Sie OPCache für bessere Performance.";
-        }
-        
-        return $warnings;
     }
     
     /**
-     * Konvertiert Größenangaben wie "128M" in Bytes
+     * Prüft, ob ein Wert unter dem Schwellenwert liegt und fügt ggf. eine Warnung hinzu
      * 
-     * @param string $size Größenangabe (z.B. "128M", "1G")
-     * @return int Anzahl der Bytes
+     * @param string $type Typ des zu prüfenden Werts
+     * @param mixed $value Zu prüfender Wert
+     * @param string $warningMessage Warnmeldung, die hinzugefügt werden soll
+     */
+    protected function checkThresholdWarning(string $type, $value, string $warningMessage): void {
+        if (!isset($this->thresholds[$type])) {
+            return;
+        }
+        
+        $isBelow = false;
+        
+        switch ($type) {
+            case 'memory_limit':
+            case 'upload_max_filesize':
+                $isBelow = $this->convertToBytes((string)$value) < $this->thresholds[$type]['min'];
+                break;
+                
+            case 'max_execution_time':
+                $isBelow = (int)$value < $this->thresholds[$type]['min'];
+                break;
+                
+            case 'php_version':
+                $isBelow = version_compare($value, $this->thresholds[$type]['min'], '<');
+                break;
+        }
+        
+        if ($isBelow) {
+            $this->warnings[] = $warningMessage;
+        }
+    }
+    
+    /**
+     * Gibt alle gesammelten Warnungen zurück
+     * 
+     * @return array Liste von Warnungen und Empfehlungen.
+     */
+    public function getSystemWarnings(): array {
+        return $this->warnings;
+    }
+    
+    /**
+     * Konvertiert Größenangaben wie "128M" in Bytes.
+     * 
+     * @param string $size Größenangabe (z.B. "128M", "1G").
+     * @return int Anzahl der Bytes.
      */
     protected function convertToBytes(string $size): int {
         $unit = strtoupper(substr($size, -1));
         $value = (int)$size;
         
-        switch ($unit) {
-            case 'G':
-                $value *= 1024;
-                // Durchlauf gewollt
-            case 'M':
-                $value *= 1024;
-                // Durchlauf gewollt
-            case 'K':
-                $value *= 1024;
+        if (!is_numeric($unit)) {
+            switch ($unit) {
+                case 'G':
+                    $value *= 1024;
+                case 'M':
+                    $value *= 1024;
+                case 'K':
+                    $value *= 1024;
+            }
         }
         
         return $value;
     }
     
     /**
-     * Generiert HTML für die Anzeige der Systeminformationen
+     * Gibt alle Systeminformationen gruppiert zurück.
      * 
-     * @return string HTML zur Anzeige im Admin-Bereich
+     * @return array Systeminformationen in Gruppen organisiert.
      */
-    public function renderSystemInfoHTML(): string {
-        $warnings = $this->getSystemWarnings();
-        $html = '';
+    public function getSystemInfoArray(): array {
+        $data = [];
         
-        // Warnungen anzeigen, falls vorhanden
-        if (!empty($warnings)) {
-            $html .= '<div class="system-warnings">';
-            $html .= '<h3>System-Warnungen</h3>';
-            $html .= '<ul>';
-            foreach ($warnings as $warning) {
-                $html .= '<li>' . htmlspecialchars($warning) . '</li>';
-            }
-            $html .= '</ul>';
-            $html .= '</div>';
-        }
-        
-        // Systeminformationen in Gruppen anzeigen
-        $html .= '<div class="system-info">';
-        $html .= '<h3>PHP-Informationen</h3>';
-        $html .= '<table class="info-table">';
-        $html .= $this->renderTableRow('PHP-Version', $this->systemInfo['php_version']);
-        $html .= $this->renderTableRow('PHP SAPI', $this->systemInfo['php_sapi']);
-        $html .= $this->renderTableRow('Speicherlimit', $this->systemInfo['memory_limit']);
-        $html .= $this->renderTableRow('Max. Ausführungszeit', $this->systemInfo['max_execution_time'] . ' Sekunden');
-        $html .= $this->renderTableRow('Max. POST-Größe', $this->systemInfo['post_max_size']);
-        $html .= $this->renderTableRow('Max. Upload-Größe', $this->systemInfo['upload_max_filesize']);
-        $html .= '</table>';
-        
-        $html .= '<h3>Server-Informationen</h3>';
-        $html .= '<table class="info-table">';
-        $html .= $this->renderTableRow('Server-Software', $this->systemInfo['server_software']);
-        $html .= $this->renderTableRow('Betriebssystem', $this->systemInfo['server_os']);
-        $html .= $this->renderTableRow('Protokoll', $this->systemInfo['server_protocol']);
-        $html .= $this->renderTableRow('Zeitzone', $this->systemInfo['timezone']);
-        $html .= $this->renderTableRow('Serverzeit', $this->systemInfo['server_time']);
-        $html .= '</table>';
-        
-        $html .= '<h3>Module und Performance</h3>';
-        $html .= '<table class="info-table">';
-        $html .= $this->renderTableRow('MySQL-Unterstützung', $this->systemInfo['mysql_support']);
-        $html .= $this->renderTableRow('GD-Bibliothek', $this->systemInfo['gd_version']);
-        $html .= $this->renderTableRow('OPCache aktiviert', $this->systemInfo['opcache_enabled']);
-        $html .= $this->renderTableRow('Spitzennutzung Speicher', $this->systemInfo['memory_peak_usage']);
-        $html .= '</table>';
-        
-        $html .= '</div>';
-        
-        return $html;
+        // PHP-Informationen
+        $data['PHP-Informationen'] = [
+            'PHP-Version'         => $this->systemInfo['php_version'],
+            'PHP SAPI'            => $this->systemInfo['php_sapi'],
+            'Speicherlimit'       => $this->systemInfo['memory_limit'],
+            'Max. Ausführungszeit'=> ['value' => $this->systemInfo['max_execution_time']['value'] . ' Sekunden', 'rating' => $this->systemInfo['max_execution_time']['rating']],
+            'Max. POST-Größe'     => $this->systemInfo['post_max_size'],
+            'Max. Upload-Größe'   => $this->systemInfo['upload_max_filesize'],
+        ];
+    
+        // Server-Informationen
+        $data['Server-Informationen'] = [
+            'Server-Software' => $this->systemInfo['server_software'],
+            'Betriebssystem'  => $this->systemInfo['server_os'],
+            'Protokoll'       => $this->systemInfo['server_protocol'],
+            'Zeitzone'        => $this->systemInfo['timezone'],
+            'Serverzeit'      => $this->systemInfo['server_time'],
+        ];
+    
+        // Module und Performance
+        $data['Module und Performance'] = [
+            'MySQL-Unterstützung' => $this->systemInfo['mysql_support'],
+            'GD-Bibliothek'       => $this->systemInfo['gd_version'],
+            'OPCache aktiviert'   => $this->systemInfo['opcache_enabled'],
+            'Spitzennutzung Speicher' => $this->systemInfo['memory_peak_usage'],
+        ];
+    
+        return $data;
     }
     
     /**
-     * Hilfsmethode zum Erstellen einer Tabellenzeile
+     * Gibt die aktuellen Schwellenwerte zurück
      * 
-     * @param string $label Beschriftung
-     * @param string $value Wert
-     * @return string HTML für die Tabellenzeile
+     * @return array Aktuell konfigurierte Schwellenwerte
      */
-    protected function renderTableRow(string $label, string $value): string {
-        return '<tr><th>' . htmlspecialchars($label) . ':</th><td>' . 
-               htmlspecialchars($value) . '</td></tr>';
+    public function getThresholds(): array {
+        return $this->thresholds;
     }
 }
