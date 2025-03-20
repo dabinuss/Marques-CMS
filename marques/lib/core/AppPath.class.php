@@ -100,6 +100,9 @@ class AppPath
         if (!$this->isValidPath($subPath)) {
             throw new \Exception("Ungültiger Unterpfad: '{$subPath}'.");
         }
+        if (!preg_match('/^[a-zA-Z0-9\-\_\/\.]+$/', $subPath)) {
+            throw new \Exception("Ungültiger Unterpfad: '{$subPath}'.");
+        }
         
         // Verwende unseren sicheren Resolver, um den Pfad zusammenzusetzen
         $combined = $this->safeResolve($basePath, $subPath);
