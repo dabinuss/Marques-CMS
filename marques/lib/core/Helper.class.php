@@ -129,7 +129,8 @@ class Helper {
      */
     public static function createSlug(string $string): string {
         if (function_exists('transliterator_transliterate')) {
-            $string = transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $string);
+            $converted = transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $string);
+            $string = $converted !== false ? $converted : strtolower($string);
         } else {
             $string = strtolower($string);
         }
@@ -298,6 +299,11 @@ class Helper {
 
         // Neuen Parameter-String in Array umwandeln
         parse_str($param, $newParams);
+
+        if (empty($newParams) && strpos($param, '=') !== false) {
+            $parts = explode('=', $param, 2);
+            $newParams[trim($parts[0])] = trim($parts[1]);
+        }
 
         // Zusammenführen: Bereits vorhandene Werte werden durch neue überschrieben
         $mergedParams = array_merge($existingParams, $newParams);
