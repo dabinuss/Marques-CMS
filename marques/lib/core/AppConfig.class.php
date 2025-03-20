@@ -66,7 +66,6 @@ class AppConfig {
         if (!is_readable($filePath)) {
             error_log("AppConfig: Konfigurationsdatei nicht lesbar: " . $filePath);
             throw new \RuntimeException("Konfigurationsdatei nicht lesbar: " . $filePath);
-            return null;
         }
         $content = file_get_contents($filePath);
         $config = json_decode($content, true);
