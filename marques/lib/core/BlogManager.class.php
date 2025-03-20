@@ -188,9 +188,13 @@ class BlogManager {
         }
 
         $parts = explode('-', $newId);
+        if (count($parts) < 2) {
+            throw new \RuntimeException("Invalid internal blog ID format: {$newId}");
+        }
         $yearMonth = $parts[1]; // z. B. "25C"
         $year = substr($yearMonth, 0, 2);
         $month = substr($yearMonth, 2, 1);
+        
 
         $filePath = 'blog/' . $year . '/' . $month . '/' . $newId . '.md';
         $this->fileManager->createDirectory('blog/' . $year . '/' . $month);
