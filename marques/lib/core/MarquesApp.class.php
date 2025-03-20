@@ -46,9 +46,9 @@ class MarquesApp
         $this->appcontainer->register(AppLogger::class, AppLogger::getInstance());
         $this->appcontainer->register(AppEvents::class, new AppEvents());
         $this->appcontainer->register(AppPath::class, AppPath::getInstance());
-        $this->appcontainer->register(AppRouter::class, new AppRouter($this->appcontainer, true));
         $this->appcontainer->register(Content::class, new Content()); // Hinzugefügt
         $this->appcontainer->register(AppCache::class, AppCache::getInstance($this->appcontainer->get(AppSettings::class)));
+        $this->appcontainer->register(AppRouter::class, new AppRouter($this->appcontainer, true));
         $this->appcontainer->register(AppTemplate::class, new AppTemplate());
     }
 
