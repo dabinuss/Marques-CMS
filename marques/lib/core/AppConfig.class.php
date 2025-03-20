@@ -51,6 +51,7 @@ class AppConfig {
      * @param string $name Name der Konfiguration (ohne Pfad/Erweiterung)
      * @param bool $forceReload Erzwingt das Neuladen aus der Datei
      * @return array Konfigurationsdaten
+     * @throws \RuntimeException wenn die Konfigurationsdatei nicht lesbar ist
      */
     public function load(string $name, bool $forceReload = false): ?array {
         $name = $this->normalizeConfigName($name);
@@ -64,6 +65,7 @@ class AppConfig {
         }
         if (!is_readable($filePath)) {
             error_log("AppConfig: Konfigurationsdatei nicht lesbar: " . $filePath);
+            throw new \RuntimeException("Konfigurationsdatei nicht lesbar: " . $filePath);
             return null;
         }
         $content = file_get_contents($filePath);
