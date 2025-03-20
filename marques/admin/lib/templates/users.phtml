@@ -19,7 +19,7 @@
                 <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
                 
                 <div class="admin-actions">
-                    <a href="user-edit.php" class="admin-button">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=user-edit'); ?>" class="admin-button">
                         <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
                         Neuer Benutzer
                     </a>
@@ -92,7 +92,7 @@
                                         ?>
                                     </td>
                                     <td class="actions">
-                                        <a href="user-edit.php?username=<?= urlencode($username); ?>" class="action-btn edit" title="Bearbeiten">
+                                        <a href="<?= \Marques\Core\Helper::appQueryParam('page=user-edit&username='); ?><?= urlencode($username); ?>" class="action-btn edit" title="Bearbeiten">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         

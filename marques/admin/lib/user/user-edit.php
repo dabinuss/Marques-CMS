@@ -35,7 +35,7 @@ $available_roles = [
 
 // Wenn im Bearbeitungsmodus, Benutzerdaten laden
 if ($edit_mode) {
-    $userData = $user->getUserInfo($username);
+    $userData = $user->getUserData($username);
     
     if (!$userData) {
         header('Location: users.php');
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Benutzer aktualisieren
             if ($user->updateUser($username, $user_data)) {
                 $success_message = 'Benutzer erfolgreich aktualisiert.';
-                $userData = $user->getUserInfo($username); // Aktualisierte Daten laden
+                $userData = $user->getUserData($username); // Aktualisierte Daten laden
             } else {
                 $error_message = 'Fehler beim Aktualisieren des Benutzers.';
             }

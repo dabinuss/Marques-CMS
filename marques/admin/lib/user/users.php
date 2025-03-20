@@ -31,7 +31,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
         // Verhindern, dass der Admin-Account gelöscht wird
         if ($username === 'admin') {
             $error_message = 'Der Administrator-Account kann nicht gelöscht werden.';
-        } elseif ($username === $user->getCurrentUsername()) {
+        } elseif ($username === $user->getCurrentDisplayName()) {
             $error_message = 'Sie können Ihren eigenen Account nicht löschen.';
         } else {
             if ($user->deleteUser($username)) {
