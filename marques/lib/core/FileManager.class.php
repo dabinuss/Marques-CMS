@@ -48,7 +48,7 @@ class FileManager {
         if (!file_exists($filePath) || !is_readable($filePath)) {
             return null;
         }
-        return @file_get_contents($filePath); // Korrektur: Fehlerunterdrückung bei file_get_contents beibehalten, um Lesefehler zu vermeiden
+        return file_get_contents($filePath);
     }
 
     /**
@@ -123,7 +123,7 @@ class FileManager {
     public function createDirectory(string $dir): bool {
         $fullPath = $this->getFullPath($dir);
         if (!is_dir($fullPath)) {
-            return @mkdir($fullPath, 0755, true); // Korrektur: Fehlerunterdrückung bei mkdir beibehalten, da createDirectory oft im Hintergrund läuft
+            return mkdir($fullPath, 0755, true);
         }
         return true;
     }

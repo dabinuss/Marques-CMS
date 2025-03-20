@@ -289,6 +289,9 @@ class MediaManager {
         
         // Sicheren Dateinamen generieren
         $filename = preg_replace('/[^a-zA-Z0-9_.-]/', '', basename($file['name']));
+        if (!preg_match('/^[a-zA-Z0-9_.-]+$/', $filename)) {
+            throw new \RuntimeException("Invalid filename: {$filename}");
+        }
         $fileExt = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         $uniqueName = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '', pathinfo($filename, PATHINFO_FILENAME)) . '.' . $fileExt;
         
