@@ -172,13 +172,14 @@ class AppRouter {
             }
             $value = $params[$key];
             if ($rules['type'] === 'integer') {
-                if (!filter_var($value, FILTER_VALIDATE_INT)) {
+                if (!is_numeric($value)) {
                     return false;
                 }
-                if (isset($rules['min']) && (int)$value < $rules['min']) {
+                $intValue = (int)$value;
+                if (isset($rules['min']) && $intValue < $rules['min']) {
                     return false;
                 }
-                if (isset($rules['max']) && (int)$value > $rules['max']) {
+                if (isset($rules['max']) && $intValue > $rules['max']) {
                     return false;
                 }
             } elseif ($rules['type'] === 'string') {
