@@ -86,7 +86,7 @@
                     if ($editing): 
                     
                         // Erzeuge die URL für den aktuellen Beitrag:
-                        $blogUrl = Helper::generateBlogUrl($post);
+                        $blogUrl = \Marques\Core\Helper::formatBlogUrl($post);
                     ?>
                     <a href="<?= htmlspecialchars($blogUrl); ?>" class="admin-button" target="_blank">
                         <span class="admin-button-icon"><i class="fas fa-eye"></i></span>

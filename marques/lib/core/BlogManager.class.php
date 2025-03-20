@@ -250,7 +250,7 @@ class BlogManager {
             return false;
         }
 
-        $this->updatePostUrlMapping($newId, $postData['slug']); // Korrektur: URL-Mapping nach dem Speichern aktualisieren
+        $this->updatePostUrlMapping($newId, $postData);
 
         // Rückgabe der internen ID – das URL-Mapping (id → slug) wird vom Router über den AppConfig verwaltet.
         return $newId;
@@ -274,39 +274,52 @@ class BlogManager {
      * @param string $slug Slug des Beitrags
      * @return bool Erfolgreich aktualisiert oder nicht.
      */
-    private function updatePostUrlMapping(string $postId, string $slug): bool {
+    private function updatePostUrlMapping(string $postId, array $postData): bool {
         $configManager = AppConfig::getInstance();
-        $urlMapping = $configManager->loadUrlMapping() ?: []; // Bestehendes Mapping laden oder leeres Array
-        $newPath = 'blog/' . $slug; // URL-Pfad basierend auf Slug (anpassbar)
-
-        // Pfad normalisieren, um führende/doppelte Slashes zu vermeiden
-        $newPath = trim($newPath, '/');
-
-        // Prüfen, ob der neue Pfad bereits für einen anderen Beitrag verwendet wird
-        foreach ($urlMapping as $id => $path) {
-            if ($id !== $postId && $path === $newPath) {
-                // Pfad ist bereits vergeben -> Konflikt, Mapping nicht erstellen
-                error_log("URL-Mapping-Konflikt: Pfad '$newPath' bereits für Beitrag '$id' vergeben. Mapping für '$postId' nicht aktualisiert.");
-                return false; // Mapping nicht aktualisiert
-            }
+        $urlMappings = $configManager->loadUrlMapping() ?: [];
+        
+        // Erzeuge den neuen Pfad mithilfe der zentralen Logik in Helper
+        $newPath = \Marques\Core\Helper::generateBlogUrlPath($postData);
+        
+        // Baue den neuen Routen-Konfigurations-Eintrag für den Blog-Post
+        $newRoute = [
+             'method'  => 'GET',
+             'pattern' => $newPath,
+             'handler' => 'Marques\\Controller\\BlogController@getPost',
+             'options' => [
+                  // Optional: Hier kannst du auch Parameter-Schemata hinzufügen, falls benötigt.
+                  'blog_post_id' => $postId
+             ]
+        ];
+        
+        // Konfliktprüfung: Falls ein anderer Eintrag bereits denselben Pfad hat
+        foreach ($urlMappings as $route) {
+             if (
+                 isset($route['pattern'], $route['options']['blog_post_id']) &&
+                 $route['pattern'] === $newPath &&
+                 $route['options']['blog_post_id'] !== $postId
+             ) {
+                 error_log("URL-Mapping-Konflikt: Pfad '$newPath' bereits für Beitrag '{$route['options']['blog_post_id']}' vergeben.");
+                 return false;
+             }
         }
-
-        if (isset($urlMapping[$postId]) && $urlMapping[$postId] === $newPath) {
-            return true; // Kein Update nötig, Mapping ist bereits aktuell
+        
+        // Suche nach einem vorhandenen Eintrag für diesen Blog-Post und aktualisiere ihn
+        $found = false;
+        foreach ($urlMappings as $index => $route) {
+             if (isset($route['options']['blog_post_id']) && $route['options']['blog_post_id'] === $postId) {
+                 $urlMappings[$index] = $newRoute;
+                 $found = true;
+                 break;
+             }
         }
-
-        // Mapping hinzufügen oder aktualisieren
-        $urlMapping[$postId] = $newPath;
-
-        if ($configManager->updateUrlMapping($urlMapping)) {
-            // Erfolg beim Speichern des Mappings
-            return true;
-        } else {
-            // Fehler beim Speichern des Mappings
-            error_log("Fehler beim Aktualisieren des URL-Mappings für Beitrag '$postId'.");
-            return false;
+        // Falls noch kein Eintrag vorhanden, füge einen neuen hinzu
+        if (!$found) {
+             $urlMappings[] = $newRoute;
         }
-    }
+        
+        return $configManager->updateUrlMapping($urlMappings);
+    }    
 
 
     /**

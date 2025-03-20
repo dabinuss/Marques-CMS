@@ -5,13 +5,13 @@
     <?php foreach ($posts as $post): ?>
       <article class="super-blog-post">
         <?php if (!empty($post['featured_image'])): ?>
-          <a href="<?= \Marques\Core\Helper::generateBlogUrl($post); ?>">
+          <a href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>">
             <img src="<?= \Marques\Core\Helper::getSiteUrl($post['featured_image']); ?>" alt="<?= htmlspecialchars($post['title']); ?>">
           </a>
         <?php endif; ?>
         <div class="post-content">
           <h2 class="post-title">
-            <a href="<?= \Marques\Core\Helper::generateBlogUrl($post); ?>">
+            <a href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>">
               <?= htmlspecialchars($post['title']); ?>
             </a>
           </h2>
@@ -20,7 +20,7 @@
             <span>von <?= htmlspecialchars($post['author']); ?></span>
           </div>
           <p class="post-excerpt"><?= htmlspecialchars($post['excerpt']); ?></p>
-          <a class="read-more" href="<?= \Marques\Core\Helper::generateBlogUrl($post); ?>">Weiterlesen</a>
+          <a class="read-more" href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>">Weiterlesen</a>
         </div>
       </article>
     <?php endforeach; ?>

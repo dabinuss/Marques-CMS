@@ -165,86 +165,20 @@ class Helper {
      * @return string Generierte URL
      */
     public static function formatBlogUrl(array $post): string {
-        $urlMapping = self::getUrlMapping();
-        $config = self::getConfig();
-        $format = $config['blog_url_format'] ?? 'date_slash';
-        $dateParts = explode('-', $post['date']);
-        if (count($dateParts) !== 3) {
-            return self::getSiteUrl('blog/' . $post['slug']);
+        $urlMappings = self::getUrlMapping();
+        $postId = $post['id'];
+        
+        // Suche nach dem Eintrag mit blog_post_id == $postId
+        foreach ($urlMappings as $routeConfig) {
+             if (isset($routeConfig['options']['blog_post_id']) && $routeConfig['options']['blog_post_id'] === $postId) {
+                 return self::getSiteUrl($routeConfig['pattern']);
+             }
         }
-        [$year, $month, $day] = $dateParts;
-        $slug = $post['slug'];
-        $postId = $post['id']; // Interne Post-ID
-
-        // URL-Mapping prüfen
-        if (isset($urlMapping[$postId])) {
-            return self::getSiteUrl($urlMapping[$postId]); // Gemappte URL verwenden
-        }
-
-        switch ($format) {
-            case 'date_slash':
-                return self::getSiteUrl("blog/{$year}/{$month}/{$day}/{$slug}");
-            case 'date_dash':
-                return self::getSiteUrl("blog/{$year}-{$month}-{$day}/{$slug}");
-            case 'year_month':
-                return self::getSiteUrl("blog/{$year}/{$month}/{$slug}");
-            case 'numeric':
-                if (isset($post['id']) && !empty($post['id'])) {
-                    return self::getSiteUrl("blog/{$post['id']}");
-                }
-                return self::getSiteUrl("blog/{$year}{$month}{$day}-{$slug}");
-            case 'post_name':
-                return self::getSiteUrl("blog/{$slug}");
-            default:
-                return self::getSiteUrl("blog/{$year}/{$month}/{$day}/{$slug}");
-        }
+        
+        // Fallback: Generiere den Pfad anhand der zentralen Logik
+        return self::getSiteUrl(self::generateBlogUrlPath($post));
     }
-
-
-    /**
-     * Generiert die URL für einen Blogbeitrag basierend auf den Systemeinstellungen.
-     * Nutzt URL-Mapping, falls vorhanden.
-     *
-     * @param array $post Post-Daten (muss 'id', 'slug' und 'date' enthalten)
-     * @return string Generierte URL (z. B. "../blog/000-25C" oder "../blog/2025/03/15/mein-beitrag")
-     */
-    public static function generateBlogUrl(array $post): string {
-        $urlMapping = self::getUrlMapping(); // URL-Mapping laden
-        $configManager = AppConfig::getInstance();
-        $systemSettings = $configManager->load('system') ?: [];
-        $blogUrlFormat = $systemSettings['blog_url_format'] ?? 'internal';
-
-        $timestamp = strtotime($post['date']);
-        if ($timestamp === false) {
-            $timestamp = time();
-        }
-
-        $postId = $post['id']; // Interne Post-ID
-
-        // URL-Mapping prüfen - zuerst nach interner ID suchen
-        if (isset($urlMapping[$postId])) {
-            return '../' . $urlMapping[$postId]; // Gemappte URL verwenden (relativ zum Root)
-        }
-
-        // Fallback: Generiere URL basierend auf blog_url_format (wenn kein Mapping gefunden)
-        if ($blogUrlFormat === 'internal') {
-            return '../blog/' . urlencode($post['id']);
-        } elseif ($blogUrlFormat === 'post_name') {
-            return '../blog/' . urlencode($post['slug']);
-        } elseif ($blogUrlFormat === 'year_month') {
-            $year = date('Y', $timestamp);
-            $month = date('m', $timestamp);
-            return "../blog/{$year}/{$month}/" . urlencode($post['slug']);
-        } elseif ($blogUrlFormat === 'date_slash') {
-            $year = date('Y', $timestamp);
-            $month = date('m', $timestamp);
-            $day = date('d', $timestamp);
-            return "../blog/{$year}/{$month}/{$day}/" . urlencode($post['slug']);
-        }
-        return '../blog/' . urlencode($post['id']); // Fallback zu interner ID, falls Format unbekannt
-    }
-
-
+    
     /**
      * Gibt die URL zu einer Theme-Asset-Datei zurück.
      *
@@ -320,5 +254,27 @@ class Helper {
             $result .= '#' . $parts['fragment'];
         }
         return $result;
+    }
+
+    public static function generateBlogUrlPath(array $post): string {
+        $config = self::getConfig();
+        $blogUrlFormat = $config['blog_url_format'] ?? 'post_name';
+        $timestamp = strtotime($post['date']);
+        if ($timestamp === false) {
+            $timestamp = time();
+        }
+        switch ($blogUrlFormat) {
+            case 'date_slash':
+                return "blog/" . date('Y/m/d', $timestamp) . "/" . $post['slug'];
+            case 'date_dash':
+                return "blog/" . date('Y-m-d', $timestamp) . "/" . $post['slug'];
+            case 'year_month':
+                return "blog/" . date('Y/m', $timestamp) . "/" . $post['slug'];
+            case 'numeric':
+                return "blog/" . $post['id'];
+            case 'post_name':
+            default:
+                return "blog/" . $post['slug'];
+        }
     }
 }

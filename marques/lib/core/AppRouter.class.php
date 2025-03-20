@@ -201,6 +201,20 @@ class AppRouter {
      */
     private function persistRoute(string $method, string $pattern, array $options = []): void {
         $currentRoutes = AppConfig::getInstance()->loadUrlMapping();
+    
+        // Stelle sicher, dass alle Einträge als Array vorliegen:
+        foreach ($currentRoutes as $i => $route) {
+            if (is_string($route)) {
+                // Konvertiere einen alten String-Eintrag in ein Array
+                $currentRoutes[$i] = [
+                    'method'  => 'GET',        // Standardwert (ggf. anpassen)
+                    'pattern' => $route,
+                    'handler' => '',
+                    'options' => []
+                ];
+            }
+        }
+    
         $newRoute = [
             'method'  => $method,
             'pattern' => $pattern,
@@ -220,27 +234,34 @@ class AppRouter {
         }
         AppConfig::getInstance()->updateUrlMapping($currentRoutes);
     }
+    
 
     /**
      * Lädt persistierte Routen aus der Konfigurationsdatei und registriert sie.
      */
     public function loadRoutesFromConfig(): void {
         $urlMappings = AppConfig::getInstance()->loadUrlMapping();
-    
+        
         if (!empty($urlMappings)) {
             foreach ($urlMappings as $routeConfig) {
+                // Falls der Eintrag als String vorliegt, in Array umwandeln:
+                if (is_string($routeConfig)) {
+                    $routeConfig = [
+                        'method'  => 'GET',
+                        'pattern' => $routeConfig,
+                        'handler' => '',  // Hier ggf. einen Default-Handler definieren
+                        'options' => [],
+                    ];
+                }
+                // Registriere die Route
                 $handlerString = $routeConfig['handler'] ?? '';
                 if (!empty($handlerString)) {
-                    // Prüfe, ob das erwartete "@" vorhanden ist.
                     if (strpos($handlerString, '@') === false) {
                         throw new \Exception('Invalid handler string for route: missing "@"', 500);
                     }
                     list($controllerClass, $action) = explode('@', $handlerString);
-    
-                    // Spezialfall: Dynamische Seiten über den PageManager
                     if ($controllerClass === 'Marques\\Core\\PageManager' && $action === 'getPage') {
                         $routeCallback = function(AppRouterRequest $req, array $params) {
-                            // Verwende den 'page'-Parameter aus der URL, falls vorhanden
                             $pageId = $params['page'] ?? ltrim($req->getPath(), '/');
                             $pageManager = new \Marques\Core\PageManager();
                             $pageData = $pageManager->getPage($pageId);
@@ -250,7 +271,6 @@ class AppRouter {
                             return $pageData;
                         };
                     } else {
-                        // Standard-Handler, der den Controller instanziiert
                         $allowedControllers = [
                             'Marques\\Controller\\BlogController',
                             'Marques\\Controller\\UserController'
@@ -268,7 +288,6 @@ class AppRouter {
                         };
                     }
                 } else {
-                    // Kein Handler definiert: Alternative Callback-Logik ohne Controller
                     $routeCallback = function(AppRouterRequest $req, array $params) {
                         $normalizedPath = ltrim($req->getPath(), '/');
                         if ($normalizedPath === '') {
@@ -289,6 +308,6 @@ class AppRouter {
                 );
             }
         }
-    }
+    }    
 
 }
