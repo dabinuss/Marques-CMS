@@ -85,10 +85,10 @@
     {
         "method": "GET",
         "pattern": "/{page}",
-        "handler": "",
+        "handler": "Marques\\Core\\PageManager@getPage",
         "options": {
             "params": {
-                "page": "^[a-z0-9-]+$"
+                "page": "[a-z0-9-]+"
             },
             "schema": {
                 "page": {

@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+// Fehlender Import der Content-Klasse wurde ergänzt – bitte sicherstellen, dass der Namespace stimmt.
+use Marques\Core\Content;
+
 class MarquesApp
 {
     private AppRouter $router;
@@ -13,7 +16,6 @@ class MarquesApp
     private AppEvents $eventManager;
     private User $user;
     private AppPath $appPath;
-    //private AdminAuthService $authService;
 
     public function __construct()
     {
@@ -147,10 +149,21 @@ HTML;
         }
     }
 
+    // Unterstützt nun auch IPv6, indem der letzte Block auf "0" gesetzt wird.
     private function anonymizeIp(string $ip): string
     {
-        $parts = explode('.', $ip);
-        return (count($parts) === 4) ? "{$parts[0]}.{$parts[1]}.{$parts[2]}.0" : $ip;
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $parts = explode(':', $ip);
+            if (count($parts) >= 1) {
+                $parts[count($parts)-1] = '0';
+                return implode(':', $parts);
+            }
+            return $ip;
+        } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ip);
+            return (count($parts) === 4) ? "{$parts[0]}.{$parts[1]}.{$parts[2]}.0" : $ip;
+        }
+        return $ip;
     }
 
     private function getCurrentUrl(): string
@@ -187,13 +200,13 @@ HTML;
 
     private function handleException(\Exception $e): void
     {
-        $this->logger->error($e->getMessage(), [
-            'exception' => $e,
-        ]);
+        // Fehler protokollieren
+        $this->logger->error($e->getMessage(), ['exception' => $e]);
         http_response_code(500);
         echo '<h1>Ein Fehler ist aufgetreten</h1>';
+        // Debug-Informationen nur im Debug-Modus anzeigen
         if ($this->settings->getSetting('debug', false)) {
-            echo '<pre>' . print_r($e, true) . '</pre>';
+            echo '<pre>' . htmlspecialchars($e->getMessage()) . '</pre>';
         }
         exit;
     }

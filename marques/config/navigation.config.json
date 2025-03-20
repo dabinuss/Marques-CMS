@@ -2,7 +2,7 @@
     "main_menu": [
         {
             "title": "Startseite",
-            "url": "",
+            "url": "/",
             "target": "_self",
             "id": "menu_67c77d642d185"
         },

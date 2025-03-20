@@ -124,7 +124,7 @@ class AppRouter {
                             if (is_callable($mw)) {
                                 $result = $mw($req, $params);
                                 if ($result instanceof AppRouterResponse) {
-                                    // Hier könntest Du auch direkt eine Exception werfen, wenn die Middleware die Verarbeitung abbrechen soll.
+                                    // Alternativ: Man könnte hier auch das Response-Objekt direkt senden.
                                     throw new \Exception('Request interrupted by middleware', 403);
                                 }
                             }
@@ -229,10 +229,26 @@ class AppRouter {
             foreach ($urlMappings as $routeConfig) {
                 $handlerString = $routeConfig['handler'] ?? '';
                 if (!empty($handlerString)) {
-                    // Wenn ein Handler definiert ist, rufe den Controller auf
-                    $routeCallback = function(AppRouterRequest $req, array $params) use ($handlerString) {
-                        list($controllerClass, $action) = explode('@', $handlerString);
-                        // Whitelist: Nur zugelassene Controller dürfen instanziiert werden
+                    // Prüfe, ob das erwartete "@" vorhanden ist.
+                    if (strpos($handlerString, '@') === false) {
+                        throw new \Exception('Invalid handler string for route: missing "@"', 500);
+                    }
+                    list($controllerClass, $action) = explode('@', $handlerString);
+    
+                    // Spezialfall: Dynamische Seiten über den PageManager
+                    if ($controllerClass === 'Marques\\Core\\PageManager' && $action === 'getPage') {
+                        $routeCallback = function(AppRouterRequest $req, array $params) {
+                            // Verwende den 'page'-Parameter aus der URL, falls vorhanden
+                            $pageId = $params['page'] ?? ltrim($req->getPath(), '/');
+                            $pageManager = new \Marques\Core\PageManager();
+                            $pageData = $pageManager->getPage($pageId);
+                            if (!$pageData) {
+                                throw new \Exception('Page not found', 404);
+                            }
+                            return $pageData;
+                        };
+                    } else {
+                        // Standard-Handler, der den Controller instanziiert
                         $allowedControllers = [
                             'Marques\\Controller\\BlogController',
                             'Marques\\Controller\\UserController'
@@ -240,18 +256,18 @@ class AppRouter {
                         if (!in_array($controllerClass, $allowedControllers, true)) {
                             throw new \Exception('Controller not allowed.');
                         }
-                        // Controller über den DI-Container abrufen, wenn vorhanden
-                        if ($this->container && $this->container->has($controllerClass)) {
-                            $controller = $this->container->get($controllerClass);
-                        } else {
-                            $controller = new $controllerClass();
-                        }
-                        return call_user_func([$controller, $action], $req, $params);
-                    };
+                        $routeCallback = function(AppRouterRequest $req, array $params) use ($controllerClass, $action) {
+                            if ($this->container && $this->container->has($controllerClass)) {
+                                $controller = $this->container->get($controllerClass);
+                            } else {
+                                $controller = new $controllerClass();
+                            }
+                            return call_user_func([$controller, $action], $req, $params);
+                        };
+                    }
                 } else {
                     // Kein Handler definiert: Alternative Callback-Logik ohne Controller
                     $routeCallback = function(AppRouterRequest $req, array $params) {
-                        // Normalisiere den Pfad: Entferne führende "/" und setze leere Pfade auf "home"
                         $normalizedPath = ltrim($req->getPath(), '/');
                         if ($normalizedPath === '') {
                             $normalizedPath = 'home';
@@ -271,6 +287,6 @@ class AppRouter {
                 );
             }
         }
-    }    
-    
+    }
+
 }
