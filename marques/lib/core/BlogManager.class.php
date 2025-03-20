@@ -53,7 +53,7 @@ class BlogManager {
 
         if ($yearDirs) {
             foreach ($yearDirs as $yearDir) {
-                $monthDirs = glob($yearDir . '/[A-M]', GLOB_ONLYDIR);
+                $monthDirs = glob($yearDir . '/[A-L]', GLOB_ONLYDIR);
 
                 if ($monthDirs) {
                     foreach ($monthDirs as $monthDir) {
