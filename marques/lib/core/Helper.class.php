@@ -91,16 +91,6 @@ class Helper {
     }
 
     /**
-     * Validiert einen Pfad anhand eines Regex.
-     *
-     * @param string $path
-     * @return bool
-     */
-    public static function isValidPath(string $path): bool {
-        return preg_match('/^[a-zA-Z0-9\-_\/]+$/', $path) === 1;
-    }
-
-    /**
      * Gibt die vollständige Site-URL zurück, optional mit angehängtem Pfad.
      *
      * @param string $path
