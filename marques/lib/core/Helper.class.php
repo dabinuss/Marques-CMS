@@ -101,16 +101,6 @@ class Helper {
     }
 
     /**
-     * Escaped einen String für die HTML-Ausgabe.
-     *
-     * @param string|null $string
-     * @return string
-     */
-    public static function escapeHtml(?string $string): string {
-        return $string === null ? '' : htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
-    }
-
-    /**
      * Gibt die vollständige Site-URL zurück, optional mit angehängtem Pfad.
      *
      * @param string $path

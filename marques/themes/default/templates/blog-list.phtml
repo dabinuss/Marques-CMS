@@ -3,6 +3,13 @@ declare(strict_types=1);
 
 error_reporting(E_ALL);
 
+use \Marques\Core\Helper;
+
+if (!isset($tpl) || !is_object($tpl)) {
+    // Fallback: Falls $tpl nicht gesetzt ist, initialisiere es mit leeren Daten
+    $tpl = new \Marques\Core\TemplateVars([]);
+}
+
 // Falls noch nicht vorhanden, initialisieren wir die nötigen Werte:
 $tpl->config = $tpl->config ?? require MARQUES_CONFIG_DIR . '/lib.config.php';
 $blogManager = $blogManager ?? new \Marques\Core\BlogManager();
@@ -44,12 +51,12 @@ $categories = $blogManager->getCategories();
                 <article class="blog-post-summary">
                     <header>
                         <h2 class="post-title">
-                            <a href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>">  <!-- KORREKTUR: formatBlogUrl verwenden -->
+                            <a href="<?= Helper::formatBlogUrl($post); ?>">  <!-- KORREKTUR: formatBlogUrl verwenden -->
                                 <?= htmlspecialchars($post['title']); ?>
                             </a>
                         </h2>
                         <div class="post-meta">
-                            <span class="post-date"><?= \Marques\Core\Helper::formatDate($post['date'], 'd.m.Y'); ?></span>
+                            <span class="post-date"><?= Helper::formatDate($post['date'], 'd.m.Y'); ?></span>
                             <span class="post-author">von <?= htmlspecialchars($post['author']); ?></span>
                             <?php if (!empty($post['categories'])): ?>
                                 <span class="post-categories">
@@ -58,7 +65,7 @@ $categories = $blogManager->getCategories();
                                     $categoryLinks = [];
                                     foreach ($post['categories'] as $cat) {
                                         if (!empty($cat)) {
-                                            $categoryLinks[] = '<a href="' . \Marques\Core\Helper::getSiteUrl('blog?category=' . urlencode($cat)) . '">' . htmlspecialchars($cat) . '</a>';
+                                            $categoryLinks[] = '<a href="' . Helper::getSiteUrl('blog?category=' . urlencode($cat)) . '">' . htmlspecialchars($cat) . '</a>';
                                         }
                                     }
                                     echo implode(', ', $categoryLinks);
@@ -70,8 +77,8 @@ $categories = $blogManager->getCategories();
 
                     <?php if (!empty($post['featured_image'])): ?>
                         <div class="post-featured-image">
-                            <a href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>"> <!-- KORREKTUR: formatBlogUrl verwenden -->
-                                <img src="<?= \Marques\Core\Helper::getSiteUrl($post['featured_image']); ?>" alt="<?= htmlspecialchars($post['title']); ?>">
+                            <a href="<?= Helper::formatBlogUrl($post); ?>"> <!-- KORREKTUR: formatBlogUrl verwenden -->
+                                <img src="<?= Helper::getSiteUrl($post['featured_image']); ?>" alt="<?= htmlspecialchars($post['title']); ?>">
                             </a>
                         </div>
                     <?php endif; ?>
@@ -81,7 +88,7 @@ $categories = $blogManager->getCategories();
                     </div>
 
                     <div class="post-read-more">
-                        <a href="<?= \Marques\Core\Helper::formatBlogUrl($post); ?>" class="read-more-link"> <!-- KORREKTUR: formatBlogUrl verwenden -->
+                        <a href="<?= Helper::formatBlogUrl($post); ?>" class="read-more-link"> <!-- KORREKTUR: formatBlogUrl verwenden -->
                             Weiterlesen
                         </a>
                     </div>
@@ -91,13 +98,13 @@ $categories = $blogManager->getCategories();
             <!-- Paginierung -->
             <div class="blog-pagination">
                 <?php if ($tpl->page > 1): ?>
-                    <a href="<?= \Marques\Core\Helper::getSiteUrl('blog?page=' . ($tpl->page - 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-prev marques-button marques-button--outline">
+                    <a href="<?= Helper::getSiteUrl('blog?page=' . ($tpl->page - 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-prev marques-button marques-button--outline">
                         « Vorherige
                     </a>
                 <?php endif; ?>
 
                 <?php if (count($posts) === $tpl->perPage): ?>
-                    <a href="<?= \Marques\Core\Helper::getSiteUrl('blog?page=' . ($tpl->page + 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-next marques-button marques-button--outline">
+                    <a href="<?= Helper::getSiteUrl('blog?page=' . ($tpl->page + 1) . (!empty($tpl->category) ? '&category=' . urlencode($tpl->category) : '') . (!empty($tpl->tag) ? '&tag=' . urlencode($tpl->tag) : '')); ?>" class="pagination-next marques-button marques-button--outline">
                         Nächste »
                     </a>
                 <?php endif; ?>
@@ -114,7 +121,7 @@ $categories = $blogManager->getCategories();
                 <ul class="categories-list">
                     <?php foreach ($categories as $cat => $count): ?>
                         <li>
-                            <a href="<?= \Marques\Core\Helper::getSiteUrl('blog?category=' . urlencode($cat)); ?>">
+                            <a href="<?= Helper::getSiteUrl('blog?category=' . urlencode($cat)); ?>">
                                 <?= htmlspecialchars($cat); ?> (<?= $count; ?>)
                             </a>
                         </li>

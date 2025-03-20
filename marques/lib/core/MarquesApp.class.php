@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 // Fehlender Import der Content-Klasse wurde ergänzt – bitte sicherstellen, dass der Namespace stimmt.
+use Marques\Core\SafetyXSS;
 use Marques\Core\Content;
 
 class MarquesApp
@@ -54,11 +55,12 @@ class MarquesApp
     {
         $this->startSession();
         $this->checkDirectAccess();
+        SafetyXSS::setSecurityHeaders();
+        SafetyXSS::setCSPHeader();
         $this->configureErrorReporting($this->settings);
         $this->setTimezone($this->settings);
         $this->checkMaintenanceMode($this->settings);
         $this->logUserAccess();
-        // $this->loadHelpers();
     }
 
     private function startSession(): void
@@ -107,33 +109,33 @@ class MarquesApp
 
     private function renderMaintenancePage(AppSettings $settings, string $maintenanceMessage): string
     {
-        $siteName = htmlspecialchars($settings->getSetting('site_name', 'marques CMS'));
-        $message  = htmlspecialchars($maintenanceMessage);
+        $siteName = SafetyXSS::escapeOutput($settings->getSetting('site_name', 'marques CMS'), 'html'); // Neu
+        $message  = SafetyXSS::escapeOutput($maintenanceMessage, 'html'); // Neu
         return <<<HTML
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Wartungsmodus - {$siteName}</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; background-color: #f8f9fa; color: #212529; margin: 0; padding: 0; display: flex; height: 100vh; align-items: center; justify-content: center; }
-        .maintenance-container { text-align: center; max-width: 600px; padding: 2rem; background-color: white; border-radius: .5rem; box-shadow: 0 4px 6px rgba(0,0,0,.1); }
-        h1 { color: #343a40; margin-top: 0; }
-        p { font-size: 1.1rem; line-height: 1.6; color: #6c757d; }
-        .icon { font-size: 4rem; margin-bottom: 1rem; color: #007bff; }
-    </style>
-</head>
-<body>
-    <div class="maintenance-container">
-        <div class="icon">⚙️</div>
-        <h1>Website wird gewartet</h1>
-        <p>{$message}</p>
-    </div>
-</body>
-</html>
-HTML;
-    }
+                <!DOCTYPE html>
+                <html lang="de">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width,initial-scale=1">
+                    <title>Wartungsmodus - {$siteName}</title>
+                    <style>
+                        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; background-color: #f8f9fa; color: #212529; margin: 0; padding: 0; display: flex; height: 100vh; align-items: center; justify-content: center; }
+                        .maintenance-container { text-align: center; max-width: 600px; padding: 2rem; background-color: white; border-radius: .5rem; box-shadow: 0 4px 6px rgba(0,0,0,.1); }
+                        h1 { color: #343a40; margin-top: 0; }
+                        p { font-size: 1.1rem; line-height: 1.6; color: #6c757d; }
+                        .icon { font-size: 4rem; margin-bottom: 1rem; color: #007bff; }
+                    </style>
+                </head>
+                <body>
+                    <div class="maintenance-container">
+                        <div class="icon">⚙️</div>
+                        <h1>Website wird gewartet</h1>
+                        <p>{$message}</p>
+                    </div>
+                </body>
+                </html>
+                HTML;
+    }    
 
     private function logUserAccess(): void
     {
@@ -206,7 +208,7 @@ HTML;
         echo '<h1>Ein Fehler ist aufgetreten</h1>';
         // Debug-Informationen nur im Debug-Modus anzeigen
         if ($this->settings->getSetting('debug', false)) {
-            echo '<pre>' . htmlspecialchars($e->getMessage()) . '</pre>';
+            echo '<pre>' . SafetyXSS::escapeOutput($e->getMessage(), 'html') . '</pre>'; // Neu
         }
         exit;
     }

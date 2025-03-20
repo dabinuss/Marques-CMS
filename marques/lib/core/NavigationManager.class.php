@@ -14,6 +14,8 @@ namespace Marques\Core;
 
 use Marques\Core\Helper;
 
+use Marques\Core\SafetyXSS;
+
 class NavigationManager {
     /**
      * @var array Systemkonfiguration
@@ -239,7 +241,7 @@ class NavigationManager {
             
             $target = isset($item['target']) && $item['target'] === '_blank' ? ' target="_blank"' : '';
             $html .= '<li class="marques-menu-item' . ($active ? ' active' : '') . '">';
-            $html .= '<a href="' . htmlspecialchars($item['url'] ?? '#') . '"' . $target . '>' . htmlspecialchars($item['title'] ?? 'Menüpunkt') . '</a>';
+            $html .= '<a href="' . SafetyXSS::escapeOutput($item['url'] ?? '#', 'html') . '"' . $target . '>' . SafetyXSS::escapeOutput($item['title'] ?? 'Menüpunkt', 'html') . '</a>';
             $html .= '</li>';
         }
         
@@ -265,7 +267,7 @@ class NavigationManager {
         foreach ($footerMenu as $item) {
             $target = isset($item['target']) && $item['target'] === '_blank' ? ' target="_blank"' : '';
             $html .= '<li class="marques-menu-item">';
-            $html .= '<a href="' . htmlspecialchars($item['url'] ?? '#') . '"' . $target . '>' . htmlspecialchars($item['title'] ?? 'Menüpunkt') . '</a>';
+            $html .= '<a href="' . SafetyXSS::escapeOutput($item['url'] ?? '#', 'html') . '"' . $target . '>' . SafetyXSS::escapeOutput($item['title'] ?? 'Menüpunkt', 'html') . '</a>';
             $html .= '</li>';
         }
         

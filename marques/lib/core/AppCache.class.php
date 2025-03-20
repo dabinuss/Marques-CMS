@@ -3,6 +3,13 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+if (!function_exists('opcache_invalidate')) {
+    function opcache_invalidate($file, $force = false) {
+        // Dummy-Funktion: Nichts tun, da OPcache nicht verfügbar ist.
+        return true;
+    }
+}
+
 class AppCache {
     protected string $cacheDir;
     protected bool $useOpcache;
@@ -55,7 +62,6 @@ class AppCache {
      * @param string|null $cacheDir Pfad zum Cache-Verzeichnis
      * @param bool $enabled Ob Caching aktiviert ist
      * @param bool $useIndex Ob der Index verwendet werden soll
-     * @throws ConfigurationException Falls das Cache-Verzeichnis nicht erstellt werden kann.
      */
     public function __construct(?string $cacheDir = null, bool $enabled = true, bool $useIndex = true) {
         if ($cacheDir === null) {
@@ -63,7 +69,7 @@ class AppCache {
         }
         $this->cacheDir = rtrim($cacheDir, DIRECTORY_SEPARATOR);
         if (!is_dir($this->cacheDir) && !mkdir($this->cacheDir, 0755, true) && !is_dir($this->cacheDir)) {
-            throw new ConfigurationException("Cache-Verzeichnis konnte nicht erstellt werden.", 500);
+            throw new \RuntimeException("Cache-Verzeichnis konnte nicht erstellt werden.", 500);
         }
         $this->useOpcache = function_exists('opcache_get_status');
         $this->enabled = $enabled;
@@ -298,7 +304,6 @@ class AppCache {
      * @param string $content
      * @param int|null $ttl Time-to-live in Sekunden (falls null, werden Standardwerte genutzt)
      * @param array $groups Gruppen, denen der Cacheeintrag zugeordnet wird
-     * @throws ConfigurationException
      */
     public function set(string $key, string $content, ?int $ttl = null, array $groups = []): void {
         $this->validateKey($key);
@@ -332,7 +337,7 @@ class AppCache {
         $serialized = serialize($data);
         $fp = fopen($file, 'c');
         if ($fp === false) {
-            throw new ConfigurationException("Cache-Datei konnte nicht geöffnet werden.", 500, null, ['file' => $file]);
+            throw new \RuntimeException("Cache-Datei konnte nicht geöffnet werden.", 500);
         }
         if (flock($fp, LOCK_EX)) {
             ftruncate($fp, 0);
@@ -341,13 +346,13 @@ class AppCache {
             flock($fp, LOCK_UN);
         } else {
             fclose($fp);
-            throw new ConfigurationException("Cache-Datei konnte nicht gesperrt werden.", 500, null, ['file' => $file]);
+            throw new \RuntimeException("Cache-Datei konnte nicht gesperrt werden.", 500);
         }
         fclose($fp);
         $this->memoryCache[$key] = $content;
-        if ($this->useOpcache) {
+        if ($this->useOpcache && function_exists('opcache_invalidate')) {
             opcache_invalidate($file, true);
-        }
+        }        
         if ($this->useIndex && !empty($groups)) {
             $this->updateIndexForKey($key, $groups);
         }

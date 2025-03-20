@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Core\SafetyXSS;
+
 class AppTemplate {
     /**
      * @var array Systemkonfiguration
@@ -57,8 +59,8 @@ class AppTemplate {
         $templateName = $data['template'] ?? 'page';
 
         if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $templateName)) {
-            throw new \Exception("Ungültiger Template-Name: " . htmlspecialchars($templateName));
-        }
+            throw new \Exception("Ungültiger Template-Name: " . SafetyXSS::escapeOutput($templateName, 'html'));
+        }        
 
         // Suche nach dem Template im definierten Pfad mit der Endung .phtml
         $templateFile = $this->templatePath . '/' . $templateName . '.phtml';
@@ -239,6 +241,6 @@ class AppTemplate {
             return $svg;
         }
         
-        return '<!-- Icon nicht gefunden: ' . htmlspecialchars($iconName) . ' -->';
+        return '<!-- Icon nicht gefunden: ' . SafetyXSS::escapeOutput($iconName, 'html') . ' -->';
     }    
 }

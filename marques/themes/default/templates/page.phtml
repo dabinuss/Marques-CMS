@@ -1,10 +1,10 @@
 <article class="marques-page">
     <header class="marques-page-header">
-        <h1 class="marques-page-title"><?= \Marques\Core\Helper::escapeHtml($tpl->title ?? ''); ?></h1>
+        <h1 class="marques-page-title"><?= \Marques\Core\SafetyXSS::escapeOutput($tpl->title ?? '', 'html'); ?></h1>
         
         <?php if (!empty($tpl->featured_image)): ?>
         <div class="marques-featured-image">
-            <img src="<?= $tpl->themeUrl('media/' . $tpl->featured_image); ?>" alt="<?= \Marques\Core\Helper::escapeHtml($tpl->title ?? ''); ?>">
+            <img src="<?= \Marques\Core\SafetyXSS::escapeOutput($tpl->themeUrl('media/' . $tpl->featured_image), 'attr'); ?>" alt="<?= \Marques\Core\SafetyXSS::escapeOutput($tpl->title ?? '', 'attr'); ?>">
         </div>
         <?php endif; ?>
     </header>

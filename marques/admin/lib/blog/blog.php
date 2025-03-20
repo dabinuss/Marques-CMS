@@ -15,10 +15,6 @@ $blogManager = new \Marques\Core\BlogManager();
 $configManager = \Marques\Core\AppConfig::getInstance();
 $system_config = $configManager->load('system') ?: [];
 
-// get Blog Entry URL
-require_once MARQUES_ROOT_DIR . '/lib/core/Helper.class.php';
-use Marques\Core\Helper;
-
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

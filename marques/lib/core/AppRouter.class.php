@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Core\SafetyXSS;
 use Marques\Core\AppRouterRequest;
 use Marques\Core\AppRouterResponse;
 
@@ -109,7 +110,7 @@ class AppRouter {
                     foreach ($matches as $key => $value) {
                         if (!is_int($key)) {
                             // Nur Sanitization hier; die Validierung erfolgt separat.
-                            $params[$key] = htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8');
+                            $params[$key] = SafetyXSS::escapeOutput(trim($value), 'html');
                         }
                     }
                     // Parameter-Validierung anhand des definierten Schemas (sofern vorhanden)

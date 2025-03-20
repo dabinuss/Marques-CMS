@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Core\SafetyXSS;
+
 class Content {
     /**
      * @var array Content-Cache
@@ -58,10 +60,10 @@ class Content {
         
         $filePath = MARQUES_CONTENT_DIR . '/pages/' . $path . '.md';
         if (!file_exists($filePath)) {
-            throw new \Marques\Core\AppExceptions("Seite nicht gefunden: " . $path, 404);
+            throw new \Marques\Core\AppExceptions("Seite nicht gefunden: " . SafetyXSS::escapeOutput($path, 'html'), 404);
         }
         if (!is_readable($filePath)) {
-            throw new \Marques\Core\AppExceptions("Keine Leserechte für: " . $path, 403);
+            throw new \Marques\Core\AppExceptions("Keine Leserechte für: " . SafetyXSS::escapeOutput($path, 'html'), 403);
         }
         
         try {

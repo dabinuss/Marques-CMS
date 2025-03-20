@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Core\SafetyXSS;
+
 class AppRouterResponse {
     private int $status;
     private string $content;
@@ -27,7 +29,7 @@ class AppRouterResponse {
         $new->status = $status;
         $xml = new \SimpleXMLElement('<response/>');
         foreach ($data as $key => $value) {
-            $xml->addChild($key, htmlspecialchars((string)$value));
+            $xml->addChild($key, SafetyXSS::escapeOutput((string)$value, 'html'));
         }
         $new->content = $xml->asXML();
         $new->headers['Content-Type'] = 'application/xml';
