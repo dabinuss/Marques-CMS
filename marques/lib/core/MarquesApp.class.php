@@ -17,6 +17,7 @@ class MarquesApp
     private AppEvents $eventManager;
     private User $user;
     private AppPath $appPath;
+    private Content $content;
 
     public function __construct()
     {
@@ -29,6 +30,7 @@ class MarquesApp
         $this->eventManager = $this->appcontainer->get(AppEvents::class);
         $this->user         = $this->appcontainer->get(User::class);
         $this->appPath      = $this->appcontainer->get(AppPath::class);
+        $this->content      = $this->appcontainer->get(Content::class);
         //$this->authService  = $this->appcontainer->get(AdminAuthService::class);
     }
 
@@ -44,11 +46,9 @@ class MarquesApp
         $this->appcontainer->register(AppLogger::class, AppLogger::getInstance());
         $this->appcontainer->register(AppEvents::class, new AppEvents());
         $this->appcontainer->register(AppPath::class, AppPath::getInstance());
-
-        // Registriere den neuen Router – hier wird er mit dem DI-Container und der Persistenz-Option erstellt.
         $this->appcontainer->register(AppRouter::class, new AppRouter($this->appcontainer, true));
-
         $this->appcontainer->register(AppTemplate::class, new AppTemplate());
+        $this->appcontainer->register(Content::class, new Content()); // Hinzugefügt
     }
 
     public function init(): void
@@ -188,9 +188,7 @@ class MarquesApp
             $routeInfo = $this->router->processRequest();
             $this->eventManager->trigger('after_routing', $routeInfo);
             
-            // Übergib die Route-Parameter an die Content-Klasse
-            $content = new Content();
-            $pageData = $content->getPage($routeInfo['path'], $routeInfo['params'] ?? []);
+            $pageData = $this->content->getPage($routeInfo['path'], $routeInfo['params'] ?? []);
             $pageData = $this->eventManager->trigger('before_render', $pageData);
             $this->template->render($pageData);
             
