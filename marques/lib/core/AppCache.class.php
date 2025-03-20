@@ -32,12 +32,14 @@ class AppCache {
     protected int $totalRequests = 0;
     protected int $cacheHits = 0;
     protected float $totalAccessTime = 0.0;
-    
-    // Konfigurierbare TTL-Standardwerte
+
+    protected const DEFAULT_TTL = 3600;
+    protected const TEMPLATE_TTL = 3600;
+    protected const ASSET_TTL = 86400;
     protected array $defaultTtlMapping = [
-        'template_' => 3600,
-        'asset_'    => 86400,
-        'default'   => 3600,
+        'template_' => self::TEMPLATE_TTL,
+        'asset_'     => self::ASSET_TTL,
+        'default'    => self::DEFAULT_TTL,
     ];
     
     /**
@@ -46,9 +48,11 @@ class AppCache {
      *
      * @return AppCache
      */
-    public static function getInstance(): AppCache {
+    public static function getInstance(?AppSettings $settingsManager = null): AppCache {
         if (self::$instance === null) {
-            $settingsManager = new AppSettings();
+            if ($settingsManager === null) {
+                $settingsManager = new AppSettings();
+            }
             $system_settings = $settingsManager->getAllSettings();
             $enabled = $system_settings['cache_enabled'] ?? true;
             self::$instance = new self(null, $enabled, true);
@@ -335,6 +339,7 @@ class AppCache {
             'groups'  => $groups,
         ];
         $serialized = serialize($data);
+
         $fp = fopen($file, 'c');
         if ($fp === false) {
             throw new \RuntimeException("Cache-Datei konnte nicht geöffnet werden.", 500);
@@ -348,6 +353,7 @@ class AppCache {
             fclose($fp);
             throw new \RuntimeException("Cache-Datei konnte nicht gesperrt werden.", 500);
         }
+        
         fclose($fp);
         $this->memoryCache[$key] = $content;
         if ($this->useOpcache && function_exists('opcache_invalidate')) {
