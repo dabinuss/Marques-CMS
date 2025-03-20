@@ -33,7 +33,7 @@ class FileManager {
         }
         // Cache invalidieren: Der AppCache wird informiert, dass sich der Inhalt geändert hat.
         $cacheManager = AppCache::getInstance();
-        $cacheManager->delete($filePath);
+        $cacheManager->delete(md5($filePath));
         return true;
     }
 
@@ -61,7 +61,7 @@ class FileManager {
         $filePath = $this->getFullPath($relativePath);
         if (file_exists($filePath)) {
             $cacheManager = AppCache::getInstance();
-            $cacheManager->delete($filePath);
+            $cacheManager->delete(md5($filePath));
             return unlink($filePath);
         }
         return false;
