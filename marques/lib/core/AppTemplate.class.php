@@ -146,8 +146,6 @@ class AppTemplate {
             $data['system_settings'] = $system_settings;
         }
 
-        extract($data);
-
         $partialFile = $this->templatePath . '/partials/' . $partialName . '.phtml';
         if (!file_exists($partialFile)) {
             $partialFile = MARQUES_TEMPLATE_DIR . '/partials/' . $partialName . '.phtml';
