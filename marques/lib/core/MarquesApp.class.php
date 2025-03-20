@@ -201,13 +201,13 @@ class MarquesApp
 
     private function handleException(\Exception $e): void
     {
-        // Fehler protokollieren
         $this->logger->error($e->getMessage(), ['exception' => $e]);
         http_response_code(500);
         echo '<h1>Ein Fehler ist aufgetreten</h1>';
-        // Debug-Informationen nur im Debug-Modus anzeigen
         if ($this->settings->getSetting('debug', false)) {
-            echo '<pre>' . SafetyXSS::escapeOutput($e->getMessage(), 'html') . '</pre>'; // Neu
+            echo '<pre>' . SafetyXSS::escapeOutput($e->getMessage(), 'html') . '</pre>';
+        } else {
+            echo '<p>Bitte versuchen Sie es später erneut.</p>';
         }
         exit;
     }
