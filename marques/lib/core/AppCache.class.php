@@ -317,12 +317,12 @@ class AppCache {
         // Konfigurierbare TTL-Standardwerte nutzen
         if ($ttl === null) {
             foreach ($this->defaultTtlMapping as $prefix => $defaultTtl) {
-                if ($prefix !== 'default' && strpos($key, $prefix) === 0) {
+                if ($prefix !== 'default' && strncmp($key, $prefix, strlen($prefix)) === 0) { // Verwendung von strncmp
                     $ttl = $defaultTtl;
                     if ($prefix === 'template_') {
-                        $groups[] = 'templates';
+                        $groups= 'templates';
                     } elseif ($prefix === 'asset_') {
-                        $groups[] = 'assets';
+                        $groups= 'assets';
                     }
                     break;
                 }
@@ -342,17 +342,17 @@ class AppCache {
 
         $fp = fopen($file, 'c');
         if ($fp === false) {
-            throw new \RuntimeException("Cache-Datei konnte nicht geöffnet werden.", 500);
+            throw new \RuntimeException("Cache-Datei konnte nicht zum Schreiben geöffnet werden: " . $file, 500);
         }
-        if (flock($fp, LOCK_EX)) {
-            ftruncate($fp, 0);
-            fwrite($fp, $serialized);
-            fflush($fp);
-            flock($fp, LOCK_UN);
-        } else {
+        if (!flock($fp, LOCK_EX)) {
             fclose($fp);
-            throw new \RuntimeException("Cache-Datei konnte nicht gesperrt werden.", 500);
+            throw new \RuntimeException("Cache-Datei konnte nicht gesperrt werden: " . $file, 500);
         }
+        ftruncate($fp, 0);
+        fwrite($fp, $serialized);
+        fflush($fp);
+        flock($fp, LOCK_UN);
+        fclose($fp);
         
         fclose($fp);
         $this->memoryCache[$key] = $content;
@@ -416,6 +416,7 @@ class AppCache {
             }
         } else {
             // Ineffizienter Fallback: Durchsuche alle Cache-Dateien
+            // WARNUNG: Diese Methode ist ineffizient, wenn der Index deaktiviert ist.
             $files = glob($this->cacheDir . '/*.cache');
             if ($files !== false) {
                 foreach ($files as $file) {
