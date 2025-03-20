@@ -147,14 +147,14 @@ class AdminAuthService
         if (!$this->checkRateLimit()) {
             return false; // Login blockiert wegen zu vieler fehlgeschlagener Versuche
         }
-
-        $allUsers = $this->userModel->getAllUsers(); // Erwartet ein Array aller Benutzer (ohne sensible Daten)
-        if (!isset($allUsers[$username])) {
+    
+        // Nutze getRawUserData(), um den Passwort-Hash zu erhalten
+        $user = $this->userModel->getRawUserData($username);
+        if (!$user) {
             $this->logLoginAttempt($username, false);
             return false;
         }
-        $user = $allUsers[$username];
-
+    
         // Behandlung für Admin beim ersten Login (Standardpasswort)
         if ($username === 'admin' && (empty($user['password']) || ($user['first_login'] ?? false))) {
             if ($password === 'admin') {
@@ -172,13 +172,13 @@ class AdminAuthService
             $this->logLoginAttempt($username, false);
             return false;
         }
-
+    
         // Normale Passwortprüfung
         if (empty($user['password']) || !password_verify($password, $user['password'])) {
             $this->logLoginAttempt($username, false);
             return false;
         }
-
+    
         $_SESSION['marques_user'] = [
             'username'     => $username,
             'display_name' => $user['display_name'],
@@ -188,7 +188,7 @@ class AdminAuthService
         $this->regenerateSession();
         $this->logLoginAttempt($username, true);
         return true;
-    }
+    }    
 
     /**
      * Loggt den aktuell angemeldeten Benutzer aus.

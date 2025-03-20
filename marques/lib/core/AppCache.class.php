@@ -342,19 +342,20 @@ class AppCache {
 
         $fp = fopen($file, 'c');
         if ($fp === false) {
-            throw new \RuntimeException("Cache-Datei konnte nicht zum Schreiben geöffnet werden: " . $file, 500);
+            throw new \RuntimeException("Cache-Datei konnte nicht geöffnet werden.", 500);
         }
-        if (!flock($fp, LOCK_EX)) {
-            fclose($fp);
-            throw new \RuntimeException("Cache-Datei konnte nicht gesperrt werden: " . $file, 500);
-        }
-        ftruncate($fp, 0);
-        fwrite($fp, $serialized);
-        fflush($fp);
-        flock($fp, LOCK_UN);
-        fclose($fp);
         
-        fclose($fp);
+        if (flock($fp, LOCK_EX)) {
+            ftruncate($fp, 0);
+            fwrite($fp, $serialized);
+            fflush($fp);
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        } else {
+            // Nur schließen, wenn $fp ein gültiger Stream ist
+            fclose($fp);
+            throw new \RuntimeException("Cache-Datei konnte nicht gesperrt werden.", 500);
+        }
         $this->memoryCache[$key] = $content;
         if ($this->useOpcache && function_exists('opcache_invalidate')) {
             opcache_invalidate($file, true);

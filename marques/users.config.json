@@ -1,0 +1,18 @@
+{
+    "admin": {
+        "password": "$2y$10$.yq2gC1Y7wBeC\/LmHSwdxuRtCBNBQQxWm6h2BIG4LQ1.xghSumETC",
+        "display_name": "Administrator",
+        "role": "admin",
+        "created": 1741205694,
+        "last_login": 1742195004,
+        "first_login": false
+    },
+    "test": {
+        "password": "$2y$10$RCgux4OUv0nR4fccDtD9Q.HNLj6T2NEwtIVFUKTw0jdHOpupmdO..",
+        "display_name": "Testnutzer",
+        "role": "admin",
+        "created": 1742483502,
+        "last_login": 0,
+        "first_login": false
+    }
+}

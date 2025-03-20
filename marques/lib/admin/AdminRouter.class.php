@@ -24,7 +24,8 @@ class AdminRouter
         'blog-versions'     => 'blog/blog-versions',
         'media'             => 'media/media',
         'users'             => 'user/users',
-        'user-edit'         => 'user/user-edit'
+        'user-edit'         => 'user/user-edit',
+        'user-add'          => 'user/user-add',
     ];
 
     /**
