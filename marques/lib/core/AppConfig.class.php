@@ -220,7 +220,7 @@ class AppConfig {
      * @param string $name Name der Konfiguration
      * @return string Normalisierter Name
      */
-    private function normalizeConfigName($name) {
+    private function normalizeConfigName(string $name): string {
         $name = basename($name);
         $name = preg_replace('/\.(json|php)$/', '', $name);
         $name = preg_replace('/\.config$/', '', $name);
