@@ -27,16 +27,13 @@ class AppEvents
         if (!isset($this->listeners[$event])) {
             $this->listeners[$event] = [];
         }
-        
-        // Speichern des Callbacks mit seiner Priorität
+        $listenerId = is_object($callback) ? spl_object_hash($callback) : $callback;
         $this->listeners[$event][] = [
+            'id'       => $listenerId,
             'callback' => $callback,
             'priority' => $priority
         ];
-        
-        // Event-Cache ungültig machen, da sich die Listener geändert haben
         $this->eventCache[$event] = false;
-        
         return $this;
     }
     
@@ -67,34 +64,25 @@ class AppEvents
      */
     public function off(string $event, ?callable $callback = null): self
     {
-        // Wenn kein Event existiert, nichts tun
         if (!isset($this->listeners[$event])) {
             return $this;
         }
-        
-        // Wenn kein Callback angegeben, alle Listener für dieses Event entfernen
         if ($callback === null) {
-            unset($this->listeners[$event]);
-            unset($this->eventCache[$event]);
+            unset($this->listeners[$event], $this->eventCache[$event]);
             return $this;
         }
-        
-        // Spezifischen Callback entfernen
+        $listenerId = is_object($callback) ? spl_object_hash($callback) : $callback;
         foreach ($this->listeners[$event] as $key => $listener) {
-            if ($listener['callback'] === $callback) {
+            if ($listener['id'] === $listenerId) {
                 unset($this->listeners[$event][$key]);
             }
         }
-        
-        // Array neu indizieren
         if (empty($this->listeners[$event])) {
-            unset($this->listeners[$event]);
-            unset($this->eventCache[$event]);
+            unset($this->listeners[$event], $this->eventCache[$event]);
         } else {
             $this->listeners[$event] = array_values($this->listeners[$event]);
             $this->eventCache[$event] = false;
         }
-        
         return $this;
     }
     
