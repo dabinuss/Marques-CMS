@@ -70,8 +70,7 @@ class AppConfig {
         $content = file_get_contents($filePath);
         $config = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("AppConfig: Fehler beim Parsen der JSON-Konfiguration: " . json_last_error_msg());
-            return null;
+            throw new \RuntimeException("Fehler beim Parsen der JSON-Konfiguration: " . json_last_error_msg());
         }
         $this->_cache[$name] = $config;
         return $config;
