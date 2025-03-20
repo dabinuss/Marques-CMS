@@ -71,7 +71,7 @@
             <?php else: ?>
                 <div class="media-grid">
                     <?php foreach ($media as $item): ?>
-                        <div class="media-item" data-url="<?= marques_site_url($item['cache_bust_url']); ?>" data-filename="<?= htmlspecialchars($item['filename']); ?>">
+                        <div class="media-item" data-url="<?= \Marques\Core\Helper::getSiteUrl($item['cache_bust_url']); ?>" data-filename="<?= htmlspecialchars($item['filename']); ?>">
                             <div class="media-thumbnail">
                                 <?php if (strpos($item['filetype'], 'image/') === 0): ?>
                                     <img src="../<?= $item['cache_bust_url']; ?>" alt="<?= htmlspecialchars($item['filename']); ?>">
