@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Version wiederherstellen
                 if ($action === 'restore') {
-                    if ($versionManager->restoreVersion('blog', $post_id, $version_id, $user->getCurrentUsername())) {
+                    if ($versionManager->restoreVersion('blog', $post_id, $version_id, $user->getCurrentDisplayName())) {
                         $success_message = 'Version wurde erfolgreich wiederhergestellt.';
                     } else {
                         $error_message = 'Fehler beim Wiederherstellen der Version.';

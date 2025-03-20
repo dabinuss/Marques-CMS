@@ -8,6 +8,8 @@
  * @subpackage admin
  */
 
+ use Marques\Core\Helper;
+
 // BlogManager initialisieren
 $blogManager = new \Marques\Core\BlogManager();
 
@@ -63,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $post['title'] = $_POST['title'] ?? '';
         $post['slug'] = $_POST['slug'] ?? '';
         $post['date'] = $_POST['date'] ?? date('Y-m-d');
-        $post['author'] = $_POST['author'] ?? $user->getCurrentUsername();
+        $post['author'] = $_POST['author'] ?? $user->getCurrentDisplayName();
         $post['excerpt'] = $_POST['excerpt'] ?? '';
         $post['content'] = $_POST['content'] ?? '';
         $post['categories'] = isset($_POST['categories']) ? explode(',', $_POST['categories']) : [];
