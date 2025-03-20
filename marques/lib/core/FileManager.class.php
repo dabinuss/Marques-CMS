@@ -25,7 +25,7 @@ class FileManager {
     public function writeFile(string $relativePath, string $content): bool {
         $filePath = $this->getFullPath($relativePath);
         $dir = dirname($filePath);
-        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) { // Korrektur: Fehlerunterdrückung bei mkdir entfernt, um Fehler besser zu erkennen
+        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
             throw new \RuntimeException("Konnte Verzeichnis nicht erstellen: $dir");
         }
         if (file_put_contents($filePath, $content) === false) {
@@ -62,7 +62,7 @@ class FileManager {
         if (file_exists($filePath)) {
             $cacheManager = AppCache::getInstance();
             $cacheManager->delete($filePath);
-            return @unlink($filePath); // Korrektur: Fehlerunterdrückung bei unlink beibehalten, um Löschfehler zu vermeiden
+            return unlink($filePath);
         }
         return false;
     }
