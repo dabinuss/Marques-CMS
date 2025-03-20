@@ -118,6 +118,11 @@ class SafetyXSS
                 return preg_replace_callback('/[^\w\s-]/u', function ($matches) {
                     $char = $matches[0];
                     $ord = function_exists('mb_ord') ? mb_ord($char, 'UTF-8') : ord($char);
+                    if (!function_exists('mb_ord')) {
+                        $ord = unpack('N', mb_convert_encoding($char, 'UCS-4BE', 'UTF-8'))[1];
+                    } else {
+                        $ord = mb_ord($char, 'UTF-8');
+                    }
                     return '\\' . strtoupper(dechex($ord)) . ' ';
                 }, $data);
                 
