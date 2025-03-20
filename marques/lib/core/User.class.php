@@ -149,6 +149,8 @@ class User {
     private function _getUsers(): array {
         $configManager = AppConfig::getInstance();
         $users = $configManager->load('users');
+
+        $modified = false;
         if (empty($users)) {
             $users = [
                 'admin' => [
@@ -160,7 +162,7 @@ class User {
                     'first_login' => true
                 ]
             ];
-            $this->_saveUsers($users);
+            $modified = true;
         }
         if (!isset($users['admin'])) {
             $users['admin'] = [
@@ -171,12 +173,16 @@ class User {
                 'last_login' => 0,
                 'first_login' => true
             ];
-            $this->_saveUsers($users);
+            $modified = true;
         }
         if (!isset($users['admin']['first_login'])) {
             $users['admin']['first_login'] = empty($users['admin']['password']);
+            $modified = true;
+        }
+        if ($modified) {
             $this->_saveUsers($users);
         }
+
         return $users;
     }
 
