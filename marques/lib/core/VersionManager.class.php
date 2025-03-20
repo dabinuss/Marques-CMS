@@ -22,6 +22,11 @@ class VersionManager {
      * @var int Maximale Anzahl von Versionen pro Inhalt
      */
     private $_maxVersions;
+
+    /**
+     * @var array Inhaltstypen
+     */
+    private $_contentTypes;
     
     /**
      * Konstruktor
@@ -29,24 +34,27 @@ class VersionManager {
      * @param int $maxVersions Maximale Anzahl von Versionen (Standard: 10)
      */
     public function __construct($maxVersions = 10) {
+        /* Konfiguration der Inhaltstypen */
+        $contentTypes = [
+            'pages', 
+            'blog', 
+            'media'
+        ];
+
         $this->_versionsDir = MARQUES_ROOT_DIR . '/content/versions';
         $this->_maxVersions = $maxVersions;
+        $this->_contentTypes = $contentTypes; // Initialisierung der Inhaltstypen
         
         // Verzeichnisstruktur sicherstellen
         $this->ensureVersionsDirectory();
     }
-    
-    /**
-     * Stellt sicher, dass das Versionsverzeichnis existiert
-     */
+
     public function ensureVersionsDirectory() {
         if (!is_dir($this->_versionsDir)) {
             mkdir($this->_versionsDir, 0755, true);
         }
-        
-        // Unterverzeichnisse für verschiedene Inhaltstypen
-        $contentTypes = ['pages', 'blog', 'media'];
-        foreach ($contentTypes as $type) {
+
+        foreach ($this->_contentTypes as $type) { // Verwendung der konfigurierbaren Inhaltstypen
             $dir = $this->_versionsDir . '/' . $type;
             if (!is_dir($dir)) {
                 mkdir($dir, 0755, true);
@@ -169,33 +177,33 @@ class VersionManager {
      * @param string $username Benutzername für die neue Version
      * @return bool Erfolg der Wiederherstellung
      */
-    public function restoreVersion(string $contentType, string $id, string $versionId, string $username = 'system'): bool {
-        // Inhalt der Version abrufen
+    public function restoreVersion(string $contentType, string $id, string $versionId, string $username = 'system', bool $backupBeforeRestore = true): bool { // Parameter hinzugefügt
         $content = $this->getVersionContent($contentType, $id, $versionId);
-        
+
         if ($content === false) {
             return false;
         }
-        
-        // Zielpfad für die Wiederherstellung
+
         $targetPath = $this->getContentPath($contentType, $id);
-        
+
         if ($targetPath === false) {
             return false;
         }
-        
-        // Aktuelle Version sichern, bevor wir überschreiben
-        $currentContent = file_exists($targetPath) ? file_get_contents($targetPath) : '';
-        $this->createVersion($contentType, $id, $currentContent, $username . ' (vor Wiederherstellung)');
-        
+
+        // Aktuelle Version sichern, bevor wir überschreiben (optional)
+        if ($backupBeforeRestore) {
+            $currentContent = file_exists($targetPath) ? file_get_contents($targetPath) : '';
+            $this->createVersion($contentType, $id, $currentContent, $username . ' (vor Wiederherstellung)');
+        }
+
         // Version wiederherstellen
         if (file_put_contents($targetPath, $content) === false) {
             return false;
         }
-        
+
         // Neue Version der wiederhergestellten Datei erstellen
         $this->createVersion($contentType, $id, $content, $username . ' (Wiederherstellung von ' . $versionId . ')');
-        
+
         return true;
     }
     
