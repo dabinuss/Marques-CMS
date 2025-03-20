@@ -339,16 +339,16 @@ class SafetyXSS
         bool $includeScripts = true,
         bool $includeStyles = true
     ): array {
-        $nonceValue = "'nonce-{$nonce}'";
+        $nonceValue = "nonce-{$nonce}";
         
         if ($includeScripts && isset($directives['script-src'])) {
-            $directives['script-src'] .= " {$nonceValue}";
+            $directives['script-src'] .= " '{$nonceValue}'";
         } elseif ($includeScripts) {
             $directives['script-src'] = "'{$nonceValue}'";
         }
         
         if ($includeStyles && isset($directives['style-src'])) {
-            $directives['style-src'] .= " {$nonceValue}";
+            $directives['style-src'] .= " '{$nonceValue}'";
         } elseif ($includeStyles) {
             $directives['style-src'] = "'{$nonceValue}'";
         }
