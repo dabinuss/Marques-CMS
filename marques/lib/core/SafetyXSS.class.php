@@ -115,9 +115,10 @@ class SafetyXSS
                 return substr($result, 1, -1);
                 
             case 'css':
-                // Escaping für CSS: Ersetze alle nicht-alphanumerischen Zeichen.
-                return preg_replace_callback('/[^a-zA-Z0-9]/', function ($matches) {
-                    return '\\' . str_pad(dechex(ord($matches[0])), 2, '0', STR_PAD_LEFT) . ' ';
+                return preg_replace_callback('/[^\w\s-]/u', function ($matches) {
+                    $char = $matches[0];
+                    $ord = function_exists('mb_ord') ? mb_ord($char, 'UTF-8') : ord($char);
+                    return '\\' . strtoupper(dechex($ord)) . ' ';
                 }, $data);
                 
             case 'url':
