@@ -851,6 +851,7 @@ class FlatFileTableEngine
      */
     public function updateRecord(string $recordId, array $newData): bool
     {
+        $recordId = (string)$recordId;
         $oldOffset = $this->indexBuilder->getIndexOffset($recordId);
         if ($oldOffset === null) {
             return false;
