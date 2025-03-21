@@ -23,9 +23,6 @@ $db->table('users')->setSchema(
     ['name' => 'string', 'email' => 'string', 'age' => 'int']
 );
 
-$users = $db->table('users')->selectAllRecords();
-var_dump($users);
-
 // ===========================================================
 // Formular-Verarbeitung:
 // ===========================================================
