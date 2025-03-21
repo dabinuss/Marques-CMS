@@ -912,9 +912,9 @@ class FlatFileTableEngine
         
         try {
             $oldData = $this->fileManager->readRecordAtOffset($oldOffset);
-            if (!$oldData || isset($oldData['_deleted'])) { // Check if already deleted
+            if (!$oldData || ($oldData['_deleted'] === true)) {
                 return false;
-            }
+            }            
             
             $oldData['_deleted'] = true;
             $oldData['deleted_at'] = time();
