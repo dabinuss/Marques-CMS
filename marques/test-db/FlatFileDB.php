@@ -902,8 +902,10 @@ class FlatFileTableEngine
      */
     public function deleteRecord(string $recordId): bool
     {
+        $recordId = (string)$recordId;
         $oldOffset = $this->indexBuilder->getIndexOffset($recordId);
         if ($oldOffset === null) {
+            error_log("DEBUG: ID '$recordId' nicht im Index gefunden.");
             return false;
         }
         
@@ -924,6 +926,7 @@ class FlatFileTableEngine
             
             return true;
         } catch (Throwable $e) {
+            error_log("Fehler beim Löschen des Datensatzes '$recordId': " . $e->getMessage());
             throw new RuntimeException("Fehler beim Löschen des Datensatzes $recordId: " . $e->getMessage(), 0, $e);
         }
     }
@@ -974,6 +977,7 @@ class FlatFileTableEngine
         $allKeys = $this->indexBuilder->getAllKeys();
         
         foreach ($allKeys as $recordId) {
+            $recordId = (string)$recordId;
             $record = $this->selectRecord($recordId);
             if ($record !== null) {
                 $results[] = $record;
