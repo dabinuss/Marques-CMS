@@ -30,8 +30,8 @@ $message = '';
 $searchResults = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Aktion auslesen
-    $action = $_POST['action'] ?? '';
+// Aktion auslesen
+$action = $_POST['action'] ?? '';
 
     try {
         switch ($action) {
@@ -51,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? "Benutzer mit der ID <strong>$id</strong> wurde erfolgreich eingefügt."
                     : "Fehler: Ein Benutzer mit der ID <strong>$id</strong> existiert bereits.";
 
-                $db->table('users')->compactTable();
+                // Statt Kompaktierung: Index sofort committen
+                $db->commitAllIndexes();
                 break;
 
             // Benutzer aktualisieren
@@ -70,7 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? "Benutzer mit der ID <strong>$id</strong> wurde erfolgreich aktualisiert."
                     : "Fehler: Benutzer mit der ID <strong>$id</strong> konnte nicht gefunden werden.";
 
-                $db->table('users')->compactTable();
+                // Statt Kompaktierung: Index sofort committen
+                $db->commitAllIndexes();
                 break;
 
             // Benutzer löschen
@@ -81,6 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? "Benutzer mit der ID <strong>$id</strong> wurde erfolgreich gelöscht."
                     : "Fehler: Benutzer mit der ID <strong>$id</strong> konnte nicht gefunden werden.";
 
+                // Auch hier: Index sofort committen
+                $db->commitAllIndexes();
                 break;
 
             // Benutzer suchen
@@ -93,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = "Suche nach Benutzern mit dem Begriff <strong>$searchTerm</strong> durchgeführt.";
                 break;
 
-            // Tabelle kompaktieren
+            // Tabelle kompaktieren (als manuelle Systemaktion)
             case 'compact_table':
                 $db->table('users')->compactTable();
                 $message = "Tabelle 'users' wurde kompaktiert.";
@@ -105,12 +109,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = "Die Datenbank wurde geleert.";
                 break;
 
+            // Backup-Aktion ergänzen (falls noch benötigt)
+            case 'backup_db':
+                $backupResults = $db->createBackup(FlatFileDBConstants::DEFAULT_BACKUP_DIR);
+                $message = "Backup wurde erstellt.";
+                break;
+
             default:
                 $message = "Unbekannte Aktion.";
         }
     } catch (Exception $e) {
         $message = "Fehler: " . $e->getMessage();
     }
+
 }
 
 // Änderungen sichern
