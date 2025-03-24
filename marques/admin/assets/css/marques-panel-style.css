@@ -10,6 +10,7 @@
     --danger-color: #f44336;
     --light-gray: #f5f7fa;
     --border-color: #e0e0e0;
+    --border-secondary-color: #9e9e9e;
     --text-primary: #263238;
     --text-secondary: #546e7a;
     --text-light: #ffffff;
@@ -315,6 +316,19 @@ a:hover {
 
 .box, .stat-card {
     border: 1px solid #a0a0a0;
+}
+
+
+.box-header .btn, .menu-item-actions .btn, .btn {
+    background: none;
+    color: var(--text-secondary);
+    padding: 0.4rem 0.6rem;
+    border: 1px dashed var(--primary-color);
+    box-shadow: var(--box-shadow);
+}
+
+.btn {
+    border: 1px solid var(--primary-color);
 }
 
 .table-container {
@@ -747,6 +761,18 @@ textarea {
     background-color: var(--gray-100);
 }
 
+.box-header .menu-tabs {
+    position: relative;
+    top: -1rem;
+    left: -1rem;
+    padding: 0.4rem 0.8rem;
+    margin-bottom:0px;
+}
+
+.box-header .menu-tabs > a {
+    padding:0.4rem 0.8rem;
+}
+
 .ui-sortable-helper {
     box-shadow: var(--box-shadow);
 }
@@ -820,4 +846,36 @@ textarea {
     .grid-container {
         grid-template-columns: 1fr;
     }
+}
+
+.modal {
+    display: none; /* Standardmäßig ausblenden */
+    position: fixed; /* Fest positioniert, damit es über dem Inhalt schwebt */
+    z-index: 1000; /* Über allen anderen Inhalten */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Falls der Inhalt größer ist als das Fenster */
+    background-color: rgba(0, 0, 0, 0.5); /* Halbtransparentes schwarzes Overlay */
+}
+
+/* Modal-Inhalt */
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto; /* Zentriert den Inhalt horizontal und platziert ihn ca. 15% vom oberen Rand */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Breite des Modals */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Schließ-Button im Modal */
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
 }

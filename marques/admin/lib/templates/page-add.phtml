@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seite bearbeiten - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+    <title>Neue Seite erstellen - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
     <link rel="stylesheet" href="assets/css/marques-panel-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="assets/js/tinymce/tinymce.min.js"></script>
@@ -16,7 +16,7 @@
         
         <main class="main-content">
             <div class="header">
-                <h1 class="admin-page-title">Seite bearbeiten</h1>
+                <h1 class="admin-page-title">Neue Seite erstellen</h1>
                 <div class="header-actions">
                     <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" alt="Neue Seite">
                         <button class="btn">
@@ -45,7 +45,7 @@
             <div class="grid-container">
                 <div class="box col-6">
                     <div class="box-header">
-                        <h3 class="box-title">Seiten Bearbeitung</h3>
+                        <h3 class="box-title">Seiten Erstellung</h3>
                     </div>
                     <div class="box-content">
                         <?php if (!empty($success_message)): ?>
@@ -62,13 +62,13 @@
             
                         <form method="post" class="admin-form">
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
-                            <input type="hidden" name="id" value="<?= htmlspecialchars($page['id']); ?>">
+                            <!-- Kein Hidden-Feld für "id", da es eine neue Seite ist -->
                             
                             <div class="form-row">
                                 <div class="form-column">
                                     <div class="form-group">
                                         <label for="title" class="form-label">Titel</label>
-                                        <input type="text" id="title" name="title" class="form-control" value="<?= htmlspecialchars($page['title']); ?>" required>
+                                        <input type="text" id="title" name="title" class="form-control" value="" required>
                                     </div>
                                 </div>
                                 
@@ -76,9 +76,9 @@
                                     <div class="form-group">
                                         <label for="template" class="form-label">Template</label>
                                         <select id="template" name="template" class="form-control">
-                                            <option value="page" <?= $page['template'] === 'page' ? 'selected' : ''; ?>>Standard-Seite</option>
-                                            <option value="landing" <?= $page['template'] === 'landing' ? 'selected' : ''; ?>>Landing-Page</option>
-                                            <option value="sidebar" <?= $page['template'] === 'sidebar' ? 'selected' : ''; ?>>Seite mit Seitenleiste</option>
+                                            <option value="page">Standard-Seite</option>
+                                            <option value="landing">Landing-Page</option>
+                                            <option value="sidebar">Seite mit Seitenleiste</option>
                                         </select>
                                     </div>
                                 </div>
@@ -86,19 +86,19 @@
                             
                             <div class="form-group">
                                 <label for="description" class="form-label">Beschreibung</label>
-                                <input type="text" id="description" name="description" class="form-control" value="<?= htmlspecialchars($page['description']); ?>">
+                                <input type="text" id="description" name="description" class="form-control" value="">
                                 <div class="form-help">Kurze Beschreibung der Seite für SEO-Zwecke.</div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="featured_image" class="form-label">Beitragsbild (URL)</label>
-                                <input type="text" id="featured_image" name="featured_image" class="form-control" value="<?= htmlspecialchars($page['featured_image']); ?>">
+                                <input type="text" id="featured_image" name="featured_image" class="form-control" value="">
                                 <div class="form-help">Relativer Pfad zum Beitragsbild (z.B. "uploads/image.jpg").</div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="content" class="form-label">Inhalt</label>
-                                <textarea id="content" name="content" class="form-control content-editor"><?= htmlspecialchars($page['content']); ?></textarea>
+                                <textarea id="content" name="content" class="form-control content-editor"></textarea>
                             </div>
                             
                             <div class="admin-actions">

@@ -12,12 +12,17 @@ declare(strict_types=1);
 
 use Marques\Admin\MarquesAdmin;
 use Marques\Core\DatabaseHandler;
+use Marques\Core\ThemeManager;
 
 $adminApp = new MarquesAdmin();
 $container = $adminApp->getContainer();
 
 // Hole den DatabaseHandler via DI
 $dbHandler = $container->get(DatabaseHandler::class);
+$themeManager = $container->get(ThemeManager::class);
+
+$themes = $themeManager->getThemes();
+$activeTheme = $themeManager->getActiveTheme();
 
 // Meldungsvariablen
 $success_message = '';

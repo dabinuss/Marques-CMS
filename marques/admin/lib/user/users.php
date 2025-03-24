@@ -8,14 +8,18 @@
  * @subpackage admin
  */
 
-// Benutzer-Objekt initialisieren
-$user = new \Marques\Core\User();
+use Marques\Admin\MarquesAdmin;
+use Marques\Core\DatabaseHandler;
+use Marques\Core\User;
 
-// CSRF-Token generieren
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
+
+$dbHandler = $container->get(DatabaseHandler::class);
+$dbHandler->useTable('settings');
+
+// Benutzer-Objekt initialisieren
+$user = $container->get(User::class);
 
 // Meldungsvariablen
 $success_message = '';

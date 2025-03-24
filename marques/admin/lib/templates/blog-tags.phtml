@@ -70,8 +70,8 @@
                 <h2 class="admin-page-title">Tags verwalten</h2>
                 
                 <div class="admin-actions">
-                    <a href="blog.php" class="admin-button">
-                        <span class="admin-button-icon"><i class="fas fa-arrow-left"></i></span>
+                    <a href="blog.php">
+                        <span class="btn-icon"><i class="fas fa-arrow-left"></i></span>
                         Zurück zum Blog
                     </a>
                 </div>
@@ -98,8 +98,8 @@
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                         <input type="hidden" name="action" value="add">
                         <input type="text" name="tag_name" class="form-control" placeholder="Tagname" required>
-                        <button type="submit" class="admin-button">
-                            <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
+                        <button type="submit" class="btn">
+                            <span class="btn-icon"><i class="fas fa-plus"></i></span>
                             Hinzufügen
                         </button>
                     </form>
@@ -126,7 +126,7 @@
                                             <input type="hidden" name="action" value="rename">
                                             <input type="hidden" name="old_name" value="<?= htmlspecialchars($name); ?>">
                                             <input type="text" name="new_name" class="form-control" value="<?= htmlspecialchars($name); ?>" required>
-                                            <button type="submit" class="admin-button">
+                                            <button type="submit" class="btn">
                                                 <i class="fas fa-save"></i> Umbenennen
                                             </button>
                                         </form>
@@ -136,7 +136,7 @@
                                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="tag_name" value="<?= htmlspecialchars($name); ?>">
-                                            <button type="submit" class="admin-button admin-button-danger">
+                                            <button type="submit" class="btn btn-danger">
                                                 <i class="fas fa-trash-alt"></i> Löschen
                                             </button>
                                         </form>

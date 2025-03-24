@@ -1,8 +1,8 @@
 <?php
 /**
- * marques CMS - Seiten-Editor
+ * marques CMS - Neue Seite erstellen
  *
- * Ermöglicht das Bearbeiten von bestehenden Seiten.
+ * Ermöglicht das Erstellen von Seiten.
  *
  * @package marques
  * @subpackage admin
@@ -32,7 +32,7 @@ $csrf_token = $_SESSION['csrf_token'];
 $success_message = '';
 $error_message = '';
 
-// Seitendaten initialisieren (Default-Werte)
+// Seitendaten initialisieren (Default-Werte für neue Seite)
 $page = [
     'id' => '',
     'title' => '',
@@ -42,19 +42,7 @@ $page = [
     'featured_image' => ''
 ];
 
-$editing = false;
-// Überprüfen, ob es sich um die Bearbeitung einer bestehenden Seite handelt
-if (isset($_GET['id']) && !empty($_GET['id'])) {
-    $page_id = $_GET['id'];
-    $existing_page = $pageManager->getPage($page_id);
-    
-    if ($existing_page) {
-        $page = $existing_page;
-        $editing = true;
-    } else {
-        $error_message = 'Die angeforderte Seite wurde nicht gefunden.';
-    }
-}
+$editing = false; // Wir sind im "add"-Modus
 
 // Formular verarbeiten
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -63,7 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error_message = 'Ungültige Anfrage. Bitte versuchen Sie es erneut.';
     } else {
         // Formulardaten verarbeiten
-        $page['id'] = $_POST['id'] ?? '';
         $page['title'] = $_POST['title'] ?? '';
         $page['description'] = $_POST['description'] ?? '';
         $page['content'] = $_POST['content'] ?? '';
@@ -78,10 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Seite speichern
             if ($pageManager->savePage($page)) {
-                $success_message = 'Seite erfolgreich gespeichert.';
+                $success_message = 'Seite erfolgreich erstellt.';
                 
-                // Falls es sich um eine neue ID handelt (selten im Edit-Modus)
-                if (empty($_POST['id']) && !empty($page['title'])) {
+                // Bei erfolgreicher Erstellung könnte die ID z.B. neu generiert werden
+                if (!empty($page['title'])) {
                     $page['id'] = $pageManager->generateSlug($page['title']);
                     $editing = true;
                 }

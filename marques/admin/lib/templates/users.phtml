@@ -1,116 +1,161 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($page_title); ?> - Admin-Panel - marques CMS</title>
-    <link rel="stylesheet" href="assets/css/admin-style.css">
+    <title>Seiten verwalten - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
     <link rel="stylesheet" href="assets/css/marques-panel-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
+
 <body>
-    <div class="admin-layout">
-        
+    <div class="container">
         <!-- SIDEBAR & NAVIGATION -->
         <?php include 'sidebar.phtml'; ?>
         
-        <main class="admin-content">
-            <div class="admin-topbar">
-                <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
-                
-                <div class="admin-actions">
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=user-add'); ?>" class="admin-button">
-                        <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
-                        Neuer Benutzer
+        <main class="main-content">
+            <div class="header">
+                <h1><?= htmlspecialchars($page_title); ?></h1>
+                <div class="header-actions">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" alt="Neue Seite">
+                        <button class="btn">
+                            <?= $this->renderIcon('notebook', '', '24'); ?>
+                        </button>
+                    </a>
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" alt="Neuer Beitrag">
+                        <button class="btn">
+                            <?= $this->renderIcon('pencil-plus', '', '24'); ?>
+                        </button>
+                    </a>
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>" alt="Hochladen">
+                        <button class="btn">
+                            <?= $this->renderIcon('file-upload', '', '24'); ?>
+                        </button>
+                    </a>
+                    <a href="../" alt="Website ansehen" target="_blank">
+                        <button class="btn">
+                            <?= $this->renderIcon('world-star', '', '24'); ?>
+                            Website ansehen
+                        </button>
                     </a>
                 </div>
             </div>
+
+
+            <div class="grid-container">
+                <div class="box col-6">
+                    <div class="box-header">
+                        <div class="header-actions">
+                            <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-add'); ?>" alt="Neuer Beitrag">
+                                <button class="btn">
+                                    <?= $this->renderIcon('pencil-plus', '', '24'); ?>
+                                    Seite erstellen
+                                </button>
+                            </a>
+                        </div>
+
+                        <h3 class="box-title">Seiten Übersicht</h3>
+                    </div>
+                    <div class="box-content">
             
-            <?php if (!empty($success_message)): ?>
-                <div class="admin-alert success">
-                    <i class="fas fa-check-circle"></i> <?= htmlspecialchars($success_message); ?>
-                </div>
-            <?php endif; ?>
+                        <?php if (!empty($success_message)): ?>
+                            <div class="admin-alert success">
+                                <i class="fas fa-check-circle"></i> <?= htmlspecialchars($success_message); ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (!empty($error_message)): ?>
+                            <div class="admin-alert error">
+                                <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error_message); ?>
+                            </div>
+                        <?php endif; ?>
             
-            <?php if (!empty($error_message)): ?>
-                <div class="admin-alert error">
-                    <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error_message); ?>
-                </div>
-            <?php endif; ?>
-            
-            <div class="admin-card">
-                <div class="admin-card-content">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Benutzername</th>
-                                <th>Anzeigename</th>
-                                <th>Rolle</th>
-                                <th>Erstellt am</th>
-                                <th>Letzter Login</th>
-                                <th>Aktionen</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($all_users as $username => $userData): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($username); ?></td>
-                                    <td><?= htmlspecialchars($userData['display_name']); ?></td>
-                                    <td>
-                                        <?php 
-                                        switch ($userData['role']) {
-                                            case 'admin':
-                                                echo '<span class="role-badge role-admin">Administrator</span>';
-                                                break;
-                                            case 'editor':
-                                                echo '<span class="role-badge role-editor">Editor</span>';
-                                                break;
-                                            case 'author':
-                                                echo '<span class="role-badge role-author">Autor</span>';
-                                                break;
-                                            default:
-                                                echo htmlspecialchars($userData['role']);
-                                        }
-                                        ?>
-                                    </td>
-                                    <td>
-                                        <?php 
-                                        if (!empty($userData['created'])) {
-                                            echo date('d.m.Y H:i', $userData['created']); 
-                                        } else {
-                                            echo '-';
-                                        }
-                                        ?>
-                                    </td>
-                                    <td>
-                                        <?php 
-                                        if (!empty($userData['last_login'])) {
-                                            echo date('d.m.Y H:i', $userData['last_login']); 
-                                        } else {
-                                            echo 'Noch nie';
-                                        }
-                                        ?>
-                                    </td>
-                                    <td class="actions">
-                                        <a href="<?= \Marques\Core\Helper::appQueryParam('page=user-edit&username='); ?><?= urlencode($username); ?>" class="action-btn edit" title="Bearbeiten">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        
-                                        <?php if ($username !== 'admin'): ?>
-                                            <form method="post" action="" onsubmit="return confirm('Möchten Sie den Benutzer <?= htmlspecialchars($username); ?> wirklich löschen?');" style="display: inline;">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="username" value="<?= htmlspecialchars($username); ?>">
-                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
-                                                <button type="submit" class="action-btn delete" title="Löschen">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </form>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+
+                        <div class="table-container">
+                            <table>
+                                <colgroup>
+                                    <col class="tbl-col-2">
+                                    <col class="tbl-col-2">
+                                    <col class="tbl-col-2">
+                                    <col class="tbl-col-1">
+                                    <col class="tbl-col-1">
+                                    <col class="tbl-col-2">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>Benutzername</th>
+                                        <th>Anzeigename</th>
+                                        <th>Rolle</th>
+                                        <th>Erstellt am</th>
+                                        <th>Letzter Login</th>
+                                        <th>Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($all_users as $username => $userData): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($username); ?></td>
+                                            <td><?= htmlspecialchars($userData['display_name']); ?></td>
+                                            <td>
+                                                <?php 
+                                                switch ($userData['role']) {
+                                                    case 'admin':
+                                                        echo '<span class="role-badge role-admin">Administrator</span>';
+                                                        break;
+                                                    case 'editor':
+                                                        echo '<span class="role-badge role-editor">Editor</span>';
+                                                        break;
+                                                    case 'author':
+                                                        echo '<span class="role-badge role-author">Autor</span>';
+                                                        break;
+                                                    default:
+                                                        echo htmlspecialchars($userData['role']);
+                                                }
+                                                ?>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                if (!empty($userData['created'])) {
+                                                    echo date('d.m.Y H:i', $userData['created']); 
+                                                } else {
+                                                    echo '-';
+                                                }
+                                                ?>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                if (!empty($userData['last_login'])) {
+                                                    echo date('d.m.Y H:i', $userData['last_login']); 
+                                                } else {
+                                                    echo 'Noch nie';
+                                                }
+                                                ?>
+                                            </td>
+                                            <td class="menu-item-actions">
+                                                <a href="<?= \Marques\Core\Helper::appQueryParam('page=user-edit&username='); ?><?= urlencode($username); ?>" class="action-btn edit" title="Bearbeiten">
+                                                    <button type="button" class="btn btn-danger">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                </a>
+                                                
+                                                <?php if ($username !== 'admin'): ?>
+                                                    <form method="post" action="" onsubmit="return confirm('Möchten Sie den Benutzer <?= htmlspecialchars($username); ?> wirklich löschen?');" style="display: inline;">
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="username" value="<?= htmlspecialchars($username); ?>">
+                                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
+                                                        <button type="submit" class="btn btn-danger delete" title="Löschen">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

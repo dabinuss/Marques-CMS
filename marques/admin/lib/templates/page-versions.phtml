@@ -22,12 +22,12 @@
                 <h2 class="admin-page-title">Versionen: <?= htmlspecialchars($page['title']); ?></h2>
                 
                 <div class="admin-actions">
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit&id=' . htmlspecialchars($page_id)); ?>" class="admin-button">
-                        <span class="admin-button-icon"><i class="fas fa-edit"></i></span>
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit&id=' . htmlspecialchars($page_id)); ?>">
+                        <span class="btn-icon"><i class="fas fa-edit"></i></span>
                         Seite bearbeiten
                     </a>
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>" class="admin-button">
-                        <span class="admin-button-icon"><i class="fas fa-arrow-left"></i></span>
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>">
+                        <span class="btn-icon"><i class="fas fa-arrow-left"></i></span>
                         Zurück zur Übersicht
                     </a>
                 </div>
@@ -60,14 +60,14 @@
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                             <input type="hidden" name="action" value="restore">
                             <input type="hidden" name="version_id" value="<?= htmlspecialchars($version_metadata['version_id']); ?>">
-                            <button type="submit" class="admin-button">
-                                <span class="admin-button-icon"><i class="fas fa-history"></i></span>
+                            <button type="submit" class="btn">
+                                <span class="btn-icon"><i class="fas fa-history"></i></span>
                                 Diese Version wiederherstellen
                             </button>
                         </form>
                         
-                        <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-versions&id=' . htmlspecialchars($page_id)); ?>" class="admin-button">
-                            <span class="admin-button-icon"><i class="fas fa-times"></i></span>
+                        <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-versions&id=' . htmlspecialchars($page_id)); ?>">
+                            <span class="btn-icon"><i class="fas fa-times"></i></span>
                             Zurück zur Versionsliste
                         </a>
                     </div>
@@ -151,12 +151,12 @@
                 Die aktuelle Version wird dabei als neue Version gesichert.
             </div>
             <div class="modal-actions">
-                <button id="cancelRestore" class="admin-button modal-close">Abbrechen</button>
+                <button id="cancelRestore" class="btn modal-close">Abbrechen</button>
                 <form id="restoreForm" method="post" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="action" value="restore">
                     <input type="hidden" name="version_id" id="restoreVersionId">
-                    <button type="submit" class="admin-button">Wiederherstellen</button>
+                    <button type="submit" class="btn">Wiederherstellen</button>
                 </form>
             </div>
         </div>
@@ -171,12 +171,12 @@
                 Dieser Vorgang kann nicht rückgängig gemacht werden.
             </div>
             <div class="modal-actions">
-                <button id="cancelDelete" class="admin-button modal-close">Abbrechen</button>
+                <button id="cancelDelete" class="btn modal-close">Abbrechen</button>
                 <form id="deleteForm" method="post" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="version_id" id="deleteVersionId">
-                    <button type="submit" class="admin-button modal-delete">Löschen</button>
+                    <button type="submit" class="btn modal-delete">Löschen</button>
                 </form>
             </div>
         </div>

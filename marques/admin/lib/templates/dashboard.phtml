@@ -22,25 +22,22 @@
             <div class="header">
                 <h1><?= htmlspecialchars($page_title); ?></h1>
                 <div class="header-actions">
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" alt="Neue Seite"
-                        class="admin-button">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" alt="Neue Seite">
                         <button class="btn">
                             <?= $this->renderIcon('notebook', '', '24'); ?>
                         </button>
                     </a>
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" alt="Neuer Beitrag"
-                        class="admin-button">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" alt="Neuer Beitrag">
                         <button class="btn">
                             <?= $this->renderIcon('pencil-plus', '', '24'); ?>
                         </button>
                     </a>
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>"
-                        class="admin-button" alt="Hochladen">
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>" alt="Hochladen">
                         <button class="btn">
                             <?= $this->renderIcon('file-upload', '', '24'); ?>
                         </button>
                     </a>
-                    <a href="../" class="admin-button" alt="Website ansehen" target="_blank">
+                    <a href="../" alt="Website ansehen" target="_blank">
                         <button class="btn">
                             <?= $this->renderIcon('world-star', '', '24'); ?>
                             Website ansehen
@@ -177,7 +174,7 @@
                                         <td></td>
                                         <td>
                                             <button class="btn">
-                                                <a href="#" class="admin-button" target="_blank">
+                                                <a href="#" target="_blank">
                                                     Cache leeren
                                                 </a>
                                             </button>

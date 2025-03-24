@@ -19,12 +19,12 @@
             <h2 class="admin-page-title">Blog verwalten</h2>
 
             <div class="admin-actions">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>" class="admin-button">
-                    <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
+                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>">
+                    <span class="btn-icon"><i class="fas fa-plus"></i></span>
                     Neuer Beitrag
                 </a>
-                <a href="../blog" class="admin-button" target="_blank">
-                    <span class="admin-button-icon"><i class="fas fa-external-link-alt"></i></span>
+                <a href="../blog" target="_blank">
+                    <span class="btn-icon"><i class="fas fa-external-link-alt"></i></span>
                     Blog ansehen
                 </a>
             </div>
@@ -131,12 +131,12 @@
             Dieser Vorgang kann nicht rückgängig gemacht werden.
         </div>
         <div class="modal-actions">
-            <button id="cancelDelete" class="admin-button modal-close">Abbrechen</button>
+            <button id="cancelDelete" class="btn modal-close">Abbrechen</button>
             <form id="deleteForm" method="post" style="display: inline;">
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="post_id" id="deletePostId">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
-                <button type="submit" class="admin-button modal-delete">Löschen</button>
+                <button type="submit" class="btn modal-delete">Löschen</button>
             </form>
         </div>
     </div>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menüpunkt hinzufügen - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
+  <link rel="stylesheet" href="assets/css/marques-panel-style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    /* Für das Formular – du kannst hier ggf. weitere Anpassungen vornehmen */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <?php include 'sidebar.phtml'; ?>
+    <main class="main-content">
+      <div class="header">
+        <h1>Menüpunkt hinzufügen</h1>
+        <div class="header-actions">
+          <a href="<?= \Marques\Core\Helper::appQueryParam('page=navigation-list'); ?>">
+            <button class="btn"><i class="fas fa-arrow-left"></i> Zurück zur Übersicht</button>
+          </a>
+        </div>
+      </div>
+      <div class="grid-container">
+        <div class="box col-6">
+          <div class="box-header">
+            <h3 class="box-title">Neuen Menüpunkt erstellen</h3>
+          </div>
+          <div class="box-content">
+            <?php if (!empty($error_message)): ?>
+              <div class="alert alert-danger"><?= htmlspecialchars($error_message); ?></div>
+            <?php endif; ?>
+            <form method="post" class="admin-form">
+              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
+              <input type="hidden" name="action" value="add_item">
+              <input type="hidden" name="menu_type" value="<?= $activeMenu; ?>">
+              <div class="form-row">
+                <div class="form-column">
+                  <div class="form-group">
+                    <label for="title" class="form-label">Titel</label>
+                    <input type="text" id="title" name="title" class="form-control" required>
+                  </div>
+                </div>
+                <div class="form-column">
+                  <div class="form-group">
+                    <label for="url" class="form-label">URL</label>
+                    <input type="text" id="url" name="url" class="form-control" required>
+                    <div class="quick-urls">
+                      <small>Schnellauswahl:</small>
+                      <?php foreach ($commonUrls as $commonUrl): ?>
+                        <a href="#" class="quick-url-link" data-url="<?= htmlspecialchars($commonUrl['url']); ?>">
+                          <?= htmlspecialchars($commonUrl['title']); ?>
+                        </a>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-column">
+                  <div class="form-group">
+                    <label class="form-label">Öffnen in</label>
+                    <div class="form-check">
+                      <input type="checkbox" id="target" name="target" value="_blank">
+                      <label for="target">Neuem Tab öffnen</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="admin-actions">
+                <button type="submit" class="btn">
+                  <span class="btn-icon"><i class="fas fa-plus"></i></span> Hinzufügen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    $(document).ready(function(){
+      $(".quick-url-link").click(function(e){
+        e.preventDefault();
+        var url = $(this).data("url");
+        $("#url").val(url);
+      });
+    });
+  </script>
+</body>
+</html>

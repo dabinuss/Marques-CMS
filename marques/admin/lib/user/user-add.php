@@ -6,10 +6,20 @@
  *
  * @package marques
  * @subpackage admin
- */
+*/
+
+use Marques\Admin\MarquesAdmin;
+use Marques\Core\DatabaseHandler;
+use Marques\Core\User;
+
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
+
+$dbHandler = $container->get(DatabaseHandler::class);
+$dbHandler->useTable('settings');
 
 // Benutzer-Objekt initialisieren
-$user = new \Marques\Core\User();
+$user = $container->get(User::class);
 
 // Meldungsvariablen initialisieren
 $success_message = '';

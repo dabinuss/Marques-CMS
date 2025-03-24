@@ -19,8 +19,8 @@
                 <h2 class="admin-page-title"><?= htmlspecialchars($page_title); ?></h2>
                 
                 <div class="admin-actions">
-                    <a href="users.php" class="admin-button">
-                        <span class="admin-button-icon"><i class="fas fa-arrow-left"></i></span>
+                    <a href="users.php">
+                        <span class="btn-icon"><i class="fas fa-arrow-left"></i></span>
                         Zurück zur Übersicht
                     </a>
                 </div>
@@ -100,8 +100,8 @@
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                         
                         <div class="form-group">
-                            <button type="submit" class="admin-button">
-                                <span class="admin-button-icon"><i class="fas fa-save"></i></span>
+                            <button type="submit" class="btn">
+                                <span class="btn-icon"><i class="fas fa-save"></i></span>
                                 <?= $edit_mode ? 'Benutzer speichern' : 'Benutzer erstellen'; ?>
                             </button>
                         </div>
