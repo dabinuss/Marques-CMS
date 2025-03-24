@@ -188,7 +188,6 @@ a:hover {
     width: 24px;
     height: 20px;
     transition: var(--transition);
-    display: flex;
     align-items: center;
     justify-content: center;
 }
@@ -349,7 +348,7 @@ table {
 
 th,
 td {
-    padding: 0.6rem 1rem;
+    padding: 1rem;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.85rem;
@@ -779,15 +778,23 @@ textarea {
     padding:0.4rem 0.8rem;
 }
 
+.ui-sortable .menu-item {
+    box-shadow: var(--box-shadow);
+    border:1px dashed var(--border-color);
+    margin-bottom:0.2rem;
+}
+
 .ui-sortable-helper {
     box-shadow: var(--box-shadow);
 }
 
 .ui-sortable-placeholder {
-    background-color: var(--gray-100);
-    border: 2px dashed var(--gray-300);
+    background-color: var(--warning-color);
+    border: 1px dashed var(--warning-color);
     visibility: visible !important;
-    height: 40px;
+    opacity:0.2;
+    height: 3.4rem;
+    margin-bottom:0.2rem;
 }
 
 .quick-urls {
