@@ -187,7 +187,7 @@ class Helper {
     public static function themeUrl(string $path = ''): string {
         static $themeManager = null;
         if ($themeManager === null) {
-            $themeManager = new ThemeManager();
+            $themeManager = new ThemeManager(self::$dbHandler ?? DatabaseHandler::getInstance());
         }
         return $themeManager->getThemeAssetsUrl($path);
     }
