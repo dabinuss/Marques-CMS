@@ -239,7 +239,7 @@ a:hover {
     color: #fff;
     border: none;
     border-radius: var(--border-radius);
-    padding: 0.4rem;
+    padding: 0.4rem 0.6rem;
     cursor: pointer;
     font-size: 0.85rem;
     transition: var(--transition);
