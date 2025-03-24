@@ -92,7 +92,8 @@ class User {
             $newId = max($ids) + 1;
         }
         $dbHandler = $this->dbHandler->useTable('user');
-        return $dbHandler->insertRecord($newUser);
+        $insertResult = $dbHandler->insertRecord($newUser);
+        return $insertResult > 0;
     }
 
     /**

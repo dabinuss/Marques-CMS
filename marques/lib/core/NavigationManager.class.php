@@ -71,7 +71,7 @@ class NavigationManager {
         if (!isset($menuItem['id'])) {
             $menuItem['id'] = (int)(microtime(true) * 1000);
         }
-        return $navTable->insertRecord($menuItem);
+        return (bool) $navTable->insertRecord($menuItem);
     }
     
     /**
