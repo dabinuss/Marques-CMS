@@ -8,12 +8,19 @@
  * @subpackage admin
  */
 
-// Media Manager initialisieren
-$mediaManager = new \Marques\Core\MediaManager();
+use Marques\Admin\MarquesAdmin;
+use \Marques\Core\DatabaseHandler;
+use Marques\Core\MediaManager;
 
-// Konfiguration laden
-$configManager = \Marques\Core\AppConfig::getInstance();
-$system_config = $configManager->load('system') ?: [];
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
+
+// Hole den DatabaseHandler via DI
+$dbHandler = $container->get(DatabaseHandler::class);
+$mediaManager = $container->get(MediaManager::class);
+
+$dbHandler->useTable('settings');
+$system_config = $dbHandler->getAllSettings();
 
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {

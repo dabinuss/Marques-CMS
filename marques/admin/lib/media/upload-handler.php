@@ -11,11 +11,16 @@
 // Antwort-Header setzen
 header('Content-Type: application/json');
 
-// AppConfig initialisieren
-$configManager = \Marques\Core\AppConfig::getInstance();
+use Marques\Admin\MarquesAdmin;
+use \Marques\Core\DatabaseHandler;
 
-// Konfiguration laden
-$system_config = $configManager->load('system') ?: [];
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
+
+$dbHandler = $container->get(DatabaseHandler::class);
+
+$dbHandler->useTable('settings');
+$system_config = $dbHandler->getAllSettings();
 
 // Fehlerfunktion
 function returnError($message) {

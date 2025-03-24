@@ -8,15 +8,19 @@
  * @subpackage admin
  */
 
-// PageManager initialisieren
-$pageManager = new \Marques\Core\PageManager();
+use Marques\Admin\MarquesAdmin;
+use \Marques\Core\DatabaseHandler;
+use \Marques\Core\PageManager;
 
-// VersionManager initialisieren
-$versionManager = new \Marques\Core\VersionManager();
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
 
-// Konfiguration laden
-$configManager = \Marques\Core\AppConfig::getInstance();
-$system_config = $configManager->load('system') ?: [];
+// Hole den DatabaseHandler via DI
+$dbHandler = $container->get(DatabaseHandler::class);
+$pageManager = $container->get(PageManager::class);
+
+$dbHandler->useTable('settings');
+$system_config = $dbHandler->getAllSettings();
 
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {
@@ -61,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Version wiederherstellen
                 if ($action === 'restore') {
-                    if ($versionManager->restoreVersion('pages', $page_id, $version_id, $user->getCurrentUsername())) {
+                    if ($versionManager->restoreVersion('pages', $page_id, $version_id, $user->getCurrentDisplayName())) {
                         $success_message = 'Version wurde erfolgreich wiederhergestellt.';
                     } else {
                         $error_message = 'Fehler beim Wiederherstellen der Version.';

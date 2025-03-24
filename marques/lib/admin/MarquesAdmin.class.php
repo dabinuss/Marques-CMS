@@ -9,6 +9,7 @@ use Marques\Core\AppLogger;
 use Marques\Core\AppEvents;
 use Marques\Core\AppCache;
 use Marques\Core\AppPath;
+use Marques\Core\MediaManager;
 use Marques\Core\PageManager;
 use Marques\Core\User;
 use Marques\Core\Content;
@@ -108,6 +109,10 @@ class MarquesAdmin
         // PageManager
         $this->adminContainer->register(PageManager::class, function(AppNode $container) {
             return new PageManager($container->get(DatabaseHandler::class));
+        });
+        // PageManager
+        $this->adminContainer->register(MediaManager::class, function(AppNode $container) {
+            return new MediaManager($container->get(DatabaseHandler::class));
         });
         // Optional: weitere Admin-spezifische Services können hier registriert werden
     }

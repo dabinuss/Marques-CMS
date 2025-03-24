@@ -8,7 +8,7 @@
  * @subpackage admin
  */
 
- use Marques\Admin\MarquesAdmin;
+use Marques\Admin\MarquesAdmin;
 use \Marques\Core\DatabaseHandler;
 use \Marques\Core\PageManager;
 
