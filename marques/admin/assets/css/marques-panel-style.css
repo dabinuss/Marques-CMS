@@ -255,6 +255,7 @@ a:hover {
 
 .btn:hover {
     background-color: var(--primary-dark);
+    color: var(--text-light);
 }
 
 .btn-icon {
@@ -329,6 +330,11 @@ a:hover {
 
 .btn {
     border: 1px solid var(--primary-color);
+}
+
+.box-header .btn:hover, .menu-item-actions .btn:hover, .btn:hover {
+    background-color: var(--primary-dark);
+    color: var(--text-light);
 }
 
 .table-container {
