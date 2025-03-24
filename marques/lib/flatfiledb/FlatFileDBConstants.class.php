@@ -3,11 +3,6 @@ declare(strict_types=1);
 
 namespace FlatFileDB;
 
-use InvalidArgumentException;
-use RuntimeException;
-use JsonException;
-use Throwable;
-
 /**
  * Konfigurationskonstanten für die FlatFile-Datenbank.
  */

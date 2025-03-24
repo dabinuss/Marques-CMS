@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 class AppLogger {
-    private static ?AppLogger $instance = null;
     private string $logDir;
 
     public function __construct() {
@@ -14,16 +13,8 @@ class AppLogger {
         }
     }
 
-    public static function getInstance(): AppLogger {
-        if (self::$instance === null) {
-            self::$instance = new AppLogger();
-        }
-        return self::$instance;
-    }
-    
-    /**
-     * Schreibt eine Logzeile in die tägliche Logdatei.
-     */
+    // Entferne die statische getInstance()-Methode.
+
     public function log(string $level, string $message, array $context = []): void {
         $timestamp = (new \DateTime())->format('Y-m-d H:i:s');
         $formattedEntry = $this->formatLogEntry($timestamp, $level, $message, $context);
@@ -31,13 +22,9 @@ class AppLogger {
         file_put_contents($logFile, $formattedEntry, FILE_APPEND);
     }
     
-    /**
-     * Formatiert den Logeintrag.
-     */
     private function formatLogEntry(string $timestamp, string $level, string $message, array $context = []): string {
         $entry = "[{$timestamp}] [{$level}] {$message}";
         if (!empty($context)) {
-            // Kontext übersichtlich formatiert, z. B. als JSON mit Pretty-Print:
             $entry .= "\nContext: " . json_encode($context, JSON_PRETTY_PRINT);
         }
         return $entry . PHP_EOL;

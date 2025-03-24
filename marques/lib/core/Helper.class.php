@@ -24,11 +24,11 @@ class Helper {
     private static ?array $urlMappingCache = null;
 
     /**
-     * AppConfig-Instanz
+     * DatabaseHandler-Instanz
      *
-     * @var AppConfig|null
+     * @var DatabaseHandler|null
      */
-    private static ?AppConfig $configManager = null;
+    private static ?DatabaseHandler $dbHandler = null;
 
     /**
      * Lädt (oder gibt den bereits geladenen) Systemkonfiguration zurück.
@@ -37,12 +37,11 @@ class Helper {
      * @return array
      */
     public static function getConfig(bool $forceReload = false): array {
-        if (self::$configManager === null) {
-            self::$configManager = AppConfig::getInstance();
+        if (self::$dbHandler === null) {
+            self::$dbHandler = DatabaseHandler::getInstance();
         }
-
         if ($forceReload || self::$config === null) {
-            self::$config = self::$configManager->load('system') ?: [];
+            self::$config = self::$dbHandler->getAllSettings() ?: [];
 
             // Im Frontend: "/admin" aus der Base‑URL entfernen
             if (!defined('IS_ADMIN') && isset(self::$config['base_url']) && strpos(self::$config['base_url'], '/admin') !== false) {
@@ -55,19 +54,22 @@ class Helper {
     /**
      * Lädt (oder gibt das bereits geladene) URL-Mapping zurück.
      *
+     * Da das URL-Mapping in einer eigenen Tabelle in der Datenbank gespeichert ist,
+     * wird der Datensatz aus der Tabelle "urlmapping" (Record-ID "data") abgerufen.
+     *
      * @param bool $forceReload Erzwingt das Neuladen des Mappings
      * @return array
      */
     private static function getUrlMapping(bool $forceReload = false): array {
-        if (self::$configManager === null) {
-            self::$configManager = AppConfig::getInstance();
+        if (self::$dbHandler === null) {
+            self::$dbHandler = DatabaseHandler::getInstance();
         }
-
         if ($forceReload || self::$urlMappingCache === null) {
-            self::$urlMappingCache = self::$configManager->loadUrlMapping() ?: [];
+            $mappingHandler = self::$dbHandler->useTable('urlmapping');
+            self::$urlMappingCache = $mappingHandler->getAllRecords();
         }
         return self::$urlMappingCache;
-    }
+    }    
 
     /**
      * Gibt die Base‑URL zurück und passt sie je nach Kontext an.
@@ -97,7 +99,6 @@ class Helper {
      * @return string
      */
     public static function getSiteUrl(string $path = ''): string {
-        // Übergibt den Admin-Status an getBaseUrl
         $baseUrl = self::getBaseUrl(defined('IS_ADMIN'));
         if (!empty($path)) {
             $path = '/' . ltrim($path, '/');
@@ -168,14 +169,12 @@ class Helper {
         $urlMappings = self::getUrlMapping();
         $postId = $post['id'];
         
-        // Suche nach dem Eintrag mit blog_post_id == $postId
         foreach ($urlMappings as $routeConfig) {
              if (isset($routeConfig['options']['blog_post_id']) && $routeConfig['options']['blog_post_id'] === $postId) {
                  return self::getSiteUrl($routeConfig['pattern']);
              }
         }
         
-        // Fallback: Generiere den Pfad anhand der zentralen Logik
         return self::getSiteUrl(self::generateBlogUrlPath($post));
     }
     
@@ -212,40 +211,25 @@ class Helper {
     /**
      * Fügt einen GET-Parameter zur aktuellen URL hinzu oder aktualisiert ihn, wenn er schon existiert.
      *
-     * @param string      $param Der Parameter-String, z. B. "menu=footer".
-     * @param string|null $url   Optional: Eine Basis-URL. Standardmäßig wird $_SERVER['REQUEST_URI'] verwendet.
-     *
+     * @param string $param Der Parameter-String, z. B. "menu=footer".
+     * @param string|null $url Optional: Eine Basis-URL. Standardmäßig wird $_SERVER['REQUEST_URI'] verwendet.
      * @return string Die URL mit dem neuen bzw. aktualisierten Parameter.
      */
     public static function appQueryParam(string $param, ?string $url = null): string {
-        // Nutzt REQUEST_URI, um den gesamten aktuellen Pfad inkl. Query-String zu erhalten.
         if ($url === null) {
             $url = $_SERVER['REQUEST_URI'];
         }
-
-        // Zerlege die URL in ihre Bestandteile
         $parts = parse_url($url);
         $path = $parts['path'] ?? '';
         $query = $parts['query'] ?? '';
-
-        // Bestehende Parameter extrahieren
         parse_str($query, $existingParams);
-
-        // Neuen Parameter-String in Array umwandeln
         parse_str($param, $newParams);
-
         if (empty($newParams) && strpos($param, '=') !== false) {
-            $parts = explode('=', $param, 2);
-            $newParams[trim($parts[0])] = trim($parts[1]);
+            $partsParam = explode('=', $param, 2);
+            $newParams[trim($partsParam[0])] = trim($partsParam[1]);
         }
-
-        // Zusammenführen: Bereits vorhandene Werte werden durch neue überschrieben
         $mergedParams = array_merge($existingParams, $newParams);
-
-        // Neuen Query-String erzeugen
         $newQuery = http_build_query($mergedParams);
-
-        // URL wieder zusammensetzen
         $result = $path;
         if ($newQuery) {
             $result .= '?' . $newQuery;

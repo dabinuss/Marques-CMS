@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
-// Fehlender Import der Content-Klasse wurde ergänzt – bitte sicherstellen, dass der Namespace stimmt.
 use Marques\Core\SafetyXSS;
 use Marques\Core\Content;
 
@@ -12,44 +11,85 @@ class MarquesApp
     private AppRouter $router;
     private AppTemplate $template;
     private AppNode $appcontainer;
-    private AppSettings $settings;
+    private DatabaseHandler $dbHandler;
     private AppLogger $logger;
     private AppEvents $eventManager;
     private User $user;
     private AppPath $appPath;
     private Content $content;
+    private ThemeManager $themeManager;
+    private FileManager $fileManager;
 
     public function __construct()
     {
         $this->initContainer();
-        // Alle Kernservices via Container abrufen
-        $this->router       = $this->appcontainer->get(AppRouter::class);
-        $this->template     = $this->appcontainer->get(AppTemplate::class);
-        $this->settings     = $this->appcontainer->get(AppSettings::class);
+
+        // Alle Kernservices werden ausschließlich über den Container bezogen.
+        $this->dbHandler    = $this->appcontainer->get(DatabaseHandler::class);
+        $this->appPath      = $this->appcontainer->get(AppPath::class);
         $this->logger       = $this->appcontainer->get(AppLogger::class);
         $this->eventManager = $this->appcontainer->get(AppEvents::class);
+        $this->fileManager  = $this->appcontainer->get(FileManager::class);
+        $this->themeManager = $this->appcontainer->get(ThemeManager::class);
         $this->user         = $this->appcontainer->get(User::class);
-        $this->appPath      = $this->appcontainer->get(AppPath::class);
         $this->content      = $this->appcontainer->get(Content::class);
-        //$this->authService  = $this->appcontainer->get(AdminAuthService::class);
+        $this->template     = $this->appcontainer->get(AppTemplate::class);
+        $this->router       = $this->appcontainer->get(AppRouter::class);
     }
 
     /**
      * Initialisiert den DI-Container und registriert alle wesentlichen Services.
      */
-    private function initContainer(): void
-    {
+    private function initContainer(): void {
         $this->appcontainer = new AppNode();
-        // Registrierungen – hier übergeben wir bereits fertige Instanzen oder Singletons:
-        $this->appcontainer->register(AppSettings::class, AppSettings::getInstance());
-        $this->appcontainer->register(User::class, new User());
-        $this->appcontainer->register(AppLogger::class, AppLogger::getInstance());
-        $this->appcontainer->register(AppEvents::class, new AppEvents());
-        $this->appcontainer->register(AppPath::class, AppPath::getInstance());
-        $this->appcontainer->register(Content::class, new Content()); // Hinzugefügt
-        $this->appcontainer->register(AppCache::class, AppCache::getInstance($this->appcontainer->get(AppSettings::class)));
-        $this->appcontainer->register(AppRouter::class, new AppRouter($this->appcontainer, true));
-        $this->appcontainer->register(AppTemplate::class, new AppTemplate());
+
+        $this->appcontainer->register(DatabaseHandler::class, function(AppNode $container) {
+            return new DatabaseHandler();
+        });
+        $this->appcontainer->register(AppPath::class, function(AppNode $container) {
+            return new AppPath();
+        });
+        $this->appcontainer->register(AppLogger::class, function(AppNode $container) {
+            return new AppLogger();
+        });
+        $this->appcontainer->register(AppEvents::class, function(AppNode $container) {
+            return new AppEvents();
+        });
+        $this->appcontainer->register(AppCache::class, function(AppNode $container) {
+            return new AppCache();
+        });
+        $this->appcontainer->register(FileManager::class, function(AppNode $container) {
+            return new FileManager($container->get(AppCache::class), MARQUES_CONTENT_DIR);
+        });
+        $this->appcontainer->register(ThemeManager::class, function(AppNode $container) {
+            return new ThemeManager($container->get(DatabaseHandler::class));
+        });
+        $this->appcontainer->register(User::class, function(AppNode $container) {
+            return new User($container->get(DatabaseHandler::class));
+        });
+        $this->appcontainer->register(Content::class, function(AppNode $container) {
+            return new Content(
+                $container->get(DatabaseHandler::class),
+                $container->get(FileManager::class)
+            );
+        });
+        $this->appcontainer->register(AppRouter::class, function(AppNode $container) {
+            return new AppRouter($container, true);
+        });
+        $this->appcontainer->register(AppTemplate::class, function(AppNode $container) {
+            return new AppTemplate(
+                $container->get(DatabaseHandler::class),
+                $container->get(ThemeManager::class),
+                $container->get(AppPath::class),
+                $container->get(AppCache::class)
+            );
+        });
+    }
+
+    private function startSession(): void {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
     }
 
     public function init(): void
@@ -58,17 +98,10 @@ class MarquesApp
         $this->checkDirectAccess();
         SafetyXSS::setSecurityHeaders();
         SafetyXSS::setCSPHeader();
-        $this->configureErrorReporting($this->settings);
-        $this->setTimezone($this->settings);
-        $this->checkMaintenanceMode($this->settings);
+        $this->configureErrorReporting($this->dbHandler);
+        $this->setTimezone($this->dbHandler);
+        $this->checkMaintenanceMode($this->dbHandler);
         $this->logUserAccess();
-    }
-
-    private function startSession(): void
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
     }
 
     private function checkDirectAccess(): void
@@ -78,9 +111,9 @@ class MarquesApp
         }
     }
 
-    private function configureErrorReporting(AppSettings $settings): void
+    private function configureErrorReporting(DatabaseHandler $dbHandler): void
     {
-        if ($settings->getSetting('debug', false)) {
+        if ($dbHandler->getSetting('debug', false)) {
             error_reporting(E_ALL);
             ini_set('display_errors', '1');
         } else {
@@ -89,29 +122,29 @@ class MarquesApp
         }
     }
 
-    private function setTimezone(AppSettings $settings): void
+    private function setTimezone(DatabaseHandler $dbHandler): void
     {
-        date_default_timezone_set($settings->getSetting('timezone', 'UTC'));
+        date_default_timezone_set($dbHandler->getSetting('timezone', 'UTC'));
     }
 
-    private function checkMaintenanceMode(AppSettings $settings): void
+    private function checkMaintenanceMode(DatabaseHandler $dbHandler): void
     {
-        if (!defined('IS_ADMIN') && $settings->getSetting('maintenance_mode', false)) {
+        if (!defined('IS_ADMIN') && $dbHandler->getSetting('maintenance_mode', false)) {
             if (!$this->user->isAdmin()) {
-                $maintenanceMessage = $settings->getSetting('maintenance_message', 'Die Website wird aktuell gewartet.');
+                $maintenanceMessage = $dbHandler->getSetting('maintenance_message', 'Die Website wird aktuell gewartet.');
                 header('HTTP/1.1 503 Service Temporarily Unavailable');
                 header('Status: 503 Service Temporarily Unavailable');
                 header('Retry-After: 3600');
-                echo $this->renderMaintenancePage($settings, $maintenanceMessage);
+                echo $this->renderMaintenancePage($dbHandler, $maintenanceMessage);
                 exit;
             }
         }
     }
 
-    private function renderMaintenancePage(AppSettings $settings, string $maintenanceMessage): string
+    private function renderMaintenancePage(DatabaseHandler $dbHandler, string $maintenanceMessage): string
     {
-        $siteName = SafetyXSS::escapeOutput($settings->getSetting('site_name', 'marques CMS'), 'html'); // Neu
-        $message  = SafetyXSS::escapeOutput($maintenanceMessage, 'html'); // Neu
+        $siteName = SafetyXSS::escapeOutput($dbHandler->getSetting('site_name', 'marques CMS'), 'html');
+        $message  = SafetyXSS::escapeOutput($maintenanceMessage, 'html');
         return <<<HTML
                 <!DOCTYPE html>
                 <html lang="de">
@@ -136,7 +169,7 @@ class MarquesApp
                 </body>
                 </html>
                 HTML;
-    }    
+    }
 
     private function logUserAccess(): void
     {
@@ -152,7 +185,6 @@ class MarquesApp
         }
     }
 
-    // Unterstützt nun auch IPv6, indem der letzte Block auf "0" gesetzt wird.
     private function anonymizeIp(string $ip): string
     {
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
@@ -179,11 +211,15 @@ class MarquesApp
 
     private function loadHelpers(): void
     {
-        // Beispielhafter Aufruf – hier wird über den AppPath der Pfad zur Exceptions.inc.php ermittelt.
+        // Beispielhafter Aufruf – z. B.:
         // require_once $this->appPath->combine('core', 'Exceptions.inc.php');
     }
 
     public function run(): void {
+        // Starte Output Buffering, um sicherzustellen, dass keine Ausgabe vor session_start() erfolgt.
+        ob_start();
+        $this->startSession();
+        $this->init();
         try {
             $this->eventManager->trigger('before_request');
             $routeInfo = $this->router->processRequest();
@@ -197,6 +233,8 @@ class MarquesApp
         } catch (\Exception $e) {
             $this->handleException($e);
         }
+        // Output Buffer leeren
+        ob_end_flush();
     }
 
     private function handleException(\Exception $e): void
@@ -204,7 +242,7 @@ class MarquesApp
         $this->logger->error($e->getMessage(), ['exception' => $e]);
         http_response_code(500);
         echo '<h1>Ein Fehler ist aufgetreten</h1>';
-        if ($this->settings->getSetting('debug', false)) {
+        if ($this->dbHandler->getSetting('debug', false)) {
             echo '<pre>' . SafetyXSS::escapeOutput($e->getMessage(), 'html') . '</pre>';
         } else {
             echo '<p>Bitte versuchen Sie es später erneut.</p>';

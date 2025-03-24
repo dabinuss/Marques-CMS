@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * marques CMS - Systemeinstellungen
  * 
@@ -8,8 +10,14 @@
  * @subpackage admin
  */
 
-// AdminSettings initialisieren (als Ersatz für den alten AppSettings)
-$settings = new \Marques\Admin\AdminSettings();
+use Marques\Admin\MarquesAdmin;
+use Marques\Core\DatabaseHandler;
+
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
+
+// Hole den DatabaseHandler via DI
+$dbHandler = $container->get(DatabaseHandler::class);
 
 // Meldungsvariablen
 $success_message = '';
@@ -27,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Einstellungen basierend auf der Gruppe aktualisieren
         switch ($group) {
             case 'general':
-                $settings->setMultipleSettings([
+                $dbHandler->setMultipleSettings([
                     'site_name'        => $_POST['site_name'] ?? '',
                     'site_description' => $_POST['site_description'] ?? '',
                     'admin_email'      => $_POST['admin_email'] ?? '',
@@ -37,15 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'other':
-                $settings->setSetting('social_links.facebook', $_POST['social_facebook'] ?? '');
-                $settings->setSetting('social_links.twitter', $_POST['social_twitter'] ?? '');
-                $settings->setSetting('social_links.instagram', $_POST['social_instagram'] ?? '');
-                $settings->setSetting('social_links.linkedin', $_POST['social_linkedin'] ?? '');
-                $settings->setSetting('social_links.youtube', $_POST['social_youtube'] ?? '');
+                $dbHandler->setSetting('social_links.facebook', $_POST['social_facebook'] ?? '');
+                $dbHandler->setSetting('social_links.twitter', $_POST['social_twitter'] ?? '');
+                $dbHandler->setSetting('social_links.instagram', $_POST['social_instagram'] ?? '');
+                $dbHandler->setSetting('social_links.linkedin', $_POST['social_linkedin'] ?? '');
+                $dbHandler->setSetting('social_links.youtube', $_POST['social_youtube'] ?? '');
                 break;
                 
             case 'content':
-                $settings->setMultipleSettings([
+                $dbHandler->setMultipleSettings([
                     'posts_per_page'   => (int)($_POST['posts_per_page'] ?? 10),
                     'excerpt_length'   => (int)($_POST['excerpt_length'] ?? 150),
                     'comments_enabled' => isset($_POST['comments_enabled']),
@@ -54,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'system':
-                $settings->setMultipleSettings([
+                $dbHandler->setMultipleSettings([
                     'debug'              => isset($_POST['debug']),
                     'cache_enabled'      => isset($_POST['cache_enabled']),
                     'maintenance_mode'   => isset($_POST['maintenance_mode']),
@@ -66,22 +74,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'appearance':
-                $settings->setMultipleSettings([
+                $dbHandler->setMultipleSettings([
                     'active_theme' => $_POST['active_theme'] ?? '',
                 ]);
                 break;
 
             case 'seo':
-                $settings->setMultipleSettings([
-                    'meta_keywords'        => $_POST['meta_keywords'] ?? '',
-                    'meta_author'          => $_POST['meta_author'] ?? '',
-                    'google_analytics_id'  => $_POST['google_analytics_id'] ?? '',
+                $dbHandler->setMultipleSettings([
+                    'meta_keywords'       => $_POST['meta_keywords'] ?? '',
+                    'meta_author'         => $_POST['meta_author'] ?? '',
+                    'google_analytics_id' => $_POST['google_analytics_id'] ?? '',
                 ]);
                 break;
         }
         
         // Einstellungen speichern
-        if ($settings->saveSettings()) {
+        if ($dbHandler->saveSettings()) {
             $success_message = 'Einstellungen wurden erfolgreich gespeichert.';
         } else {
             $error_message = 'Fehler beim Speichern der Einstellungen.';
@@ -98,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Aktuelle Einstellungen laden
-$current_settings = $settings->getAllSettings();
+$current_settings = $dbHandler->getAllSettings();
 
 // Aktiven Tab bestimmen
 $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';

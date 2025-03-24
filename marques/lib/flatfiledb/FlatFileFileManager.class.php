@@ -194,9 +194,8 @@ class FlatFileFileManager
         $newIndex = [];
         $dataFile = $this->config->getDataFile();
         $tempFile = $dataFile . '.tmp';
-        $backupFile = $dataFile . '.bak.' . date('YmdHisu'); // Use microseconds
+        $backupFile = $dataFile . '.bak.' . date('YmdHisu');
 
-        // 1. Alle Zeilen einlesen und pro ID nur den letzten Eintrag speichern
         $records = [];
         $readHandle = fopen($dataFile, 'rb');
         if (!$readHandle) {
@@ -207,26 +206,25 @@ class FlatFileFileManager
             if (!flock($readHandle, LOCK_SH)) {
                 throw new RuntimeException("Konnte keine Lesesperre für die Datei erhalten.");
             }
-
+    
             while (($line = fgets($readHandle)) !== false) {
                 try {
                     $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
-                    if (is_array($decoded) && isset($decoded['id']) && FlatFileValidator::isValidId($decoded['id'])) {
+                    if (is_array($decoded) && isset($decoded['id'])) {
                         // Überschreibe vorherige Einträge – so gewinnt der letzte Eintrag
-                        $records[(string)$decoded['id']] = $decoded;
+                        $records[$decoded['id']] = $decoded;
                     }
                 } catch (JsonException $e) {
                     // Ungültige Zeile überspringen
                     continue;
                 }
             }
-
+    
             flock($readHandle, LOCK_UN);
         } finally {
             fclose($readHandle);
         }
 
-        // 2. Schreibe nur die aktiven (nicht gelöschten) Datensätze in die temporäre Datei
         $writeHandle = fopen($tempFile, 'wb');
         if (!$writeHandle) {
             throw new RuntimeException('Fehler beim Öffnen der temporären Datei.');
@@ -236,22 +234,22 @@ class FlatFileFileManager
             if (!flock($writeHandle, LOCK_EX)) {
                 throw new RuntimeException("Konnte keine Schreibsperre für die temporäre Datei erhalten.");
             }
-
+    
             foreach ($records as $id => $record) {
                 // Überspringe den Datensatz, wenn er als gelöscht markiert ist
                 if (!empty($record['_deleted'])) {
                     continue;
                 }
-
+    
                 $offsetInNewFile = ftell($writeHandle);
                 $encoded = json_encode($record, JSON_THROW_ON_ERROR);
                 if (fwrite($writeHandle, $encoded . "\n") === false) {
                     throw new RuntimeException('Fehler beim Schreiben während der Kompaktierung.');
                 }
-
-                $newIndex[(string)$id] = $offsetInNewFile;
+    
+                $newIndex[$id] = $offsetInNewFile;
             }
-
+    
             flock($writeHandle, LOCK_UN);
         } finally {
             fclose($writeHandle);
@@ -261,7 +259,7 @@ class FlatFileFileManager
         if (!copy($dataFile, $backupFile)) {
             throw new RuntimeException('Failed to create backup during compaction.');
         }
-
+    
         // 4. Ersetze die alte Datei durch die neue.  *Zuerst* löschen, *dann* umbenennen.
         if (!unlink($dataFile)) {
             throw new RuntimeException('Alte Daten-Datei konnte nicht gelöscht werden.');

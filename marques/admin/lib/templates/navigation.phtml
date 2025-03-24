@@ -10,18 +10,23 @@
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <style>
+    /* Hier können noch spezifische CSS-Anpassungen für die Navigation stehen,
+       falls sie von den allgemeinen Stilen abweichen sollen. */
+    </style>
 </head>
 
 <body>
     <div class="container">
-        
+
         <!-- SIDEBAR & NAVIGATION -->
         <?php include 'sidebar.phtml'; ?>
-        
+
         <main class="main-content">
             <div class="header">
                 <h1><?= htmlspecialchars($page_title); ?></h1>
                 <div class="header-actions">
+                    <!-- Diese Links und Buttons sind in Ordnung, wie sie sind -->
                     <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>" alt="Neue Seite"
                         class="admin-button">
                         <button class="btn">
@@ -55,19 +60,19 @@
                         <h3 class="box-title">Menüpunkte</h3>
                     </div>
                     <div class="box-content">
-            
+
                         <?php if (!empty($success_message)): ?>
                             <div class="alert alert-success">
                                 <?= htmlspecialchars($success_message); ?>
                             </div>
                         <?php endif; ?>
-                        
+
                         <?php if (!empty($error_message)): ?>
                             <div class="alert alert-danger">
                                 <?= htmlspecialchars($error_message); ?>
                             </div>
                         <?php endif; ?>
-            
+
                         <!-- Navigation Tabs -->
                         <div class="menu-tabs">
                             <a href="<?= \Marques\Core\Helper::appQueryParam('tab=main'); ?>" class="menu-tab <?= $activeMenu === 'main_menu' ? 'active' : ''; ?>">
@@ -77,16 +82,16 @@
                                 <i class="fas fa-shoe-prints"></i> Footermenü
                             </a>
                         </div>
-            
+
                         <form method="post" class="admin-form">
                             <div class="admin-card-header">
                                 <h3>Neuen Menüpunkt hinzufügen (<?= $activeMenuTitle; ?>)</h3>
                             </div>
-                            
+
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                             <input type="hidden" name="action" value="add_item">
                             <input type="hidden" name="menu_type" value="<?= $activeMenu; ?>">
-                            
+
                             <div class="form-row">
                                 <div class="form-column">
                                     <div class="form-group">
@@ -94,12 +99,12 @@
                                         <input type="text" id="title" name="title" class="form-control" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="form-column">
                                     <div class="form-group">
                                         <label for="url" class="form-label">URL</label>
                                         <input type="text" id="url" name="url" class="form-control" required>
-                                        
+
                                         <div class="quick-urls">
                                             <small>Schnellauswahl:</small>
                                             <?php foreach ($commonUrls as $commonUrl): ?>
@@ -110,7 +115,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="form-column">
                                     <div class="form-group">
                                         <label class="form-label">Öffnen in</label>
@@ -121,7 +126,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="admin-actions">
                                 <button type="submit" class="admin-button">
                                     <span class="admin-button-icon"><i class="fas fa-plus"></i></span>
@@ -138,17 +143,17 @@
                         <small>Zum Sortieren die Einträge mit der Maus ziehen</small>
                     </div>
                     <div class="box-content menu-list" id="menu-sortable">
-                        <?php 
+                        <?php
                         $menuItems = $activeMenu === 'main_menu' ? $mainMenu : $footerMenu;
-                        
-                        if (empty($menuItems)): 
+
+                        if (empty($menuItems)):
                         ?>
 
                         <div class="empty-message">
-                            Keine Menüpunkte gefunden. 
+                            Keine Menüpunkte gefunden.
                             <?php if ($activeMenu === 'main_menu'): ?>
                                 <a href="<?= \Marques\Core\Helper::appQueryParam('tab=main&migrate=1'); ?>" class="admin-button admin-button-small">
-                                    <i class="fas fa-magic"></i> 
+                                    <i class="fas fa-magic"></i>
                                     Standard-Menü importieren
                                 </a>
                             <?php endif; ?>
@@ -157,26 +162,26 @@
                         <?php else: ?>
 
                             <?php foreach ($menuItems as $item): ?>
-                                <div class="menu-item" data-id="<?= htmlspecialchars($item['id']); ?>">
+                                <div class="menu-item" data-id="<?= (int)$item['id']; ?>">
                                     <div class="menu-item-title"><?= htmlspecialchars($item['title']); ?></div>
                                     <div class="menu-item-url"><?= htmlspecialchars($item['url']); ?></div>
                                     <?php if (isset($item['target']) && $item['target'] === '_blank'): ?>
                                         <div class="menu-item-target">Neuer Tab</div>
                                     <?php endif; ?>
                                     <div class="menu-item-actions">
-                                        <button type="button" class="admin-button edit-menu-item" 
-                                                data-id="<?= htmlspecialchars($item['id']); ?>"
+                                        <button type="button" class="admin-button edit-menu-item"
+                                                data-id="<?= (int)$item['id']; ?>"
                                                 data-title="<?= htmlspecialchars($item['title']); ?>"
                                                 data-url="<?= htmlspecialchars($item['url']); ?>"
                                                 data-target="<?= isset($item['target']) ? htmlspecialchars($item['target']) : '_self'; ?>">
                                             <i class="fas fa-edit"></i> Bearbeiten
                                         </button>
-                                        
+
                                         <form method="post" style="display:inline;" onsubmit="return confirm('Möchten Sie diesen Menüpunkt wirklich löschen?')">
                                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                                             <input type="hidden" name="action" value="delete_item">
                                             <input type="hidden" name="menu_type" value="<?= $activeMenu; ?>">
-                                            <input type="hidden" name="menu_item_id" value="<?= htmlspecialchars($item['id']); ?>">
+                                            <input type="hidden" name="menu_item_id" value="<?= (int)$item['id']; ?>">
                                             <button type="submit" class="admin-button admin-button-danger">
                                                 <i class="fas fa-trash-alt"></i> Löschen
                                             </button>
@@ -187,7 +192,7 @@
                         <?php endif; ?>
 
                     </div>
-                
+
                     <!-- Formular zum Speichern der Sortierreihenfolge -->
                     <form method="post" id="reorder-form">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
@@ -197,28 +202,28 @@
                     </form>
                 </div>
             </div>
-            
+
             <!-- Modal für Bearbeitung -->
             <div id="edit-modal" class="admin-modal" style="display: none;">
                 <div class="admin-modal-content">
-                    <span class="admin-modal-close">&times;</span>
+                    <span class="admin-modal-close">×</span>
                     <h2>Menüpunkt bearbeiten</h2>
-                    
+
                     <form method="post" id="edit-form">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
                         <input type="hidden" name="action" value="update_item">
                         <input type="hidden" name="menu_type" value="<?= $activeMenu; ?>">
                         <input type="hidden" name="menu_item_id" id="edit-menu-item-id" value="">
-                        
+
                         <div class="form-group">
                             <label for="edit-title" class="form-label">Titel</label>
                             <input type="text" id="edit-title" name="title" class="form-control" required>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="edit-url" class="form-label">URL</label>
                             <input type="text" id="edit-url" name="url" class="form-control" required>
-                            
+
                             <div class="quick-urls">
                                 <small>Schnellauswahl:</small>
                                 <?php foreach ($commonUrls as $commonUrl): ?>
@@ -228,7 +233,7 @@
                                 <?php endforeach; ?>
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="form-label">Öffnen in</label>
                             <div class="form-check">
@@ -236,7 +241,7 @@
                                 <label for="edit-target">Neuem Tab öffnen</label>
                             </div>
                         </div>
-                        
+
                         <div class="form-actions">
                             <button type="button" class="admin-button cancel-edit">Abbrechen</button>
                             <button type="submit" class="admin-button">Speichern</button>
@@ -246,7 +251,7 @@
             </div>
         </main>
     </div>
-    
+
     <script>
         $(document).ready(function() {
             // Sortierbare Liste
@@ -256,43 +261,58 @@
                     // Sortierreihenfolge speichern
                     var order = [];
                     $(".menu-item").each(function() {
-                        order.push($(this).data("id"));
+                        order.push(parseInt($(this).data("id"))); // WICHTIG: ID als Integer parsen!
                     });
-                    
+
                     // Im Hidden-Input speichern
                     $("#menu-order").val(JSON.stringify(order));
-                    
-                    // Formular absenden
-                    $("#reorder-form").submit();
+
+                    // Formular *asynchron* absenden (mit Fehlerbehandlung)
+                    $.ajax({
+                        url: 'navigation.php', // Passe den Pfad an, falls nötig
+                        type: 'POST',
+                        data: $("#reorder-form").serialize(), // Sendet alle Formulardaten (inkl. csrf_token)
+                        success: function(response) {
+                            // Erfolgsmeldung anzeigen (optional)
+                            // Hier könntest du z.B. eine Erfolgsmeldung anzeigen
+                            console.log("Sortierung erfolgreich gespeichert.");
+                        },
+                        error: function() {
+                            // Fehlermeldung anzeigen
+                            alert("Fehler beim Speichern der Sortierreihenfolge!");
+                            // Optional:  Seite neu laden, um den vorherigen Zustand wiederherzustellen
+                            location.reload();
+                        }
+                    });
                 }
             });
-            
+
             // Modal-Funktionen
             $(".edit-menu-item").click(function() {
                 var id = $(this).data("id");
                 var title = $(this).data("title");
                 var url = $(this).data("url");
                 var target = $(this).data("target");
-                
+
                 $("#edit-menu-item-id").val(id);
                 $("#edit-title").val(title);
                 $("#edit-url").val(url);
                 $("#edit-target").prop("checked", target === "_blank");
-                
+
                 $("#edit-modal").show();
             });
-            
+
             $(".admin-modal-close, .cancel-edit").click(function() {
                 $("#edit-modal").hide();
             });
-            
+
             // Modal schließen, wenn außerhalb geklickt wird
             $(window).click(function(event) {
                 if ($(event.target).is("#edit-modal")) {
                     $("#edit-modal").hide();
                 }
             });
-            
+
             // Quick URL-Links
             $(".quick-url-link").click(function(e) {
                 e.preventDefault();

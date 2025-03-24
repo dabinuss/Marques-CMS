@@ -13,23 +13,14 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 class BlogManager {
-    /**
-     * @var array Systemkonfiguration
-     */
-    private $_config;
-
-    /**
-     * @var FileManager
-     */
+    private array $_config;
     protected FileManager $fileManager;
+    private DatabaseHandler $dbHandler;
 
-    /**
-     * Konstruktor
-     */
-    public function __construct() {
-        $configManager = AppConfig::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
-        $this->fileManager = new FileManager(MARQUES_CONTENT_DIR);
+    public function __construct(DatabaseHandler $dbHandler, FileManager $fileManager) {
+        $this->dbHandler = $dbHandler;
+        $this->_config = $dbHandler->getAllSettings() ?: [];
+        $this->fileManager = $fileManager;
     }
     
     /**
@@ -275,51 +266,60 @@ class BlogManager {
      * @return bool Erfolgreich aktualisiert oder nicht.
      */
     private function updatePostUrlMapping(string $postId, array $postData): bool {
-        $configManager = AppConfig::getInstance();
-        $urlMappings = $configManager->loadUrlMapping() ?: [];
+        $dbHandler = DatabaseHandler::getInstance()->useTable('urlmapping');
+        $urlMappings = $dbHandler->getAllRecords();
         
-        // Erzeuge den neuen Pfad mithilfe der zentralen Logik in Helper
+        // Neuen Pfad erzeugen
         $newPath = \Marques\Core\Helper::generateBlogUrlPath($postData);
         
-        // Baue den neuen Routen-Konfigurations-Eintrag für den Blog-Post
+        // Neuer Routen-Eintrag (Options als JSON-String)
         $newRoute = [
-             'method'  => 'GET',
-             'pattern' => $newPath,
-             'handler' => 'Marques\\Controller\\BlogController@getPost',
-             'options' => [
-                  // Optional: Hier kannst du auch Parameter-Schemata hinzufügen, falls benötigt.
-                  'blog_post_id' => $postId
-             ]
+            'method'  => 'GET',
+            'pattern' => $newPath,
+            'handler' => 'Marques\\Controller\\BlogController@getPost',
+            'options' => json_encode(['blog_post_id' => $postId])
         ];
         
-        // Konfliktprüfung: Falls ein anderer Eintrag bereits denselben Pfad hat
-        foreach ($urlMappings as $route) {
-             if (
-                 isset($route['pattern'], $route['options']['blog_post_id']) &&
-                 $route['pattern'] === $newPath &&
-                 $route['options']['blog_post_id'] !== $postId
-             ) {
-                 error_log("URL-Mapping-Konflikt: Pfad '$newPath' bereits für Beitrag '{$route['options']['blog_post_id']}' vergeben.");
-                 return false;
-             }
+        // Konfliktprüfung
+        foreach ($urlMappings as $record) {
+            $routeOptions = isset($record['options']) ? json_decode($record['options'], true) : [];
+            if (isset($record['pattern'], $routeOptions['blog_post_id']) &&
+                $record['pattern'] === $newPath &&
+                $routeOptions['blog_post_id'] !== $postId) {
+                error_log("URL-Mapping-Konflikt: Pfad '$newPath' bereits für Beitrag '{$routeOptions['blog_post_id']}' vergeben.");
+                return false;
+            }
         }
         
-        // Suche nach einem vorhandenen Eintrag für diesen Blog-Post und aktualisiere ihn
         $found = false;
-        foreach ($urlMappings as $index => $route) {
-             if (isset($route['options']['blog_post_id']) && $route['options']['blog_post_id'] === $postId) {
-                 $urlMappings[$index] = $newRoute;
-                 $found = true;
-                 break;
-             }
-        }
-        // Falls noch kein Eintrag vorhanden, füge einen neuen hinzu
-        if (!$found) {
-             $urlMappings[] = $newRoute;
+        // Suche nach einem vorhandenen Eintrag für diesen Blog-Post und aktualisiere ihn
+        foreach ($urlMappings as $record) {
+            $routeOptions = isset($record['options']) ? json_decode($record['options'], true) : [];
+            if (isset($routeOptions['blog_post_id']) && $routeOptions['blog_post_id'] === $postId) {
+                $record['pattern'] = $newPath;
+                $record['handler'] = 'Marques\\Controller\\BlogController@getPost';
+                $record['options'] = json_encode(['blog_post_id' => $postId]);
+                $dbHandler->updateRecord((int)$record['id'], $record);
+                $found = true;
+                break;
+            }
         }
         
-        return $configManager->updateUrlMapping($urlMappings);
-    }    
+        if (!$found) {
+            // Neue Record-ID ermitteln (max existierende ID + 1)
+            $maxId = 0;
+            foreach ($urlMappings as $record) {
+                $idVal = isset($record['id']) ? (int)$record['id'] : 0;
+                if ($idVal > $maxId) {
+                    $maxId = $idVal;
+                }
+            }
+            $newRecordId = $maxId + 1;
+            $dbHandler->insertRecord($newRoute);
+        }
+        return true;
+    }
+    
 
 
     /**
@@ -357,13 +357,17 @@ class BlogManager {
     * @return bool Erfolg
     */
     private function deletePostUrlMapping(string $postId): bool {
-        $configManager = AppConfig::getInstance();
-        $urlMapping = $configManager->loadUrlMapping() ?: [];
-
-        unset($urlMapping[$postId]); // Eintrag aus dem Array entfernen
-
-        return $configManager->updateUrlMapping($urlMapping); // Aktualisiertes Mapping speichern
+        $dbHandler = DatabaseHandler::getInstance()->useTable('urlmapping');
+        $urlMappings = $dbHandler->getAllRecords();
+        foreach ($urlMappings as $record) {
+            $routeOptions = isset($record['options']) ? json_decode($record['options'], true) : [];
+            if (isset($routeOptions['blog_post_id']) && $routeOptions['blog_post_id'] === $postId) {
+                return $dbHandler->getCurrentTable()->deleteRecord((int)$record['id']);
+            }
+        }
+        return true;
     }
+     
 
     /**
      * Gibt alle Kategorien im Blog zurück

@@ -5,8 +5,15 @@ namespace Marques\Core;
 
 class TemplateVars {
     protected array $data = [];
+    protected AppCache $cache;
 
-    public function __construct(array $data = []) {
+    /**
+     * Konstruktor.
+     * @param array $data Template-Daten
+     * @param AppCache $cache Die injizierte Cache-Instanz
+     */
+    public function __construct(AppCache $cache, array $data = []) {
+        $this->cache = $cache;
         $this->data = $data;
     }
 
@@ -19,17 +26,12 @@ class TemplateVars {
     }
 
     /**
-     * Gibt die Theme-Assets URL zurück und führt automatisch Cachebusting durch.
-     *
-     * @param string $path Pfad zur Asset-Datei
-     * @return string
+     * Gibt die Theme-Assets URL zurück, inklusive Cachebusting.
      */
     public function themeUrl(string $path = ''): string {
         if (isset($this->data['themeManager']) && method_exists($this->data['themeManager'], 'getThemeAssetsUrl')) {
             $url = $this->data['themeManager']->getThemeAssetsUrl($path);
-            // Automatisch Cachebusting durchführen:
-            $cacheManager = AppCache::getInstance();
-            return $cacheManager->bustUrl($url);
+            return $this->cache->bustUrl($url);
         }
         return $path;
     }

@@ -159,7 +159,10 @@ class Router {
      */
     private function routeExists($path, $params = []): bool {
         if ($path === 'blog') {
-            $blogManager = new BlogManager();
+            $cache = new \Marques\Core\Cache(); // Create or retrieve a Cache instance
+            $fileManager = new \Marques\Core\FileManager($cache); // Create or retrieve a FileManager instance with the required cache
+            $databaseHandler = new \Marques\Core\DatabaseHandler(); // Create or retrieve a DatabaseHandler instance
+            $blogManager = new BlogManager($databaseHandler, $fileManager);
             $systemConfig = $this->_configManager->load('system') ?: [];
             $blogUrlFormat = $systemConfig['blog_url_format'] ?? 'internal';
             switch ($blogUrlFormat) {

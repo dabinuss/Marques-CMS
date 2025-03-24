@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Marques\Admin;
 
 use Marques\Core\User;
-use Marques\Core\AppConfig;
 
 class AdminAuthService
 {
@@ -12,15 +11,14 @@ class AdminAuthService
     private array $systemConfig;
     private string $loginAttemptsFile;
 
-    public function __construct(User $userModel)
+    public function __construct(User $userModel, array $systemConfig)
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
         $this->userModel = $userModel;
-        $configManager = AppConfig::getInstance();
-        $this->systemConfig = $configManager->load('system') ?: [];
+        $this->systemConfig = $systemConfig;
         $this->loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
         $this->initLoginAttemptsLog();
     }

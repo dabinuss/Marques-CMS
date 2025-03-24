@@ -4,20 +4,15 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 class User {
-    /**
-     * Enthält ausschließlich benutzerspezifische Konfigurationsdaten.
-     */
-    private $_config;
-    private $_loginAttemptsFile;
+    private array $_config;
+    private string $_loginAttemptsFile;
+    private DatabaseHandler $dbHandler;
 
-    public function __construct() {
-        // Wir gehen davon aus, dass hier keine Session-Initialisierung nötig ist.
-        $configManager = AppConfig::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
+    public function __construct(DatabaseHandler $dbHandler) {
+        $this->dbHandler = $dbHandler;
+        $this->_config = $dbHandler->getAllSettings() ?: [];
         $this->_loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
     }
-
-    // --- Methoden für Benutzerverwaltung ---
 
     /**
      * Prüft, ob ein Benutzer existiert.
@@ -28,8 +23,7 @@ class User {
     }
 
     /**
-     * Liefert alle Benutzerdaten als assoziatives Array.
-     * Dabei werden sensible Daten (z.B. das Passwort) entfernt.
+     * Liefert alle Benutzerdaten als assoziatives Array (ohne Passwort).
      *
      * @return array
      */
@@ -37,9 +31,10 @@ class User {
         $users = $this->_getUsers();
         $result = [];
         foreach ($users as $username => $data) {
-            unset($data['password']); // Entferne das Passwort
-            $data['username'] = $username;
-            $result[$username] = $data;
+            $userData = $data;
+            unset($userData['password']);
+            $userData['username'] = $username;
+            $result[$username] = $userData;
         }
         return $result;
     }
@@ -70,7 +65,7 @@ class User {
     /**
      * Erstellt einen neuen Benutzer.
      */
-    public function createUser($username, $password, $display_name, $role = 'editor'): bool {
+    public function createUser(string $username, string $password, string $display_name, string $role = 'editor'): bool {
         if ($this->exists($username)) {
             return false;
         }
@@ -78,26 +73,37 @@ class User {
             return false;
         }
         $hashedPassword = !empty($password) ? $this->hashPassword($password) : '';
-        $users = $this->_getUsers();
-        $users[$username] = [
+        $newUser = [
+            'username'      => $username,
             'password'      => $hashedPassword,
             'display_name'  => $display_name,
             'role'          => $role,
+            'email'         => '',
             'created'       => time(),
             'last_login'    => 0,
-            'first_login'   => $username === 'admin' ? empty($password) : false
+            'first_login'   => ($username === 'admin' ? empty($password) : false)
         ];
-        return $this->_saveUsers($users);
+        $users = $this->_getUsers();
+        $newId = 1;
+        if (!empty($users)) {
+            $ids = array_map(function($user) {
+                return $user['id'] ?? 0;
+            }, array_values($users));
+            $newId = max($ids) + 1;
+        }
+        $dbHandler = $this->dbHandler->useTable('user');
+        return $dbHandler->insertRecord($newUser);
     }
 
     /**
      * Aktualisiert einen bestehenden Benutzer.
      */
-    public function updateUser($username, $userData): bool {
+    public function updateUser(string $username, array $userData): bool {
         $users = $this->_getUsers();
         if (!isset($users[$username])) {
             return false;
         }
+        $existing = $users[$username];
         if (isset($userData['password']) && !empty($userData['password'])) {
             $userData['password'] = $this->hashPassword($userData['password']);
             if ($username === 'admin') {
@@ -106,14 +112,15 @@ class User {
         } else {
             unset($userData['password']);
         }
-        $users[$username] = array_merge($users[$username], $userData);
-        return $this->_saveUsers($users);
+        $updatedUser = array_merge($existing, $userData);
+        $dbHandler = $this->dbHandler->useTable('user');
+        return $dbHandler->updateRecord((int)$users[$username]['id'], $updatedUser);
     }
 
     /**
      * Aktualisiert das Passwort eines Benutzers.
      */
-    public function updatePassword($username, $new_password): bool {
+    public function updatePassword(string $username, string $new_password): bool {
         $users = $this->_getUsers();
         if (!isset($users[$username])) {
             return false;
@@ -122,82 +129,85 @@ class User {
         if ($username === 'admin') {
             $users[$username]['first_login'] = false;
         }
-        return $this->_saveUsers($users);
+        $dbHandler = $this->dbHandler->useTable('user');
+        return $dbHandler->updateRecord((int)$users[$username]['id'], $users[$username]);
     }
 
     /**
      * Löscht einen Benutzer.
      */
-    public function deleteUser($username): bool {
+    public function deleteUser(string $username): bool {
         $users = $this->_getUsers();
         if ($username === 'admin' || !isset($users[$username])) {
             return false;
         }
-        unset($users[$username]);
-        return $this->_saveUsers($users);
+        $userId = (int)$users[$username]['id'];
+        $dbHandler = $this->dbHandler->useTable('user');
+        return $dbHandler->getCurrentTable()->deleteRecord($userId);
     }
 
     /**
      * Erzeugt einen Passwort-Hash.
      */
-    public function hashPassword($password): string {
+    public function hashPassword(string $password): string {
         return password_hash($password, PASSWORD_DEFAULT);
     }
 
-    // --- Interne Methoden zum Laden/Speichern der Benutzer ---
-
+    /**
+     * Lädt alle Benutzerdatensätze aus der "user"-Tabelle.
+     * Jeder Benutzer wird als eigener Datensatz gespeichert, daher:
+     * - Es werden alle Datensätze (mittels getAllRecords()) abgerufen.
+     * - Anschließend wird ein assoziatives Array aufgebaut, das keyed by "username" ist.
+     *
+     * @return array
+     */
     private function _getUsers(): array {
-        $configManager = AppConfig::getInstance();
-        $users = $configManager->load('users');
-
-        $modified = false;
-        if (empty($users)) {
-            $users = [
-                'admin' => [
-                    'password' => '',
-                    'display_name' => 'Administrator',
-                    'role' => 'admin',
-                    'created' => time(),
-                    'last_login' => 0,
-                    'first_login' => true
-                ]
-            ];
-            $modified = true;
+        $dbHandler = $this->dbHandler->useTable('user');
+        $records = $dbHandler->getAllRecords();
+        $users = [];
+        if (!empty($records)) {
+            foreach ($records as $record) {
+                if (isset($record['username'])) {
+                    $users[$record['username']] = $record;
+                }
+            }
         }
         if (!isset($users['admin'])) {
-            $users['admin'] = [
-                'password' => '',
-                'display_name' => 'Administrator',
-                'role' => 'admin',
-                'created' => time(),
-                'last_login' => 0,
-                'first_login' => true
+            $admin = [
+                'username'      => 'admin',
+                'password'      => '',
+                'display_name'  => 'Administrator',
+                'role'          => 'admin',
+                'email'         => '',
+                'created'       => time(),
+                'last_login'    => 0,
+                'first_login'   => true
             ];
-            $modified = true;
+            $newId = empty($users) ? 1 : (max(array_map(function($u) { return $u['id'] ?? 0; }, array_values($users))) + 1);
+            $dbHandler->insertRecord($admin);
+            $users['admin'] = array_merge($admin, ['id' => $newId]);
         }
-        if (!isset($users['admin']['first_login'])) {
-            $users['admin']['first_login'] = empty($users['admin']['password']);
-            $modified = true;
-        }
-        if ($modified) {
-            $this->_saveUsers($users);
-        }
-
         return $users;
     }
 
-    private function _saveUsers($users): bool {
-        $configManager = AppConfig::getInstance();
-        return $configManager->save('users', $users);
+    /**
+     * Speichert einen einzelnen Benutzerdatensatz.
+     * Da jeder Benutzer als eigener Datensatz gespeichert wird, erfolgt das Speichern
+     * über updateRecord() für den entsprechenden Benutzer.
+     *
+     * @param array $user Benutzer-Daten
+     * @return bool
+     */
+    private function _saveUser(array $user): bool {
+        $dbHandler = $this->dbHandler->useTable('user');
+        return $dbHandler->updateRecord((int)$user['id'], $user);
     }
 
-    public function getCurrentDisplayName(): ?string
-    {
+    public function getCurrentDisplayName(): ?string {
         return $_SESSION['marques_user']['display_name'] ?? null;
     }
 
-    public function isAdmin(): bool
-    {
+    public function isAdmin(): bool {
         return (($_SESSION['marques_user']['role'] ?? '') === 'admin');
     }
 }

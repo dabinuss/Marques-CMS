@@ -13,17 +13,12 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 class PageManager {
-    /**
-     * @var array Systemkonfiguration
-     */
-    private $_config;
-    
-    /**
-     * Konstruktor
-     */
-    public function __construct() {
-        $configManager = \Marques\Core\AppConfig::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
+    private array $_config;
+    private DatabaseHandler $dbHandler;
+
+    public function __construct(DatabaseHandler $dbHandler) {
+        $this->dbHandler = $dbHandler;
+        $this->_config = $dbHandler->getAllSettings() ?: [];
     }
     
     /**

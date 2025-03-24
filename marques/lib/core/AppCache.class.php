@@ -15,20 +15,12 @@ class AppCache {
     protected bool $useOpcache;
     protected bool $enabled;
     protected array $memoryCache = [];
-    protected static ?AppCache $instance = null;
-    
-    // Index-Unterstützung
     protected bool $useIndex;
     protected array $index = [];
     protected string $indexFile;
-    // Batch-Modus für Index-Operationen
     protected bool $batchMode = false;
     protected array $batchIndexUpdates = [];
-    
-    // MD5-Cache für Schlüssel
     protected array $md5Cache = [];
-    
-    // Cache-Statistiken
     protected int $totalRequests = 0;
     protected int $cacheHits = 0;
     protected float $totalAccessTime = 0.0;
@@ -38,27 +30,9 @@ class AppCache {
     protected const ASSET_TTL = 86400;
     protected array $defaultTtlMapping = [
         'template_' => self::TEMPLATE_TTL,
-        'asset_'     => self::ASSET_TTL,
-        'default'    => self::DEFAULT_TTL,
+        'asset_'    => self::ASSET_TTL,
+        'default'   => self::DEFAULT_TTL,
     ];
-    
-    /**
-     * Liefert die Singleton-Instanz des AppCaches.
-     * Hinweis: Parameter werden nur beim ersten Aufruf berücksichtigt.
-     *
-     * @return AppCache
-     */
-    public static function getInstance(?AppSettings $settingsManager = null): AppCache {
-        if (self::$instance === null) {
-            if ($settingsManager === null) {
-                $settingsManager = new AppSettings();
-            }
-            $system_settings = $settingsManager->getAllSettings();
-            $enabled = $system_settings['cache_enabled'] ?? true;
-            self::$instance = new self(null, $enabled, true);
-        }
-        return self::$instance;
-    }
     
     /**
      * Konstruktor.
@@ -320,9 +294,9 @@ class AppCache {
                 if ($prefix !== 'default' && strncmp($key, $prefix, strlen($prefix)) === 0) { // Verwendung von strncmp
                     $ttl = $defaultTtl;
                     if ($prefix === 'template_') {
-                        $groups= 'templates';
+                        $groups = ['templates'];
                     } elseif ($prefix === 'asset_') {
-                        $groups= 'assets';
+                        $groups = ['assets'];
                     }
                     break;
                 }

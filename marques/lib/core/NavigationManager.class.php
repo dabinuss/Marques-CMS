@@ -1,325 +1,172 @@
 <?php
 declare(strict_types=1);
 
-/**
- * marques CMS - Navigation Manager Klasse
- * 
- * Verwaltet die Navigation des CMS (Hauptmenü und Footermenü).
- *
- * @package marques
- * @subpackage core
- */
-
 namespace Marques\Core;
 
-use Marques\Core\Helper;
-
+use Marques\Core\DatabaseHandler;
 use Marques\Core\SafetyXSS;
 
 class NavigationManager {
-    /**
-     * @var array Systemkonfiguration
-     */
-    private $_config;
+    private DatabaseHandler $_dbHandler;
     
-    /**
-     * @var AppConfig AppConfig-Instanz
-     */
-    private $_configManager;
-    
-    /**
-     * Konstruktor
-     */
-    public function __construct() {
-        $configManager = \Marques\Core\AppConfig::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
-        $this->_configManager = AppConfig::getInstance();
-        $this->initNavigationFile();
+    public function __construct(DatabaseHandler $dbHandler) {
+        $this->_dbHandler = $dbHandler;
     }
     
     /**
-     * Initialisiert die Navigationsdatei, wenn sie nicht existiert
+     * Liefert alle Navigationseinträge aus der Tabelle.
+     *
+     * @return array Alle Datensätze der Navigationstabelle
      */
-    public function initNavigationFile() {
-        // Prüfen, ob Navigation bereits im AppConfig existiert
-        $navigation = $this->_configManager->load('navigation');
-        
-        if (empty($navigation)) {
-            // Standard-Navigation erstellen
-            $defaultNavigation = [
-                'main_menu' => [],
-                'footer_menu' => []
-            ];
-            $this->_configManager->save('navigation', $defaultNavigation);
-        }
+    public function getAllNavigationItems(): array {
+        // Alle Datensätze über die neue API abrufen
+        return $this->_dbHandler->useTable('navigation')->getAllRecords();
     }
     
     /**
-     * Lädt die Navigationsdaten
-     * 
-     * @return array Navigationsdaten
+     * Gruppiert die Navigationseinträge nach Menütyp und sortiert sie nach "order".
+     *
+     * @return array Array mit den Schlüsseln "main_menu" und "footer_menu"
      */
     public function getNavigation(): array {
-        $navigation = $this->_configManager->load('navigation', true); // true für Force-Reload
-        
-        // Sicherstellen, dass die Grundstruktur vorhanden ist
-        if (!isset($navigation['main_menu'])) {
-            $navigation['main_menu'] = [];
+        $records = $this->_dbHandler->useTable('navigation')->getAllRecords();
+        $navigation = [
+            'main_menu'   => [],
+            'footer_menu' => []
+        ];
+        foreach ($records as $record) {
+            if (isset($record['menu_type'])) {
+                if ($record['menu_type'] === 'main_menu') {
+                    $navigation['main_menu'][] = $record;
+                } elseif ($record['menu_type'] === 'footer_menu') {
+                    $navigation['footer_menu'][] = $record;
+                }
+            }
         }
-        if (!isset($navigation['footer_menu'])) {
-            $navigation['footer_menu'] = [];
-        }
-        
+        // Sortiere beide Menüs anhand des "order"-Feldes
+        usort($navigation['main_menu'], function ($a, $b) {
+            return $a['order'] <=> $b['order'];
+        });
+        usort($navigation['footer_menu'], function ($a, $b) {
+            return $a['order'] <=> $b['order'];
+        });
         return $navigation;
     }
     
     /**
-     * Speichert die Navigationsdaten
-     * 
-     * @param array $navigation Navigationsdaten
-     * @return bool Erfolg
-     */
-    public function saveNavigation($navigation) {
-        // Sicherstellen, dass die grundlegende Struktur vorhanden ist
-        if (!isset($navigation['main_menu'])) {
-            $navigation['main_menu'] = [];
-        }
-        if (!isset($navigation['footer_menu'])) {
-            $navigation['footer_menu'] = [];
-        }
-        
-        return $this->_configManager->save('navigation', $navigation);
-    }
-    
-    /**
-     * Speichert einen Menübereich
-     * 
-     * @param string $menuType Menütyp ('main_menu' oder 'footer_menu')
-     * @param array $menuItems Menüelemente
-     * @return bool Erfolg
-     */
-    public function saveMenu($menuType, $menuItems) {
-        $navigation = $this->getNavigation();
-        $navigation[$menuType] = $menuItems;
-        return $this->saveNavigation($navigation);
-    }
-    
-    /**
-     * Gibt ein spezifisches Menü zurück
-     * 
-     * @param string $menuType Menütyp ('main_menu' oder 'footer_menu')
-     * @return array Menüelemente
-     */
-    public function getMenu($menuType) {
-        $navigation = $this->getNavigation();
-        return $navigation[$menuType] ?? [];
-    }
-    
-    /**
-     * Fügt einen Menüpunkt hinzu
-     * 
-     * @param string $menuType Menütyp ('main_menu' oder 'footer_menu')
-     * @param array $menuItem Menüelement
+     * Fügt einen neuen Navigationseintrag hinzu.
+     *
+     * @param string $menuType 'main_menu' oder 'footer_menu'
+     * @param array  $menuItem Assoziatives Array mit Feldern (z. B. title, url, target, order optional)
      * @return bool Erfolg
      */
     public function addMenuItem(string $menuType, array $menuItem): bool {
+        $navTable = $this->_dbHandler;
+        $menuItem['menu_type'] = $menuType;
+        // Falls order nicht gesetzt, bestimme die nächste Reihenfolge für diesen Menütyp
         $navigation = $this->getNavigation();
-        
+        $orders = array_column($navigation[$menuType], 'order');
+        $menuItem['order'] = empty($orders) ? 1 : max($orders) + 1;
+        // Generiere eine eindeutige int-ID (hier Beispiel: aktuelle Zeit in Millisekunden)
         if (!isset($menuItem['id'])) {
-            $menuItem['id'] = uniqid('menu_');
+            $menuItem['id'] = (int)(microtime(true) * 1000);
         }
-        
-        $navigation[$menuType][] = $menuItem;
-        return $this->saveNavigation($navigation);
+        return $navTable->insertRecord($menuItem);
     }
     
     /**
-     * Aktualisiert einen Menüpunkt
-     * 
-     * @param string $menuType Menütyp ('main_menu' oder 'footer_menu')
-     * @param string $menuItemId ID des zu aktualisierenden Menüelements
-     * @param array $menuItem Neue Daten für das Menüelement
+     * Aktualisiert einen existierenden Navigationseintrag.
+     *
+     * @param int   $menuItemId ID des zu aktualisierenden Eintrags
+     * @param array $menuItem   Neue Felddaten
      * @return bool Erfolg
      */
-    public function updateMenuItem(string $menuType, string $menuItemId, array $menuItem): bool {
-        $navigation = $this->getNavigation();
-        
-        foreach ($navigation[$menuType] as $key => $item) {
-            if ($item['id'] === $menuItemId) {
-                $menuItem['id'] = $menuItemId; // ID beibehalten
-                $navigation[$menuType][$key] = $menuItem;
-                return $this->saveNavigation($navigation);
-            }
-        }
-        
-        // Menüpunkt nicht gefunden
-        return false;
+    public function updateMenuItem(int $menuItemId, array $menuItem): bool {
+        $navTable = $this->_dbHandler;
+        $menuItem['id'] = $menuItemId;
+        return $navTable->updateRecord($menuItemId, $menuItem);
     }
     
     /**
-     * Löscht einen Menüpunkt
-     * 
-     * @param string $menuType Menütyp ('main_menu' oder 'footer_menu')
-     * @param string $menuItemId ID des zu löschenden Menüelements
+     * Löscht einen Navigationseintrag.
+     *
+     * @param int $menuItemId ID des zu löschenden Eintrags
      * @return bool Erfolg
      */
-    public function deleteMenuItem(string $menuType, string $menuItemId): bool {
-        $navigation = $this->getNavigation();
-        
-        foreach ($navigation[$menuType] as $key => $item) {
-            if ($item['id'] === $menuItemId) {
-                unset($navigation[$menuType][$key]);
-                $navigation[$menuType] = array_values($navigation[$menuType]); // Indizes neu nummerieren
-                return $this->saveNavigation($navigation);
-            }
-        }
-        
-        // Menüpunkt nicht gefunden
-        return false;
+    public function deleteMenuItem(int $menuItemId): bool {
+        return $this->_dbHandler->useTable('navigation')->deleteRecord($menuItemId);
     }
     
     /**
-     * Sortiert die Menüpunkte neu
-     * 
-     * @param string $menuType Menütyp ('main_menu' oder 'footer_menu')
-     * @param array $order Array mit Menüpunkt-IDs in der gewünschten Reihenfolge
+     * Sortiert die Navigationseinträge eines bestimmten Typs neu.
+     * Das Array $order enthält die IDs in der gewünschten Reihenfolge.
+     *
+     * @param string $menuType 'main_menu' oder 'footer_menu'
+     * @param array  $order    Array von int‑IDs in der gewünschten Reihenfolge
      * @return bool Erfolg
      */
     public function reorderMenu(string $menuType, array $order): bool {
-        $navigation = $this->getNavigation();
-        $currentMenu = $navigation[$menuType];
-        $newMenu = [];
-        
-        // Menüpunkte in der neuen Reihenfolge anordnen
-        foreach ($order as $menuItemId) {
-            foreach ($currentMenu as $item) {
-                if ($item['id'] === $menuItemId) {
-                    $newMenu[] = $item;
-                    break;
-                }
+        $navTable = $this->_dbHandler;
+        // Für jede ID den entsprechenden Datensatz abrufen und das Order-Feld aktualisieren
+        foreach ($order as $index => $id) {
+            $record = $this->_dbHandler->findRecord((int)$id);
+            if ($record !== null) {
+                $record['order'] = $index + 1;
+                $navTable->updateRecord((int)$id, $record); // Explizite Typumwandlung, obwohl unnötig
             }
         }
-        
-        // Sicherstellen, dass kein Menüpunkt verloren geht
-        if (count($newMenu) !== count($currentMenu)) {
-            return false;
-        }
-        
-        $navigation[$menuType] = $newMenu;
-        return $this->saveNavigation($navigation);
+        return true;
     }
     
     /**
-     * Gibt das Hauptmenü als HTML zurück
-     * 
-     * @param array $options Optionen für die Ausgabe
-     * @return string HTML des Hauptmenüs
+     * Rendert das Hauptmenü als HTML.
+     *
+     * @param array $options Optionen für die Darstellung (optional)
+     * @return string HTML-Code
      */
     public function renderMainMenu(array $options = []): string {
-        $mainMenu = $this->getMenu('main_menu');
-        
-        // Deine bestehende Menüstruktur
-        $html = '<nav class="marques-main-navigation">';
-        $html .= '<ul class="marques-menu">';
-        
+        $navigation = $this->getNavigation();
+        $mainMenu = $navigation['main_menu'];
+        $html = '<nav class="marques-main-navigation"><ul class="marques-menu">';
         foreach ($mainMenu as $item) {
             $active = '';
-            
-            // Aktiven Menüpunkt erkennen
             if (isset($_SERVER['REQUEST_URI'])) {
                 $currentUrl = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
                 $menuUrl = isset($item['url']) ? parse_url($item['url'], PHP_URL_PATH) : '';
-                
-                // Sicherstellen, dass beide Variablen Strings sind
-                $currentUrl = (string)$currentUrl;
-                $menuUrl = (string)$menuUrl;
-                
-                if ($currentUrl === $menuUrl || ($menuUrl !== '/' && $menuUrl !== '' && strpos($currentUrl, $menuUrl) === 0)) {
+                if ((string)$currentUrl === (string)$menuUrl ||
+                    (((string)$menuUrl !== '/') && ((string)$menuUrl !== '') && strpos((string)$currentUrl, (string)$menuUrl) === 0)
+                ) {
                     $active = ' class="active"';
                 }
             }
-            
-            $target = isset($item['target']) && $item['target'] === '_blank' ? ' target="_blank"' : '';
-            $html .= '<li class="marques-menu-item' . ($active ? ' active' : '') . '">';
-            $html .= '<a href="' . SafetyXSS::escapeOutput($item['url'] ?? '#', 'html') . '"' . $target . '>' . SafetyXSS::escapeOutput($item['title'] ?? 'Menüpunkt', 'html') . '</a>';
+            $target = (isset($item['target']) && $item['target'] === '_blank') ? ' target="_blank"' : '';
+            $html .= '<li class="marques-menu-item' . $active . '">';
+            $html .= '<a href="' . SafetyXSS::escapeOutput($item['url'] ?? '#', 'html') . '"' . $target . '>' .
+                     SafetyXSS::escapeOutput($item['title'] ?? 'Menüpunkt', 'html') . '</a>';
             $html .= '</li>';
         }
-        
-        $html .= '</ul>';
-        $html .= '</nav>';
-        
+        $html .= '</ul></nav>';
         return $html;
     }
     
     /**
-     * Gibt das Footermenü als HTML zurück
-     * 
-     * @param array $options Optionen für die Ausgabe
-     * @return string HTML des Footermenüs
+     * Rendert das Footermenü als HTML.
+     *
+     * @param array $options Optionen für die Darstellung (optional)
+     * @return string HTML-Code
      */
     public function renderFooterMenu(array $options = []): string {
-        $footerMenu = $this->getMenu('footer_menu');
-        
-        // Für Footer-Menü könnten wir ähnliche Klassen verwenden oder anpassen
-        $html = '<nav class="marques-footer-navigation">';
-        $html .= '<ul class="marques-menu">';
-        
+        $navigation = $this->getNavigation();
+        $footerMenu = $navigation['footer_menu'];
+        $html = '<nav class="marques-footer-navigation"><ul class="marques-menu">';
         foreach ($footerMenu as $item) {
-            $target = isset($item['target']) && $item['target'] === '_blank' ? ' target="_blank"' : '';
+            $target = (isset($item['target']) && $item['target'] === '_blank') ? ' target="_blank"' : '';
             $html .= '<li class="marques-menu-item">';
-            $html .= '<a href="' . SafetyXSS::escapeOutput($item['url'] ?? '#', 'html') . '"' . $target . '>' . SafetyXSS::escapeOutput($item['title'] ?? 'Menüpunkt', 'html') . '</a>';
+            $html .= '<a href="' . SafetyXSS::escapeOutput($item['url'] ?? '#', 'html') . '"' . $target . '>' .
+                     SafetyXSS::escapeOutput($item['title'] ?? 'Menüpunkt', 'html') . '</a>';
             $html .= '</li>';
         }
-        
-        $html .= '</ul>';
-        $html .= '</nav>';
-        
+        $html .= '</ul></nav>';
         return $html;
-    }
-
-    /**
-     * Migriert das bestehende statische Menü zu einem dynamischen Menü
-     * 
-     * @return bool Erfolg
-     */
-    public function migrateExistingMenu() {
-        // Nur ausführen, wenn das Menü leer ist
-        $navigation = $this->getNavigation();
-        
-        if (count($navigation['main_menu']) > 0) {
-            return false; // Es existieren bereits Menüpunkte
-        }
-        
-        // Standardmenüpunkte
-        $defaultItems = [
-            [
-                'id' => uniqid('menu_'),
-                'title' => 'Startseite',
-                'url' => Helper::getSiteUrl(),
-                'target' => '_self'
-            ],
-            [
-                'id' => uniqid('menu_'),
-                'title' => 'Blog',
-                'url' => Helper::getSiteUrl('blog'),
-                'target' => '_self'
-            ],
-            [
-                'id' => uniqid('menu_'),
-                'title' => 'Über uns',
-                'url' => Helper::getSiteUrl('about'),
-                'target' => '_self'
-            ],
-            [
-                'id' => uniqid('menu_'),
-                'title' => 'Kontakt',
-                'url' => Helper::getSiteUrl('contact'),
-                'target' => '_self'
-            ]
-        ];
-        
-        $navigation['main_menu'] = $defaultItems;
-        
-        return $this->saveNavigation($navigation);
     }
 }

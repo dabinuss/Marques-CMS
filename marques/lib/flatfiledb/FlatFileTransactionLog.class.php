@@ -45,8 +45,10 @@ class FlatFileTransactionLog
      * @throws InvalidArgumentException wenn die ID ungültig ist
      * @throws RuntimeException wenn das Log nicht geschrieben werden kann
      */
-    public function writeLog(string $action, string $recordId, ?array $data = null): void
+    public function writeLog(string $action, string|int $recordId, ?array $data = null): void
     {
+        $recordId = (string)$recordId;
+
         if (!FlatFileValidator::isValidId($recordId)) {
             throw new InvalidArgumentException('Ungültige Datensatz-ID im Log.');
         }

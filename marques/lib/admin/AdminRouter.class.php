@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Marques\Admin;
 
 class AdminRouter
@@ -36,11 +38,9 @@ class AdminRouter
     public function route(): string
     {
         $page = $_GET['page'] ?? 'dashboard';
-
         if (!array_key_exists($page, $this->allowedPages)) {
             throw new \Exception("Seite '{$page}' ist nicht erlaubt.");
         }
-
         return $this->allowedPages[$page];
     }
 }

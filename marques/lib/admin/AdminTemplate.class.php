@@ -17,14 +17,11 @@ class AdminTemplate extends AppTemplate {
      * Statischer Cache für file_exists-Ergebnisse.
      * Mit TTL zur Vermeidung veralteter Einträge bei langlebigen Prozessen.
      */
+    protected bool $cacheEnabled = false;
+
     protected static array $fileExistenceCache = [];
     protected static array $fileExistenceCacheTTL = [];
-    protected const FILE_CACHE_TTL = 1; // 1 Sekunde TTL
-
-    /**
-     * Flag, ob der Cache aktiviert ist.
-     */
-    protected bool $cacheEnabled = false;
+    const FILE_CACHE_TTL = 60; // oder ein anderer passender Wert
 
     /**
      * Setzt, ob der Cache aktiviert werden soll.
@@ -35,12 +32,16 @@ class AdminTemplate extends AppTemplate {
         $this->cacheEnabled = $enabled;
     }
 
-    public function __construct() {
-        parent::__construct();
-        $appPath = AppPath::getInstance();
-        // Überschreibe den Template-Pfad für den Adminbereich
+    public function __construct(
+        \Marques\Core\DatabaseHandler $dbHandler,
+        \Marques\Core\ThemeManager $themeManager,
+        AppPath $appPath,
+        AppCache $cache
+    ) {
+        parent::__construct($dbHandler, $themeManager, $appPath, $cache);
+        // Admin-spezifischer Template-Pfad
         $this->templatePath = $appPath->getPath('admin') . '/lib/templates/';
-        // Setze den Content-Pfad für Admin-Templates
+        // Content-Basis-Pfad für Admin-Templates
         $this->contentBase = $appPath->getPath('admin') . '/lib/';
     }
 
@@ -130,13 +131,8 @@ class AdminTemplate extends AppTemplate {
      * @throws \Exception Falls die Content- oder Layout-Datei nicht gefunden wird.
      */
     public function render(array $vars = [], string $template = '/lib/dashboard'): void {
-        // Admin-spezifische Kennzeichnung
         $vars['is_admin'] = true;
-
-        // Ermittlung der Pfade:
-        // Content-Datei, z. B. "/lib/dashboard.php"
         $contentFile = $this->contentBase . $template . '.php';
-        // Layout-Datei, z. B. "dashboard.phtml" (Basename des Templates)
         $layoutFile  = $this->templatePath . '/' . basename($template) . '.phtml';
 
         if (!$this->fileExistsCached($contentFile)) {
@@ -146,60 +142,37 @@ class AdminTemplate extends AppTemplate {
             throw new \Exception("Layout-Datei nicht gefunden: {$layoutFile}");
         }
 
-        // Verwende den AppCache, um den finalen Output zu cachen.
-        $cacheManager = AppCache::getInstance();
-        
-        // Effizienterer Cache-Key für bessere Performance
-        $varsHash = md5(json_encode(array_map(function($item) {
-            if (is_object($item)) {
-                return get_class($item) . spl_object_id($item);
-            }
-            return $item;
-        }, $vars), JSON_PARTIAL_OUTPUT_ON_ERROR));
-        
+        // Statt statischem Aufruf holen wir den Cache über DI (hier kannst du auch $this->cache verwenden)
+        $cacheManager = $this->cache;
+        $varsHash = md5(json_encode($vars, JSON_PARTIAL_OUTPUT_ON_ERROR));
         $cacheKey = 'admin_template_' . md5($template . '_' . $varsHash);
-        
-        // Nur cachen, wenn Cache aktiviert ist
+
         if ($this->cacheEnabled && ($cachedOutput = $cacheManager->get($cacheKey))) {
             echo $cachedOutput;
             return;
         }
 
-        // Content rendern in einem isolierten Bereich
         ob_start();
         $renderContent = function() use ($contentFile, $vars) {
-            // Sichere Variablen-Extrahierung ohne extract()
             foreach ($vars as $key => $value) {
                 if (preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $key)) {
                     ${$key} = $value;
                 }
             }
-            
-            // Führe die Content-Datei aus
             include $contentFile;
-            
-            // Gib alle definierten Variablen zurück
             return get_defined_vars();
         };
-        
-        // Führe die Content-Datei aus und sammle alle Variablen
         $contentVars = $renderContent();
-        $content = ob_get_clean();
+        $contentOutput = ob_get_clean();
 
-        // Entferne Variablen, die wir nicht in das Layout übertragen möchten
-        unset($contentVars['contentFile']);
-        unset($contentVars['this']);
-        
-        // Füge den gerenderten Content und alle extrahierten Variablen dem $vars-Array hinzu
+        unset($contentVars['contentFile'], $contentVars['this']);
         $vars = array_merge($vars, $contentVars);
-        $vars['content'] = $content;
+        $vars['content'] = $contentOutput;
 
-        // Jetzt das Layout rendern - alle Variablen aus Content sind verfügbar
         ob_start();
         $this->safeInclude($layoutFile, $vars);
         $output = ob_get_clean();
 
-        // Cache nur setzen, wenn aktiviert
         if ($this->cacheEnabled) {
             $cacheManager->set($cacheKey, $output, 3600, ['templates']);
         }

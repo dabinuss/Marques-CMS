@@ -6,31 +6,27 @@ namespace Marques\Core;
 use Marques\Core\SafetyXSS;
 
 class AppTemplate {
-    /**
-     * @var array Systemkonfiguration
-     */
     protected array $_config;
-    /**
-     * @var NavigationManager|null NavigationManager-Instanz (wird bei Bedarf erstellt)
-     */
     protected ?NavigationManager $_navManager = null;
-    /**
-     * @var string Pfad zum Template-Verzeichnis
-     */
     protected string $templatePath;
+    protected AppPath $appPath;
+    protected AppCache $cache;
+    protected DatabaseHandler $dbHandler;
+    protected ThemeManager $themeManager;
 
-    protected ?AppPath $appPath = null;
-
-    public function __construct() {
-        // Systemkonfiguration laden
-        $configManager = AppConfig::getInstance();
-        $this->_config = $configManager->load('system') ?: [];
-
-        // Standard-Template-Pfad aus dem ThemeManager
-        $themeManager = new ThemeManager();
+    // Konstruktor mit Injektion aller benötigten Services.
+    public function __construct(
+        DatabaseHandler $dbHandler,
+        ThemeManager $themeManager,
+        AppPath $appPath,
+        AppCache $cache
+    ) {
+        $this->dbHandler    = $dbHandler;
+        $this->themeManager = $themeManager;
+        $this->_config      = $dbHandler->getAllSettings() ?: [];
         $this->templatePath = $themeManager->getThemePath('templates');
-
-        $this->appPath = AppPath::getInstance();
+        $this->appPath      = $appPath;
+        $this->cache        = $cache;
     }
 
     /**
@@ -40,11 +36,7 @@ class AppTemplate {
      * @return string
      */
     public function themeUrl(string $path = ''): string {
-        static $themeManager = null;
-        if ($themeManager === null) {
-            $themeManager = new ThemeManager();
-        }
-        return $themeManager->getThemeAssetsUrl($path);
+        return $this->themeManager->getThemeAssetsUrl($path);
     }
 
     /**
@@ -60,9 +52,8 @@ class AppTemplate {
 
         if (!preg_match('/^[a-zA-Z0-9\-_\/]+$/', $templateName)) {
             throw new \Exception("Ungültiger Template-Name: " . SafetyXSS::escapeOutput($templateName, 'html'));
-        }        
+        }
 
-        // Suche nach dem Template im definierten Pfad mit der Endung .phtml
         $templateFile = $this->templatePath . '/' . $templateName . '.phtml';
         if (!file_exists($templateFile)) {
             $templateFile = MARQUES_TEMPLATE_DIR . '/' . $templateName . '.phtml';
@@ -71,7 +62,6 @@ class AppTemplate {
             }
         }
 
-        // Basis-Template (Layout) laden
         $baseTemplateFile = $this->templatePath . '/base.phtml';
         if (!file_exists($baseTemplateFile)) {
             $baseTemplateFile = MARQUES_TEMPLATE_DIR . '/base.phtml';
@@ -80,11 +70,8 @@ class AppTemplate {
             }
         }
 
-        // Systemeinstellungen laden
-        $settingsManager = new AppSettings();
-        $system_settings = $settingsManager->getAllSettings();
+        $system_settings = $this->dbHandler->getAllSettings();
 
-        // Basis-URL anpassen, falls IS_ADMIN definiert ist
         if (defined('IS_ADMIN')) {
             if (strpos($system_settings['base_url'], '/admin') === false) {
                 $system_settings['base_url'] = rtrim($system_settings['base_url'], '/') . '/admin';
@@ -95,21 +82,17 @@ class AppTemplate {
             }
         }
 
-        // Zusätzliche Daten für das Template bereitstellen
-        $themeManager = new ThemeManager();
-        $data['themeManager']   = $themeManager;
-        $data['templateFile']   = $templateFile;
+        $data['themeManager']    = $this->themeManager;
+        $data['templateFile']    = $templateFile;
         $data['system_settings'] = $system_settings;
-        $data['templateName']   = $templateName;
-        $data['config']         = $this->_config;
+        $data['templateName']    = $templateName;
+        $data['config']          = $this->_config;
 
-        // Erzeugen von Template-Variablen
-        $tpl = new TemplateVars($data);
+        // Injektion des Cache in die TemplateVars-Instanz
+        $tpl = new TemplateVars($this->cache, $data);
 
-        // Cache-Schlüssel generieren
         $cacheKey = 'template_' . $tpl->templateName . '_' . ($tpl->id ?? md5($tpl->content));
-        $cacheManager = AppCache::getInstance();
-        $cachedOutput = $cacheManager->get($cacheKey);
+        $cachedOutput = $this->cache->get($cacheKey);
 
         if ($cachedOutput !== null) {
             echo $cachedOutput;
@@ -117,7 +100,7 @@ class AppTemplate {
             ob_start();
             include $baseTemplateFile;
             $output = ob_get_clean();
-            $cacheManager->set($cacheKey, $output, 3600, ['templates']);
+            $this->cache->set($cacheKey, $output, 3600, ['templates']);
             echo $output;
         }
     }
@@ -129,11 +112,8 @@ class AppTemplate {
      * @param array  $data          Daten, die an das Partial übergeben werden
      */
     public function includePartial(string $partialName, array $data = []): void {
-        $config = $this->_config;
         if (!isset($data['system_settings'])) {
-            $settings_manager = new AppSettings();
-            $system_settings = $settings_manager->getAllSettings();
-
+            $system_settings = $this->dbHandler->getAllSettings();
             if (defined('IS_ADMIN')) {
                 if (strpos($system_settings['base_url'], '/admin') === false) {
                     $system_settings['base_url'] = rtrim($system_settings['base_url'], '/') . '/admin';
@@ -166,7 +146,7 @@ class AppTemplate {
      */
     public function getNavigationManager() {
         if ($this->_navManager === null) {
-            $this->_navManager = new NavigationManager();
+            $this->_navManager = new NavigationManager($this->dbHandler);
         }
         return $this->_navManager;
     }
@@ -186,11 +166,12 @@ class AppTemplate {
         return file_exists($templateFile);
     }
 
-    /* 
-     * Funktion zum Rendern des SVG-Icons mit Custom Class
-     * 
+    /**
+     * Rendert ein SVG-Icon mit optionaler Custom Class und Größe.
+     *
      * @param string $iconName
      * @param string $customClass
+     * @param string|null $size
      * @return string
      */
     public function renderIcon(string $iconName, string $customClass = 'stat-icon', ?string $size = null): string {
@@ -198,11 +179,7 @@ class AppTemplate {
         
         if (file_exists($iconPath)) {
             $svg = file_get_contents($iconPath);
-            
-            // Entferne die Attribute width, height und fill (alle immer)
             $svg = preg_replace('/\s+(width|height)="[^"]*"/i', '', $svg);
-            
-            // Bestehende Klassen erhalten und die custom class zusätzlich anhängen:
             if (preg_match('/<svg\s[^>]*class="/i', $svg)) {
                 $svg = preg_replace(
                     '/(<svg\s[^>]*class=")([^"]*)(")/i',
@@ -213,11 +190,7 @@ class AppTemplate {
             } else {
                 $svg = preg_replace('/<svg\b/i', '<svg class="' . $customClass . '"', $svg, 1);
             }
-            
-            // Wenn ein $size-Wert angegeben ist, füge ein style-Attribut ein,
-            // das width und height (gleichmäßig) festlegt.
             if ($size !== null) {
-                // Falls bereits ein style-Attribut existiert, hänge die Größe einfach an:
                 if (preg_match('/<svg\s[^>]*style="/i', $svg)) {
                     $svg = preg_replace(
                         '/(<svg\s[^>]*style=")([^"]*)(")/i',
@@ -226,7 +199,6 @@ class AppTemplate {
                         1
                     );
                 } else {
-                    // Andernfalls füge ein neues style-Attribut ein
                     $svg = preg_replace(
                         '/<svg\b/i',
                         '<svg style="width:' . $size . '; height:' . $size . ';"',
@@ -235,10 +207,8 @@ class AppTemplate {
                     );
                 }
             }
-            
             return $svg;
         }
-        
         return '<!-- Icon nicht gefunden: ' . SafetyXSS::escapeOutput($iconName, 'html') . ' -->';
-    }    
+    }
 }

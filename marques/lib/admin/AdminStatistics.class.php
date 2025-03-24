@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Marques\Admin;
 
 use Marques\Core\AppStatistics;
+use Marques\Core\DatabaseHandler;
 use Marques\Core\User;
 use Marques\Core\PageManager;
 use Marques\Core\BlogManager;
@@ -19,37 +20,62 @@ class AdminStatistics extends AppStatistics {
     
     protected array $thresholds = [
         'memory_limit' => [
-            'min' => 64 * 1024 * 1024,    // Mindestens 64MB
-            'recommended' => 128 * 1024 * 1024, // Empfohlen 128MB
+            'min' => 64 * 1024 * 1024,          // Mindestens 64 MB
+            'recommended' => 128 * 1024 * 1024,   // Empfohlen 128 MB
         ],
         'max_execution_time' => [
-            'min' => 30,   // Mindestens 30 Sekunden
-            'recommended' => 60, // Empfohlen 60 Sekunden
+            'min' => 30,                        // Mindestens 30 Sekunden
+            'recommended' => 60,                // Empfohlen 60 Sekunden
         ],
         'upload_max_filesize' => [
-            'min' => 8 * 1024 * 1024,    // Mindestens 8MB
-            'recommended' => 16 * 1024 * 1024, // Empfohlen 16MB
+            'min' => 8 * 1024 * 1024,           // Mindestens 8 MB
+            'recommended' => 16 * 1024 * 1024,  // Empfohlen 16 MB
         ],
         'php_version' => [
-            'min' => '7.4.0',    // Mindestens PHP 7.4
-            'recommended' => '8.0.0', // Empfohlen PHP 8.0+
+            'min' => '7.4.0',                   // Mindestens PHP 7.4
+            'recommended' => '8.0.0',           // Empfohlen PHP 8.0+
         ],
     ];
-    
+
+    // DI-Abhängigkeiten:
+    private DatabaseHandler $dbHandler;
+    private User $user;
+    private PageManager $pageManager;
+    private BlogManager $blogManager;
+    private MediaManager $mediaManager;
+
+    protected array $stats = [];
     protected array $warnings = [];
 
     /**
      * Konstruktor.
-     * 
+     *
+     * Jetzt erwartet AdminStatistics alle benötigten Abhängigkeiten via DI.
+     *
+     * @param DatabaseHandler $dbHandler
+     * @param User $user
+     * @param PageManager $pageManager
+     * @param BlogManager $blogManager
+     * @param MediaManager $mediaManager
      * @param array $customThresholds Optionale benutzerdefinierte Schwellenwerte
      */
-    public function __construct(array $customThresholds = []) {
-        parent::__construct();
-        
+    public function __construct(
+        DatabaseHandler $dbHandler,
+        User $user,
+        PageManager $pageManager,
+        BlogManager $blogManager,
+        MediaManager $mediaManager,
+        array $customThresholds = []
+    ) {
+        $this->dbHandler = $dbHandler;
+        parent::__construct(); // Eltern-Konstruktor ohne Parameter aufrufen
+        $this->user = $user;
+        $this->pageManager = $pageManager;
+        $this->blogManager = $blogManager;
+        $this->mediaManager = $mediaManager;
         if (!empty($customThresholds)) {
             $this->updateThresholds($customThresholds);
         }
-        
         $this->collectSystemInfo();
         $this->collectAllStatistics();
         $this->checkSystemWarnings();
@@ -225,20 +251,16 @@ class AdminStatistics extends AppStatistics {
         $additionalStats = [];
 
         // Benutzerstatistik
-        $user = new User();
-        $additionalStats['total_users'] = count($user->getAllUsers());
+        $additionalStats['total_users'] = count($this->user->getAllUsers());
 
         // Seitenstatistik
-        $pageManager = new PageManager();
-        $additionalStats['total_pages'] = count($pageManager->getAllPages());
+        $additionalStats['total_pages'] = count($this->pageManager->getAllPages());
 
         // Blog-Posts Statistik
-        $blogManager = new BlogManager();
-        $additionalStats['total_blog_posts'] = count($blogManager->getAllPosts());
+        $additionalStats['total_blog_posts'] = count($this->blogManager->getAllPosts());
 
         // Mediendateien Statistik
-        $mediaManager = new MediaManager();
-        $additionalStats['total_media'] = count($mediaManager->getAllMedia());
+        $additionalStats['total_media'] = count($this->mediaManager->getAllMedia());
 
         // Server Load Average (falls verfügbar)
         $additionalStats['server_load'] = function_exists('sys_getloadavg')

@@ -20,16 +20,14 @@ class AppConfig {
     /**
      * Privater Konstruktor (Singleton-Pattern)
      */
-    private function __construct() {
-
-        // Stellen sicher, dass das Konfigurationsverzeichnis existiert
-        try {
-            AppPath::getInstance()->preparePath('config');
-        } catch (\Exception $e) {
-            echo "Fehler beim Vorbereiten des Konfigurationsverzeichnisses: " . $e->getMessage();
+    public function __construct(?AppPath $appPath = null) {
+        // Falls keine AppPath-Instanz übergeben wurde, erstelle eine neue:
+        if ($appPath === null) {
+            $appPath = new AppPath();
         }
-        
-        // .htaccess-Datei erstellen, falls nicht vorhanden
+        // Verwende nun die Instanz:
+        $appPath->preparePath('config');
+
         $this->ensureHtaccessExists();
     }
     
@@ -291,7 +289,7 @@ class AppConfig {
      */
     private function ensureHtaccessExists(): void {
         // Hier nutzen wir den AppPath-Zugriff (optional: könntest du auch preparePath() einsetzen)
-        $configDir = AppPath::getInstance()->getPath('config');
+        $configDir = (new AppPath())->preparePath('config');
         $htaccessPath = $configDir . '/.htaccess';
         if (!file_exists($htaccessPath)) {
             $htaccessContent = "# Konfigurationsverzeichnis vor direktem Zugriff schützen\n";

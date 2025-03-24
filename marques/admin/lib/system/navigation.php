@@ -1,27 +1,37 @@
 <?php
 /**
  * marques CMS - Navigation Management
- * 
+ *
  * Verwaltung der Website-Navigation (Hauptmenü und Footermenü).
  *
  * @package marques
  * @subpackage admin
  */
 
-// NavigationManager initialisieren
-$navManager = new \Marques\Core\NavigationManager();
+use Marques\Admin\MarquesAdmin;
+use Marques\Core\DatabaseHandler;
+use Marques\Core\Helper;
 
-// Konfiguration laden
-$configManager = \Marques\Core\AppConfig::getInstance();
-$system_config = $configManager->load('system') ?: [];
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
+
+// Hole den DatabaseHandler via DI
+$dbHandler = $container->get(DatabaseHandler::class);
+
+/** @var \Marques\Core\DatabaseHandler $dbHandler */
+// Statt eines statischen Aufrufs verwenden wir nun den per DI bereitgestellten DatabaseHandler
+$dbHandler->useTable('navigation');
 
 // Erfolgsmeldung und Fehlermeldung initialisieren
 $success_message = '';
-$error_message = '';
+$error_message   = '';
 
-// Standard-Menütyp
-$activeMenu = isset($_GET['tab']) && $_GET['tab'] === 'footer' ? 'footer_menu' : 'main_menu';
-$activeMenuTitle = $activeMenu === 'main_menu' ? 'Hauptmenü' : 'Footermenü';
+// Standard-Menütyp (default: main_menu)
+$activeMenu = (isset($_GET['tab']) && $_GET['tab'] === 'footer') ? 'footer_menu' : 'main_menu';
+$activeMenuTitle = ($activeMenu === 'main_menu') ? 'Hauptmenü' : 'Footermenü';
+
+// Lade *alle* Menüeinträge *einmal*. Wir arbeiten NUR mit diesem Array.
+$navigationItems = $dbHandler->getAllRecords();
 
 // Aktionen verarbeiten
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -30,99 +40,167 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error_message = 'Ungültige Anfrage. Bitte versuchen Sie es erneut.';
     } else {
         $action = $_POST['action'] ?? '';
-        
+
         // Menüpunkt hinzufügen
         if ($action === 'add_item') {
             $menuItem = [
-                'title' => $_POST['title'] ?? '',
-                'url' => $_POST['url'] ?? '',
-                'target' => isset($_POST['target']) && $_POST['target'] === '_blank' ? '_blank' : '_self'
+                'menu_type' => $activeMenu, // Verwende $activeMenu
+                'title'     => $_POST['title'] ?? '',
+                'url'       => $_POST['url'] ?? '',
+                'target'    => (isset($_POST['target']) && $_POST['target'] === '_blank') ? '_blank' : '_self',
+                'order'     => 0, // Wird unten gesetzt
+                // 'id' wird nicht gesetzt – die Datenbank generiert die ID automatisch
             ];
-            
+        
             if (empty($menuItem['title']) || empty($menuItem['url'])) {
                 $error_message = 'Bitte füllen Sie alle Felder aus.';
             } else {
-                $menuType = $_POST['menu_type'] ?? $activeMenu;
-                
-                if ($navManager->addMenuItem($menuType, $menuItem)) {
-                    $success_message = 'Menüpunkt erfolgreich hinzugefügt.';
+                // Bestimme die höchste 'order' für den aktuellen Menütyp.
+                $maxOrder = 0;
+                foreach ($navigationItems as $item) {
+                    if ($item['menu_type'] === $activeMenu && isset($item['order']) && $item['order'] > $maxOrder) {
+                        $maxOrder = (int)$item['order'];
+                    }
+                }
+                $menuItem['order'] = $maxOrder + 1;
+        
+                // Speichere in der Datenbank.
+                // Hier keine eigene ID übergeben – die Datenbank (FlatFileDatabase) liefert die neue ID zurück
+                $newId = $dbHandler->insertRecord($menuItem);
+                if ($newId !== false) {
+                    $success_message = 'Menüpunkt erfolgreich hinzugefügt. (ID: ' . $newId . ')';
                 } else {
                     $error_message = 'Fehler beim Hinzufügen des Menüpunkts.';
                 }
             }
-        }
-        // Menüpunkt aktualisieren
-        else if ($action === 'update_item') {
-            $menuItemId = $_POST['menu_item_id'] ?? '';
+        } elseif ($action === 'update_item') {
+            $menuItemId = (int)($_POST['menu_item_id'] ?? 0); // ID muss Integer sein
             $menuItem = [
-                'title' => $_POST['title'] ?? '',
-                'url' => $_POST['url'] ?? '',
-                'target' => isset($_POST['target']) && $_POST['target'] === '_blank' ? '_blank' : '_self'
+                'title'  => $_POST['title'] ?? '',
+                'url'    => $_POST['url'] ?? '',
+                'target' => (isset($_POST['target']) && $_POST['target'] === '_blank') ? '_blank' : '_self',
             ];
-            
-            if (empty($menuItemId) || empty($menuItem['title']) || empty($menuItem['url'])) {
+
+            if ($menuItemId === 0 || empty($menuItem['title']) || empty($menuItem['url'])) {
                 $error_message = 'Bitte füllen Sie alle Felder aus.';
             } else {
-                $menuType = $_POST['menu_type'] ?? $activeMenu;
-                
-                if ($navManager->updateMenuItem($menuType, $menuItemId, $menuItem)) {
-                    $success_message = 'Menüpunkt erfolgreich aktualisiert.';
-                } else {
-                    $error_message = 'Fehler beim Aktualisieren des Menüpunkts.';
+                $updated = false;
+                foreach ($navigationItems as &$item) { // Referenz nutzen
+                    if ((int)$item['id'] === $menuItemId) {
+                        $item['title']  = $menuItem['title'];
+                        $item['url']    = $menuItem['url'];
+                        $item['target'] = $menuItem['target'];
+                        $updated = true;
+
+                        // Speichere den Eintrag in der Datenbank
+                        if ($dbHandler->updateRecord($menuItemId, $item)) {
+                            $success_message = 'Menüpunkt erfolgreich aktualisiert.';
+                        } else {
+                            $error_message = 'Fehler beim Aktualisieren des Menüpunkts.';
+                        }
+                        break;
+                    }
+                }
+                unset($item);
+                if (!$updated) {
+                    $error_message = 'Ungültige Menüpunkt-ID.';
                 }
             }
-        }
-        // Menüpunkt löschen
-        else if ($action === 'delete_item') {
-            $menuItemId = $_POST['menu_item_id'] ?? '';
-            
-            if (empty($menuItemId)) {
+        } elseif ($action === 'delete_item') {
+            $menuItemId = (int)($_POST['menu_item_id'] ?? 0);
+            if ($menuItemId === 0) {
                 $error_message = 'Ungültige Menüpunkt-ID.';
             } else {
-                $menuType = $_POST['menu_type'] ?? $activeMenu;
-                
-                if ($navManager->deleteMenuItem($menuType, $menuItemId)) {
-                    $success_message = 'Menüpunkt erfolgreich gelöscht.';
+                $index = null;
+                foreach ($navigationItems as $key => $item) {
+                    if ((int)$item['id'] === $menuItemId) {
+                        $index = $key;
+                        break;
+                    }
+                }
+                if ($index !== null) {
+                    if ($dbHandler->deleteRecord($menuItemId)) {
+                        $success_message = 'Menüpunkt erfolgreich gelöscht.';
+                        unset($navigationItems[$index]);
+                        $navigationItems = array_values($navigationItems);
+                    } else {
+                        $error_message = 'Fehler beim Löschen des Menüpunkts.';
+                    }
                 } else {
-                    $error_message = 'Fehler beim Löschen des Menüpunkts.';
+                    $error_message = 'Ungültige Menüpunkt-ID.';
                 }
             }
-        }
-        // Menü neu ordnen
-        else if ($action === 'reorder_menu') {
+        } elseif ($action === 'reorder_menu') {
             $order = isset($_POST['menu_order']) ? json_decode($_POST['menu_order'], true) : [];
-            
+            $menuType = $_POST['menu_type'] ?? $activeMenu;
             if (empty($order)) {
                 $error_message = 'Ungültige Sortierreihenfolge.';
             } else {
-                $menuType = $_POST['menu_type'] ?? $activeMenu;
-                
-                if ($navManager->reorderMenu($menuType, $order)) {
+                $newNavigationItems = [];
+                $sort_success = true;
+                foreach ($order as $index => $itemId) {
+                    $found = false;
+                    foreach ($navigationItems as $item) {
+                        if ((int)$item['id'] === (int)$itemId && $item['menu_type'] === $menuType) {
+                            $item['order'] = $index + 1;
+                            $newNavigationItems[] = $item;
+                            if (!$dbHandler->updateRecord((int)$itemId, $item)) {
+                                $error_message = "Fehler beim Speichern der Sortierung für ID $itemId.";
+                                $sort_success = false;
+                                break 2;
+                            }
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $error_message = "Ungültiger Menüpunkt in Sortierreihenfolge: $itemId";
+                        $sort_success = false;
+                        break;
+                    }
+                }
+                foreach ($navigationItems as $item) {
+                    if ($item['menu_type'] !== $menuType) {
+                        $newNavigationItems[] = $item;
+                    }
+                }
+                $navigationItems = $newNavigationItems;
+                if ($sort_success) {
                     $success_message = 'Menü erfolgreich neu sortiert.';
-                } else {
-                    $error_message = 'Fehler beim Sortieren des Menüs.';
                 }
             }
         }
     }
+    // Nach der Verarbeitung der POST-Daten: Aktualisiere das lokale Array aus der Datenbank,
+    // um Duplikationen und veraltete Einträge zu vermeiden.
+    $navigationItems = $dbHandler->getAllRecords();
 }
 
 // Häufig verwendete URLs vorbereiten
 $commonUrls = [
-    ['title' => 'Startseite', 'url' => \Marques\Core\Helper::getSiteUrl()],
-    ['title' => 'Blog', 'url' => \Marques\Core\Helper::getSiteUrl('blog')],
-    ['title' => 'Über uns', 'url' => \Marques\Core\Helper::getSiteUrl('about')],
-    ['title' => 'Kontakt', 'url' => \Marques\Core\Helper::getSiteUrl('contact')]
+    ['title' => 'Startseite', 'url' => Helper::getSiteUrl()],
+    ['title' => 'Blog', 'url' => Helper::getSiteUrl('blog')],
+    ['title' => 'Über uns', 'url' => Helper::getSiteUrl('about')],
+    ['title' => 'Kontakt', 'url' => Helper::getSiteUrl('contact')]
 ];
 
-// Menüs laden
-$mainMenu = $navManager->getMenu('main_menu');
-$footerMenu = $navManager->getMenu('footer_menu');
+// Menüs aus den Navigationseinträgen laden und nach 'order' sortieren
+$mainMenu = [];
+$footerMenu = [];
 
-// Migration des bestehenden Menüs, wenn leer
-if (empty($mainMenu) && isset($_GET['migrate']) && $_GET['migrate'] === '1') {
-    if ($navManager->migrateExistingMenu()) {
-        $success_message = 'Das bestehende Menü wurde erfolgreich migriert.';
-        $mainMenu = $navManager->getMenu('main_menu'); // Neu laden
+foreach ($navigationItems as $item) {
+    if ($item['menu_type'] === 'main_menu') {
+        $mainMenu[] = $item;
+    } elseif ($item['menu_type'] === 'footer_menu') {
+        $footerMenu[] = $item;
     }
 }
+
+// Sortiere die Menüs nach 'order'
+usort($mainMenu, function($a, $b) {
+    return $a['order'] <=> $b['order'];
+});
+
+usort($footerMenu, function($a, $b) {
+    return $a['order'] <=> $b['order'];
+});

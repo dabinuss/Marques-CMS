@@ -5,13 +5,15 @@ namespace Marques\Core;
 
 class FileManager {
     protected string $baseDir;
+    protected AppCache $cache;
 
     /**
      * Konstruktor.
      * @param string $baseDir Basisverzeichnis (z.B. MARQUES_CONTENT_DIR)
      */
-    public function __construct(string $baseDir = MARQUES_CONTENT_DIR) {
+    public function __construct(AppCache $cache, string $baseDir = MARQUES_CONTENT_DIR) {
         $this->baseDir = rtrim($baseDir, DIRECTORY_SEPARATOR);
+        $this->cache = $cache;
     }
 
     /**
@@ -31,9 +33,8 @@ class FileManager {
         if (file_put_contents($filePath, $content) === false) {
             return false;
         }
-        // Cache invalidieren: Der AppCache wird informiert, dass sich der Inhalt geändert hat.
-        $cacheManager = AppCache::getInstance();
-        $cacheManager->delete(md5($filePath));
+        // Cache invalidieren über die injizierte Instanz
+        $this->cache->delete(md5($filePath));
         return true;
     }
 
@@ -60,8 +61,7 @@ class FileManager {
     public function deleteFile(string $relativePath): bool {
         $filePath = $this->getFullPath($relativePath);
         if (file_exists($filePath)) {
-            $cacheManager = AppCache::getInstance();
-            $cacheManager->delete(md5($filePath));
+            $this->cache->delete(md5($filePath));
             return unlink($filePath);
         }
         return false;

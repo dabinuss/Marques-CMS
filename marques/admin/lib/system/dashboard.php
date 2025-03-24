@@ -1,46 +1,57 @@
 <?php
 declare(strict_types=1);
 
-use Marques\Core\AppConfig;
+use Marques\Admin\MarquesAdmin;
+use Marques\Core\DatabaseHandler;
+use Marques\Core\Helper;
+use Marques\Core\AppCache;
+use Marques\Core\ThemeManager;
+use Marques\Admin\AdminStatistics;
 use Marques\Core\BlogManager;
 use Marques\Core\PageManager;
 use Marques\Core\MediaManager;
-use Marques\Core\AppCache;
-use Marques\Core\Helper;
-use Marques\Core\ThemeManager;
-use Marques\Admin\AdminStatistics;
+use Marques\Core\User;
+use Marques\Core\FileManager;
 
-// -------------------------
-// Datenaufbereitung
-// -------------------------
+// Starte die Admin-Anwendung, die den DI-Container initialisiert
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer(); // <-- Voraussetzung: öffentliche Getter-Methode in MarquesAdmin
 
-// Error-Reporting für Debug-Zwecke
+// Hole den DatabaseHandler via DI
+$dbHandler = $container->get(DatabaseHandler::class);
+
+// Debug-Einstellungen aus der Systemkonfiguration (falls vorhanden)
 if (isset($system_config['debug']) && $system_config['debug']) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
+$systemConfig = $dbHandler->getAllSettings() ?: [];
 
-// Systemkonfiguration laden
-$configManager = AppConfig::getInstance();
-$systemConfig = $configManager->load('system') ?: [];
+// Hole den FileManager via Container (wird bereits mit AppCache und MARQUES_CONTENT_DIR konfiguriert)
+$fileManager = $container->get(FileManager::class);
 
-// Statistiken und Systeminformationen (inkl. Ratings) abrufen
-$adminStats   = new AdminStatistics();
-$stats        = $adminStats->getStatistics();
-$systemInfo   = $adminStats->getSystemInfoArray();
+// Erzeuge weitere benötigte Objekte – hier nutzen wir den Container oder instanziieren sie direkt, wenn sie nicht registriert sind
+$user         = $container->get(User::class);
+$pageManager  = new PageManager($dbHandler);
+$blogManager  = new BlogManager($dbHandler, $fileManager);
+$mediaManager = new MediaManager($dbHandler);
 
-// Alle Benutzer für die Benutzer-Statistik abrufen
-$userManager = isset($system_config['user_manager_class']) ?
-    new $system_config['user_manager_class']() :
-    new \Marques\Core\User();
+// Erstelle das AdminStatistics-Objekt mit allen Abhängigkeiten
+$adminStats   = new AdminStatistics($dbHandler, $user, $pageManager, $blogManager, $mediaManager);
+$statsSummary = $adminStats->getAdminSummary();   // Textuelle Zusammenfassung der Statistiken
+$systemInfo   = $adminStats->getSystemInfoArray();   // Gruppierte Systeminformationen
+
+// Benutzer-Management: Falls ein spezieller user_manager_class in der Konfiguration hinterlegt ist
+$userManager = isset($systemConfig['user_manager_class']) ?
+    new $systemConfig['user_manager_class']($dbHandler) :
+    new User($dbHandler);
 $allUsers = method_exists($userManager, 'getAllUsers') ? $userManager->getAllUsers() : [];
 
-// Blog-Manager initialisieren
+// Blog-Daten abrufen
 try {
-    $blogManager  = new BlogManager();
-    $categories   = $blogManager->getCategories();
-    $tags         = $blogManager->getTags();
-    $recentPosts  = $blogManager->getAllPosts(5, 0);
+    $categories  = $blogManager->getCategories();
+    $tags        = $blogManager->getTags();
+    $recentPosts = $blogManager->getAllPosts(5, 0);
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Blog-Daten: " . $e->getMessage());
     $categories  = [];
@@ -48,28 +59,26 @@ try {
     $recentPosts = [];
 }
 
-// Page-Manager initialisieren
+// Seiten abrufen
 try {
-    $pageManager = new PageManager();
-    $pages       = $pageManager->getAllPages();
+    $pages = $pageManager->getAllPages();
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Seiten: " . $e->getMessage());
     $pages = [];
 }
 
-// Media-Manager initialisieren
+// Mediendateien abrufen
 try {
-    $mediaManager = new MediaManager();
-    $mediaFiles   = $mediaManager->getAllMedia();
+    $mediaFiles = $mediaManager->getAllMedia();
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Mediendateien: " . $e->getMessage());
     $mediaFiles = [];
 }
 
-// Theme-Manager zum Laden des Template-Pfads für Assets
+// ThemeManager zum Laden des Template-Pfads für Assets
 try {
-    $themeManager  = new ThemeManager();
-    $templatePath  = $themeManager->getThemePath('assets');
+    $themeManager = new ThemeManager($dbHandler);
+    $templatePath = $themeManager->getThemePath('assets');
 } catch (\Exception $e) {
     error_log("Fehler beim Laden des Template-Pfads: " . $e->getMessage());
     $templatePath = 'assets';
@@ -95,7 +104,7 @@ try {
     ];
 }
 
-// Prüfen, ob das Log-Verzeichnis für Zugriffsstatistiken existiert; falls nicht, anlegen
+// Prüfe, ob das Log-Verzeichnis für Zugriffsstatistiken existiert; falls nicht, anlegen
 $statsDir = MARQUES_ROOT_DIR . '/logs/stats';
 if (!is_dir($statsDir)) {
     if (!@mkdir($statsDir, 0755, true)) {
@@ -105,7 +114,7 @@ if (!is_dir($statsDir)) {
 
 /**
  * Lädt und berechnet die Website-Statistiken
- * 
+ *
  * @return array Statistik-Daten
  */
 function loadSiteStatistics(): array {
@@ -322,7 +331,7 @@ usort($recentActivity, function($a, $b) {
 });
 $recentActivity = array_slice($recentActivity, 0, 10);
 
-// Daten für Charts vorbereiten (14 Tage Besucherstatistik)
+// Daten für Charts vorbereiten (7 Tage Besucherstatistik)
 $days = 7;
 $dailyData = [];
 $labels = [];

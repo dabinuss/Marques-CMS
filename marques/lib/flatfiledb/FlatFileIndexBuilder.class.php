@@ -15,6 +15,7 @@ class FlatFileIndexBuilder
     private array $indexData = [];
     private bool $indexDirty = false;
     private FlatFileConfig $config;
+    private int $nextId = 1; // Nächste verfügbare ID
     
     /**
      * @param FlatFileConfig $config Konfiguration der Tabelle
@@ -23,6 +24,7 @@ class FlatFileIndexBuilder
     {
         $this->config = $config;
         $this->loadIndex();
+        $this->nextId = empty($this->indexData) ? 1 : max(array_keys($this->indexData)) + 1; // Initialisierung
     }
     
     /**
@@ -64,15 +66,18 @@ class FlatFileIndexBuilder
 
             $this->indexData = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
 
-            // Check for null *before* is_array
             if ($this->indexData === null) {
                 throw new JsonException("Ungültiges Indexdateiformat (json_decode returned null)");
             }
-
+        
             if (!is_array($this->indexData)) {
                 throw new JsonException("Ungültiges Indexdateiformat");
             }
 
+            $this->indexData = array_combine(
+                array_map('intval', array_keys($this->indexData)),
+                array_values($this->indexData)
+            );
 
         } catch (JsonException $e) {
             // Bei einem Fehler im JSON-Format erstellen wir ein Backup und setzen den Index zurück
@@ -90,6 +95,31 @@ class FlatFileIndexBuilder
             fclose($handle);
         }
     }
+
+    // Neue Methode (atomar mit File Locking):
+    public function getNextId(): int
+    {
+        $lockFile = $this->config->getIndexFile() . '.lock';
+        $lockHandle = fopen($lockFile, 'w');
+        if (!$lockHandle) { throw new RuntimeException("Could not create index lock file."); }
+        if (!flock($lockHandle, LOCK_EX)) {
+            fclose($lockHandle);
+            throw new RuntimeException("Could not acquire lock for index.");
+        }
+
+        try {
+            $this->loadIndex(); // Index innerhalb des Locks neu laden!
+            $id = $this->nextId;
+            $this->nextId++;
+            $this->indexDirty = true;
+            $this->commitIndex(); // Index innerhalb des Locks speichern!
+        } finally {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
+            @unlink($lockFile); // Lock-Datei löschen
+        }
+        return $id;
+    }
     
     /**
      * Speichert den Index in die Datei.
@@ -104,7 +134,7 @@ class FlatFileIndexBuilder
 
             try {
                 // Write to the temporary file
-                $encoded = json_encode($this->indexData, JSON_THROW_ON_ERROR);
+                $encoded = json_encode($this->indexData, JSON_THROW_ON_ERROR | JSON_NUMERIC_CHECK);
                 $result = file_put_contents($tmpFile, $encoded); // No LOCK_EX needed here
 
                 if ($result === false) {
@@ -133,11 +163,10 @@ class FlatFileIndexBuilder
      * @param string $recordId ID des Datensatzes
      * @param int $offset Byte-Offset in der Datendatei
      */
-    public function setIndex(string $recordId, int $offset): void
+    public function setIndex(int $recordId, int $offset): void
     {
-        $this->indexData[(string)$recordId] = $offset;
+        $this->indexData[$recordId] = $offset;
         $this->indexDirty = true;
-        // Immer speichern
         $this->commitIndex();
     }
     
@@ -146,11 +175,10 @@ class FlatFileIndexBuilder
      * 
      * @param string $recordId ID des Datensatzes
      */
-    public function removeIndex(string $recordId): void
+    public function removeIndex(int $recordId): void
     {
-        unset($this->indexData[(string)$recordId]);
+        unset($this->indexData[$recordId]);
         $this->indexDirty = true;
-        // Immer speichern
         $this->commitIndex();
     }
     
@@ -160,7 +188,7 @@ class FlatFileIndexBuilder
      * @param string $recordId ID des Datensatzes
      * @return int|null Byte-Offset oder null wenn nicht gefunden
      */
-    public function getIndexOffset(string $recordId): ?int
+    public function getIndexOffset(int $recordId): ?int
     {
         return $this->indexData[$recordId] ?? null;
     }
@@ -172,7 +200,7 @@ class FlatFileIndexBuilder
      */
     public function getAllKeys(): array
     {
-        return array_keys($this->indexData);
+        return array_keys($this->indexData); // Gibt Integer-Schlüssel zurück
     }
     
     /**
@@ -181,7 +209,7 @@ class FlatFileIndexBuilder
      * @param string $recordId ID des Datensatzes
      * @return bool True wenn vorhanden, sonst false
      */
-    public function hasKey(string $recordId): bool
+    public function hasKey(int $recordId): bool
     {
         return isset($this->indexData[$recordId]);
     }
@@ -203,9 +231,11 @@ class FlatFileIndexBuilder
      */
     public function updateIndex(array $newIndex): void
     {
-        $this->indexData = $newIndex;
+        $this->indexData = array_combine(
+            array_map('intval', array_keys($newIndex)),
+            array_values($newIndex)
+        );
         $this->indexDirty = true;
-        //Immer speichern
         $this->commitIndex();
     }
 }

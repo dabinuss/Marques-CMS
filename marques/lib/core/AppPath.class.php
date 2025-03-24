@@ -5,49 +5,14 @@ namespace Marques\Core;
 
 class AppPath
 {
-    /**
-     * Die einzige Instanz der Klasse.
-     *
-     * @var AppPath|null
-     */
-    private static ?AppPath $instance = null;
-
-    /**
-     * Array mit allen wichtigen Pfaden des Projekts.
-     *
-     * @var array
-     */
     protected array $paths = [];
 
-    /**
-     * Privater Konstruktor: Initialisiert die Pfade.
-     */
-    private function __construct()
-    {
+    public function __construct() {
         $this->initializePaths();
     }
 
-    /**
-     * Gibt die einzige Instanz von AppPath zurück.
-     *
-     * @return AppPath
-     */
-    public static function getInstance(): AppPath
+    private function initializePaths(): void
     {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
-    /**
-     * Initialisiert die Standardpfade des Projekts.
-     *
-     * Hier wird der Root-Pfad anhand der Projektstruktur bestimmt.
-     */
-    protected function initializePaths(): void
-    {
-        // Angenommen, der Root-Ordner liegt zwei Ebenen oberhalb dieser Klasse:
         $root = dirname(__DIR__, 2);
         if (!$root || !is_dir($root)) {
             throw new \Exception("Der Root-Pfad konnte nicht ermittelt werden.");
@@ -93,20 +58,18 @@ class AppPath
      *                    oder der Unterpfad ungültige Zeichen enthält.
      */
     public function combine(string $baseKey, string $subPath): string {
-        // Hole den Basis-Pfad
         $basePath = $this->getPath($baseKey);
-        
-        // Validierung: Überprüfe, ob der Unterpfad nur erlaubte Zeichen enthält.
         if (!$this->isValidPath($subPath)) {
             throw new \Exception("Ungültiger Unterpfad: '{$subPath}'.");
         }
         if (!preg_match('/^[a-zA-Z0-9\-\_\/\.]+$/', $subPath)) {
             throw new \Exception("Ungültiger Unterpfad: '{$subPath}'.");
         }
-        
-        // Verwende unseren sicheren Resolver, um den Pfad zusammenzusetzen
         $combined = $this->safeResolve($basePath, $subPath);
-        
+        $baseNormalized = rtrim($basePath, DIRECTORY_SEPARATOR);
+        if (strncmp($combined, $baseNormalized, strlen($baseNormalized)) !== 0) {
+            throw new \Exception("Sicherheitsverstoß: Der aufgelöste Pfad verlässt das Basisverzeichnis.");
+        }
         return $combined;
     }
 
@@ -169,41 +132,30 @@ class AppPath
      */
     public function preparePath(string $path, string $type = 'directory', int $permissions = 0755): string
     {
-        // Validierung des Typs
         if (!in_array($type, ['directory', 'file'], true)) {
             throw new \InvalidArgumentException("Ungültiger Typ '{$type}'. Erlaubt sind 'directory' oder 'file'.");
         }
     
-        // Bestimme den vollständigen Pfad anhand des übergebenen Schlüssels
         $fullPath = $this->getPath($path);
-        
-        // Bestimme das Zielverzeichnis:
-        // - Bei "directory" wird der vollständige Pfad als Verzeichnis interpretiert.
-        // - Bei "file" wird das übergeordnete Verzeichnis (dirname) genutzt.
         $directory = ($type === 'directory') ? $fullPath : dirname($fullPath);
         
-        // Verzeichnis erstellen, falls es nicht existiert
         if (!is_dir($directory) && !mkdir($directory, $permissions, true)) {
             throw new \RuntimeException("Das Verzeichnis '{$directory}' konnte nicht erstellt werden.");
         }
         
-        // Überprüfe, ob das Verzeichnis beschreibbar ist
         if (!is_writable($directory)) {
             throw new \RuntimeException("Das Verzeichnis '{$directory}' ist nicht beschreibbar.");
         }
         
-        // Bei Dateityp: Datei erstellen (falls sie nicht existiert), Berechtigungen setzen und Schreibbarkeit prüfen
         if ($type === 'file') {
             if (!file_exists($fullPath)) {
                 if (false === touch($fullPath)) {
                     throw new \RuntimeException("Die Datei '{$fullPath}' konnte nicht erstellt werden.");
                 }
             }
-            
             if (!chmod($fullPath, $permissions)) {
                 throw new \RuntimeException("Die Berechtigungen für die Datei '{$fullPath}' konnten nicht gesetzt werden.");
             }
-            
             if (!is_writable($fullPath)) {
                 throw new \RuntimeException("Die Datei '{$fullPath}' ist nicht beschreibbar.");
             }
@@ -225,21 +177,13 @@ class AppPath
      * @throws \Exception Falls der Pfad versucht, das Basisverzeichnis zu verlassen.
      */
     protected function safeResolve(string $base, string $relative): string {
-        // Wenn der relative Pfad leer ist, gebe einfach den Basis-Pfad zurück.
         if (trim($relative) === '') {
             return rtrim($base, DIRECTORY_SEPARATOR);
         }
-        
-        // Entferne potenzielle Null-Bytes (Sicherheitsmaßnahme)
         $relative = str_replace("\0", '', $relative);
-        
-        // Entferne führende Schrägstriche, damit der Pfad wirklich relativ ist
         $relative = ltrim($relative, '/\\');
-        
-        // Zerlege den relativen Pfad in seine Segmente
         $parts = preg_split('#[\\\\/]+#', $relative);
         $safeParts = [];
-        
         foreach ($parts as $part) {
             if ($part === '' || $part === '.') {
                 continue;
@@ -254,15 +198,12 @@ class AppPath
                 $safeParts[] = $part;
             }
         }
-        
         $normalizedRelative = implode(DIRECTORY_SEPARATOR, $safeParts);
         $resolved = rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $normalizedRelative;
-        
         $baseNormalized = rtrim($base, DIRECTORY_SEPARATOR);
         if (strncmp($resolved, $baseNormalized, strlen($baseNormalized)) !== 0) {
             throw new \Exception("Sicherheitsverstoß: Der aufgelöste Pfad verlässt das Basisverzeichnis.");
         }
-        
         return $resolved;
     }
 }

@@ -70,41 +70,22 @@ class FlatFileTableEngine
      * @throws InvalidArgumentException bei ungültiger ID oder Daten
      * @throws RuntimeException bei Schreibfehlern
      */
-    public function insertRecord(string $recordId, array $data): bool
+    public function insertRecord(array $data): int
     {
-        if (!FlatFileValidator::isValidId($recordId)) {
-            throw new InvalidArgumentException("Ungültige ID: $recordId");
+        $recordId = $this->indexBuilder->getNextId(); // ID vom IndexBuilder holen
+        $data['id'] = $recordId; // Integer-ID verwenden
+        $data['created_at'] = time();
+        $data['_deleted'] = false;
+
+        if (!empty($this->schema)) { // Schema-Validierung (unverändert)
+            FlatFileValidator::validateData($data, $this->schema['requiredFields'] ?? [], $this->schema['fieldTypes'] ?? []);
         }
 
-        // Schema-Validierung wenn definiert
-        if (!empty($this->schema)) {
-            FlatFileValidator::validateData(
-                $data,
-                $this->schema['requiredFields'] ?? [],
-                $this->schema['fieldTypes'] ?? []
-            );
-        }
-
-        // Prüfen ob Datensatz bereits existiert
-        if ($this->indexBuilder->hasKey($recordId)) {
-            return false;
-        }
-
-        try {
-            $data['id'] = (string)$recordId;
-            $data['created_at'] = time();
-            $data['_deleted'] = false;
-            $offset = $this->fileManager->appendRecord($data);
-            $this->indexBuilder->setIndex($recordId, $offset);  // Index *sofort* speichern
-            $this->transactionLog->writeLog(FlatFileDBConstants::LOG_ACTION_INSERT, $recordId, $data);
-
-            // Im Cache speichern
-            $this->addToCache($recordId, $data);
-
-            return true;
-        } catch (Throwable $e) {
-            throw new RuntimeException("Fehler beim Einfügen des Datensatzes $recordId: " . $e->getMessage(), 0, $e);
-        }
+        $offset = $this->fileManager->appendRecord($data);
+        $this->indexBuilder->setIndex($recordId, $offset); // Integer-ID
+        $this->transactionLog->writeLog(FlatFileDBConstants::LOG_ACTION_INSERT, (string)$recordId, $data); // Log als String
+        $this->addToCache((string)$recordId, $data); // Cache-Key als String
+        return $recordId; // Neue ID zurückgeben
     }
     
     /**
@@ -115,68 +96,54 @@ class FlatFileTableEngine
      * @return bool True bei Erfolg, false wenn Datensatz nicht existiert
      * @throws RuntimeException bei Schreibfehlern
      */
-    public function updateRecord(string $recordId, array $newData): bool
+    public function updateRecord(int $recordId, array $newData): bool
     {
-        $recordId = (string)$recordId;
-        $oldOffset = $this->indexBuilder->getIndexOffset($recordId);
-        if ($oldOffset === null) {
+        $oldOffset = $this->indexBuilder->getIndexOffset($recordId); // Integer-ID
+        if ($oldOffset === null) { return false; }
+    
+        // Lese den aktuellen Datensatz
+        $oldData = $this->fileManager->readRecordAtOffset($oldOffset);
+        if (!$oldData || !is_array($oldData) || !isset($oldData['id'])) {
             return false;
         }
-
-        // Schema-Validierung wenn definiert
-        if (!empty($this->schema)) {
-            FlatFileValidator::validateData(
-                $newData,
-                $this->schema['requiredFields'] ?? [],
-                $this->schema['fieldTypes'] ?? []
-            );
+    
+        // Felder, die automatisch verwaltet werden, werden beim Vergleich ignoriert.
+        $fieldsToIgnore = ['updated_at', 'created_at', '_deleted', 'deleted_at'];
+        $filteredOldData = array_diff_key($oldData, array_flip($fieldsToIgnore));
+        $filteredNewData = array_diff_key($newData, array_flip($fieldsToIgnore));
+    
+        // Wenn es keine Änderungen gibt, gilt das Update als erfolgreich.
+        if ($filteredOldData == $filteredNewData) {
+            return true;
         }
-
-        $oldData = null; // Initialisieren für den Scope
+    
         try {
-            $oldData = $this->fileManager->readRecordAtOffset($oldOffset);
-            if (!$oldData || !is_array($oldData) || !isset($oldData['id'])) {
-                return false;
-            }
-
-            // 1. Append *old* data marked as deleted *FIRST*.
+            // 1. Markiere den alten Datensatz als gelöscht.
             $oldData['_deleted'] = true;
-            $oldData['deleted_at'] = time(); // Add deleted_at
+            $oldData['deleted_at'] = time();
             $this->fileManager->appendRecord($oldData);
-
-            // 2. Append the *new* record.
+    
+            // 2. Erstelle den neuen Datensatz.
             $newData['id'] = $recordId;
             $newData['created_at'] = $oldData['created_at'] ?? time();
             $newData['updated_at'] = time();
             $newOffset = $this->fileManager->appendRecord($newData);
-            if ($newOffset === false) { // Check for append failure
+            if ($newOffset === false) {
                 throw new RuntimeException("Failed to append new data for record $recordId");
             }
-
-            // 3. Update the index *AFTER* appending the new record.  *IMMER* speichern.
-            $this->indexBuilder->setIndex($recordId, $newOffset);
-
-            // 4. Log *after* successful index update.
-            $this->transactionLog->writeLog(FlatFileDBConstants::LOG_ACTION_UPDATE, $recordId, $newData);
-
-            // Cache aktualisieren
-            $this->addToCache($recordId, $newData);
-
+    
+            $this->indexBuilder->setIndex($recordId, $newOffset);  // Integer ID
+            $this->transactionLog->writeLog(FlatFileDBConstants::LOG_ACTION_UPDATE, (string)$recordId, $newData); // Log als String
+            $this->addToCache((string)$recordId, $newData); // Cache-Key als String
+    
             return true;
-
         } catch (Throwable $e) {
-            // Rollback:  If anything failed, try to restore the old state.
-            if ($newOffset ?? false) { // Check if newOffset was ever set.
-                error_log("Update failed for record $recordId AFTER appending new data.  Index remains at new offset.");
-            } elseif($oldOffset !== null && is_array($oldData)) {
-                // Wenn das Anhängen des neuen Datensatzes fehlschlug, versuchen,
-                // den alten Indexeintrag wiederherzustellen.
+            // Bei einem Fehler: versuche den alten Zustand wiederherzustellen.
+            if ($oldOffset !== null && is_array($oldData)) {
                 $this->indexBuilder->setIndex($recordId, $oldOffset);
-                // Zusätzlich: den alten Datensatz wieder als nicht gelöscht markieren
                 $oldData['_deleted'] = false;
                 unset($oldData['deleted_at']);
                 $this->fileManager->appendRecord($oldData);
-
             }
             throw new RuntimeException("Fehler beim Aktualisieren des Datensatzes $recordId: " . $e->getMessage(), 0, $e);
         }
@@ -189,13 +156,10 @@ class FlatFileTableEngine
      * @return bool True bei Erfolg, false wenn Datensatz nicht existiert
      * @throws RuntimeException bei Schreibfehlern
      */
-    public function deleteRecord(string $recordId): bool
+    public function deleteRecord(int $recordId): bool
     {
-        $recordId = (string)$recordId;
-        $oldOffset = $this->indexBuilder->getIndexOffset($recordId);
-        if ($oldOffset === null) {
-            return false;
-        }
+        $oldOffset = $this->indexBuilder->getIndexOffset($recordId); // Integer-ID
+        if ($oldOffset === null) {  return false; }
 
         $oldData = null;
         try {
@@ -212,14 +176,9 @@ class FlatFileTableEngine
                 throw new RuntimeException("Failed to append deletion marker for record $recordId");
             }
 
-            // 2. *Now* remove the index. *IMMER* speichern.
-            $this->indexBuilder->removeIndex($recordId);
-
-            // 3. Log *after* successful index removal.
-            $this->transactionLog->writeLog(FlatFileDBConstants::LOG_ACTION_DELETE, $recordId);
-
-            // Aus Cache entfernen
-            unset($this->dataCache[$recordId]);
+            $this->indexBuilder->removeIndex($recordId); // Integer-ID
+            $this->transactionLog->writeLog(FlatFileDBConstants::LOG_ACTION_DELETE, (string)$recordId); // Log als String
+            unset($this->dataCache[(string)$recordId]); // Cache-Key als String
 
             return true;
 
@@ -244,33 +203,32 @@ class FlatFileTableEngine
      * @param string $recordId ID des Datensatzes
      * @return array|null Datensatz oder null wenn nicht gefunden
      */
-    public function selectRecord(string $recordId): ?array
+    public function selectRecord(int $recordId): ?array
     {
-        $recordId = (string)$recordId;
-
-        // Zuerst im Cache suchen
-        if (isset($this->dataCache[$recordId])) {
-            return $this->dataCache[$recordId];
+        // Zuerst im Cache suchen (mit String-Key)
+        if (isset($this->dataCache[(string)$recordId])) {
+            return $this->dataCache[(string)$recordId];
         }
 
-        $offset = $this->indexBuilder->getIndexOffset($recordId);
+        $offset = $this->indexBuilder->getIndexOffset($recordId); // Korrekt: int
         if ($offset === null) {
             return null;
         }
 
         try {
             $data = $this->fileManager->readRecordAtOffset($offset);
-
+    
+            // WICHTIG: Erst prüfen, DANN cachen!
             if (isset($data) && empty($data['_deleted'])) {
-                // Im Cache speichern
-                $this->addToCache($recordId, $data);
+                // Im Cache speichern (mit String-Key)
+                $this->addToCache((string)$recordId, $data); // Korrektur: Cast zu string
                 return $data;
             }
-
-            return null;
+    
+            return null; // Explizit null zurückgeben
+    
         } catch (Throwable $e) {
-          //Kein re-throw. Fehler beim Lesen sollten nicht zum Abbruch führen.
-            error_log("Fehler beim Lesen des Datensatzes $recordId: " . $e->getMessage()); // Log the error.
+            error_log("Fehler beim Lesen des Datensatzes $recordId: " . $e->getMessage());
             return null;
         }
     }
@@ -283,16 +241,12 @@ class FlatFileTableEngine
     public function selectAllRecords(): array
     {
         $results = [];
-        $allKeys = $this->indexBuilder->getAllKeys();
-
-        foreach ($allKeys as $recordId) {
-            $recordId = (string)$recordId;
-            $record = $this->selectRecord($recordId);
+        foreach ($this->indexBuilder->getAllKeys() as $recordId) {
+            $record = $this->selectRecord($recordId); // $recordId ist int
             if ($record !== null) {
                 $results[] = $record;
             }
         }
-
         return $results;
     }
     
@@ -304,29 +258,43 @@ class FlatFileTableEngine
      * @param int $offset Überspringt die ersten n passenden Datensätze
      * @return array Liste der passenden Datensätze
      */
-    public function findRecords(callable $filterFn, int $limit = 0, int $offset = 0): array
+    public function findRecords(callable $filterFn, int $limit = 0, int $offset = 0, ?int $id = null): array
     {
         $results = [];
+    
+        // Direkte ID-Suche (wenn $id gesetzt ist)
+        if ($id !== null) {
+            $record = $this->selectRecord($id); // selectRecord verwendet den Index
+            if ($record !== null) {
+                $results[] = $record;
+            }
+            return $results; // Fertig
+        }
+    
         $count = 0;
         $skipped = 0;
-
-        foreach ($this->fileManager->readRecordsGenerator() as $record)
-        {
-            if ($record !== null && $filterFn($record)) {
-                if ($offset > 0 && $skipped < $offset) {
-                    $skipped++;
-                    continue;
-                }
-
+    
+        foreach ($this->fileManager->readRecordsGenerator() as $record) {
+    
+            // Offset überspringen
+            if ($offset > 0 && $skipped < $offset) {
+                $skipped++;
+                continue; // Nächster Datensatz
+            }
+    
+            // Filterfunktion aufrufen und *danach* Limit prüfen!
+            if ($record !== null && $filterFn($record))
+            {
                 $results[] = $record;
                 $count++;
-
+    
+                // Limit prüfen
                 if ($limit > 0 && $count >= $limit) {
-                    break;
+                    break; // Schleife verlassen
                 }
             }
         }
-
+    
         return $results;
     }
     
@@ -336,17 +304,18 @@ class FlatFileTableEngine
     public function compactTable(): void
     {
         try {
-            // Vor der Kompaktierung die Indizes speichern  (ist jetzt redundant, aber schadet nicht)
             $this->commitIndex();
 
-            // Backup wird *innerhalb* von compactData erstellt.
             $newIndex = [];
             $this->fileManager->compactData($newIndex);
 
-            // $this->indexBuilder = new FlatFileIndexBuilder($this->config); // Entfernt: unnötige Neuinitialisierung
-            $this->indexBuilder->updateIndex($newIndex); // Stattdessen updateIndex verwenden
+            // Schlüssel im neuen Index auf Integer mappen
+            $newIndex = array_combine(
+                array_map('intval', array_keys($newIndex)),
+                array_values($newIndex)
+            );
 
-            // Cache leeren
+            $this->indexBuilder->updateIndex($newIndex);
             $this->clearCache();
         } catch (Throwable $e) {
             throw new RuntimeException("Fehler bei der Tabellenkompaktierung: " . $e->getMessage(), 0, $e);
@@ -359,18 +328,17 @@ class FlatFileTableEngine
      * @param string $recordId ID des Datensatzes
      * @param array $data Datensatz
      */
-    private function addToCache(string $recordId, array $data): void
+    private function addToCache(string $recordId, array $data): void // Korrektur: string
     {
         if (count($this->dataCache) >= $this->maxCacheSize) {
-            // Entferne das älteste Element (LRU)
             reset($this->dataCache);
             $firstKey = key($this->dataCache);
-            if ($firstKey !== null) { // Zusätzliche Prüfung auf null
+            if ($firstKey !== null) {
               unset($this->dataCache[$firstKey]);
             }
         }
-
-        $this->dataCache[$recordId] = $data;
+    
+        $this->dataCache[$recordId] = $data; // $recordId ist bereits string
     }
     
     /**
