@@ -14,7 +14,7 @@ use Marques\Core\PageManager;
 use Marques\Core\User;
 use Marques\Core\Content;
 use Marques\Core\ThemeManager;
-use Marques\Core\AppRouter;
+use Marques\Core\BlogManager;
 use Marques\Core\FileManager;
 
 class MarquesAdmin
@@ -113,6 +113,12 @@ class MarquesAdmin
         // PageManager
         $this->adminContainer->register(MediaManager::class, function(AppNode $container) {
             return new MediaManager($container->get(DatabaseHandler::class));
+        });
+        $this->adminContainer->register(BlogManager::class, function(AppNode $container) {
+            return new BlogManager(
+                $container->get(DatabaseHandler::class),
+                $container->get(FileManager::class),
+            );
         });
         // Optional: weitere Admin-spezifische Services können hier registriert werden
     }
