@@ -6,17 +6,20 @@
  *
  * @package marques
  * @subpackage admin
- */
+*/
 
-// BlogManager initialisieren
-$blogManager = new \Marques\Core\BlogManager();
+use Marques\Admin\MarquesAdmin;
+use Marques\Core\DatabaseHandler;
+use Marques\Core\BlogManager;
+use Marques\Core\VersionManager;
 
-// VersionManager initialisieren
-$versionManager = new \Marques\Core\VersionManager();
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
 
-// Konfiguration laden
-$configManager = \Marques\Core\AppConfig::getInstance();
-$system_config = $configManager->load('system') ?: [];
+// Hole den DatabaseHandler via DI
+$dbHandler = $container->get(DatabaseHandler::class);
+$blogManager = $container->get(BlogManager::class);
+$versionManager = $container->get(VersionManager::class);
 
 // Erfolgsmeldung und Fehlermeldung initialisieren
 $success_message = '';
