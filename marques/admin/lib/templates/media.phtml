@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="<?= $system_config['admin_language'] ?? 'de'; ?>">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,111 +9,130 @@
     <link rel="stylesheet" href="assets/css/marques-panel-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
+
 <body>
-    <div class="admin-layout">
+    <div class="container">
         
         <!-- SIDEBAR & NAVIGATION -->
-        <?php if (!$tinyMCEMode): ?>
-            <?php include 'sidebar.phtml'; ?>
-        <?php endif; ?>
+        <?php 
+        if (!$tinyMCEMode):
+            include 'sidebar.phtml';
+        endif; 
+        ?>
         
-        <main class="<?= $tinyMCEMode ? 'tinymce-content' : 'admin-content'; ?>">
-            <div class="admin-topbar">
-                <h2 class="admin-page-title">
-                    <?= $tinyMCEMode ? 'Medium auswählen' : 'Medienverwaltung'; ?>
-                </h2>
-                
-                <?php if (!$tinyMCEMode): ?>
-                <div class="admin-actions">
+        <main class="main-content <?= $tinyMCEMode ? 'tinymce-content' : 'admin-content'; ?>">
+            <div class="header">
+                <h1><?= htmlspecialchars($page_title); ?></h1>
+                <div class="header-actions">
+                    <!-- Zurück zu Seiten oder anderen Bereichen -->
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=page-edit'); ?>">
+                        <button class="btn"><?= $this->renderIcon('notebook', '', '24'); ?></button>
+                    </a>
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>">
+                        <button class="btn"><?= $this->renderIcon('pencil-plus', '', '24'); ?></button>
+                    </a>
+                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=media&action=upload'); ?>">
+                        <button class="btn"><?= $this->renderIcon('file-upload', '', '24'); ?></button>
+                    </a>
                     <a href="../" target="_blank">
-                        <span class="btn-icon"><i class="fas fa-external-link-alt"></i></span>
-                        Website ansehen
+                        <button class="btn"><?= $this->renderIcon('world-star', '', '24'); ?> Website ansehen</button>
                     </a>
                 </div>
-                <?php endif; ?>
             </div>
-            
-            <?php if (!empty($success_message)): ?>
-                <div class="alert alert-success">
-                    <?= htmlspecialchars($success_message); ?>
-                </div>
-            <?php endif; ?>
-            
-            <?php if (!empty($error_message)): ?>
-                <div class="alert alert-danger">
-                    <?= htmlspecialchars($error_message); ?>
-                </div>
-            <?php endif; ?>
-            
-            <!-- Upload-Formular -->
-            <form method="post" enctype="multipart/form-data" class="media-upload-form">
-                <input type="hidden" name="action" value="upload">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
-                
-                <div class="media-upload-input">
-                    <label for="media" class="form-label">Medium hochladen</label>
-                    <input type="file" id="media" name="media" accept="image/*,application/pdf" class="form-control">
-                </div>
-                
-                <div>
-                    <button type="submit" class="btn">
-                        <span class="btn-icon"><i class="fas fa-upload"></i></span>
-                        Hochladen
-                    </button>
-                </div>
-            </form>
-            
-            <!-- Medien-Grid -->
-            <?php if (empty($media)): ?>
-                <div class="admin-welcome">
-                    <h3>Keine Medien gefunden</h3>
-                    <p>Laden Sie Ihre ersten Medien mit dem Formular oben hoch.</p>
-                </div>
-            <?php else: ?>
-                <div class="media-grid">
-                    <?php foreach ($media as $item): ?>
-                        <div class="media-item" data-url="<?= \Marques\Core\Helper::getSiteUrl($item['cache_bust_url']); ?>" data-filename="<?= htmlspecialchars($item['filename']); ?>">
-                            <div class="media-thumbnail">
-                                <?php if (strpos($item['filetype'], 'image/') === 0): ?>
-                                    <img src="../<?= $item['cache_bust_url']; ?>" alt="<?= htmlspecialchars($item['filename']); ?>">
-                                <?php elseif ($item['filetype'] === 'application/pdf'): ?>
-                                    <i class="fas fa-file-pdf" style="font-size: 3rem; color: #dc3545;"></i>
-                                <?php else: ?>
-                                    <i class="fas fa-file" style="font-size: 3rem; color: #6c757d;"></i>
-                                <?php endif; ?>
-                            </div>
 
-                            <div class="media-info">
-                                <div class="media-filename" title="<?= htmlspecialchars($item['filename']); ?>">
-                                    <?= htmlspecialchars($item['filename']); ?>
-                                </div>
-                                <div class="media-details">
-                                    <?= htmlspecialchars($item['filesize']); ?>
-                                    <?php if (!empty($item['dimensions'])): ?>
-                                        <br><?= htmlspecialchars($item['dimensions']); ?>
-                                    <?php endif; ?>
-                                </div>
+            <div class="grid-container">
+                <div class="box col-6">
+                    <div class="box-header">
+                        <h2 class="admin-page-title">
+                            <?= $tinyMCEMode ? 'Medium auswählen' : 'Medienverwaltung'; ?>
+                        </h2>
+                    </div>
+                    <div class="box-content">
+            
+                        <?php if (!empty($success_message)): ?>
+                            <div class="alert alert-success">
+                                <?= htmlspecialchars($success_message); ?>
                             </div>
-                            <div class="media-actions">
-                                <?php if ($tinyMCEMode): ?>
-                                    <a href="#" class="media-table-action select-media" title="Auswählen">
-                                        <i class="fas fa-check"></i>
-                                    </a>
-                                <?php else: ?>
-
-                                    <a href="../<?= $item['cache_bust_url']; ?>" class="media-table-action" title="Ansehen" target="_blank">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-
-                                    <a href="#" class="media-table-action delete" title="Löschen" data-id="<?= htmlspecialchars($item['filename']); ?>" data-title="<?= htmlspecialchars($item['filename']); ?>">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </a>
-                                <?php endif; ?>
+                        <?php endif; ?>
+                        
+                        <?php if (!empty($error_message)): ?>
+                            <div class="alert alert-danger">
+                                <?= htmlspecialchars($error_message); ?>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
+                        <?php endif; ?>
+            
+                        <!-- Upload-Formular -->
+                        <form method="post" enctype="multipart/form-data" class="media-upload-form">
+                            <input type="hidden" name="action" value="upload">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token); ?>">
+                            
+                            <div class="media-upload-input">
+                                <label for="media" class="form-label">Medium hochladen</label>
+                                <input type="file" id="media" name="media" accept="image/*,application/pdf" class="form-control">
+                            </div>
+                            
+                            <div>
+                                <button type="submit" class="btn">
+                                    <span class="btn-icon"><i class="fas fa-upload"></i></span>
+                                    Hochladen
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- Medien-Grid -->
+                        <?php if (empty($media)): ?>
+                            <div class="admin-welcome">
+                                <h3>Keine Medien gefunden</h3>
+                                <p>Laden Sie Ihre ersten Medien mit dem Formular oben hoch.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="media-grid">
+                                <?php foreach ($media as $item): ?>
+                                    <div class="media-item" data-url="<?= \Marques\Core\Helper::getSiteUrl($item['cache_bust_url']); ?>" data-filename="<?= htmlspecialchars($item['filename']); ?>">
+                                        <div class="media-thumbnail">
+                                            <?php if (strpos($item['filetype'], 'image/') === 0): ?>
+                                                <img src="../<?= $item['cache_bust_url']; ?>" alt="<?= htmlspecialchars($item['filename']); ?>">
+                                            <?php elseif ($item['filetype'] === 'application/pdf'): ?>
+                                                <i class="fas fa-file-pdf" style="font-size: 3rem; color: #dc3545;"></i>
+                                            <?php else: ?>
+                                                <i class="fas fa-file" style="font-size: 3rem; color: #6c757d;"></i>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <div class="media-info">
+                                            <div class="media-filename" title="<?= htmlspecialchars($item['filename']); ?>">
+                                                <?= htmlspecialchars($item['filename']); ?>
+                                            </div>
+                                            <div class="media-details">
+                                                <?= htmlspecialchars($item['filesize']); ?>
+                                                <?php if (!empty($item['dimensions'])): ?>
+                                                    <br><?= htmlspecialchars($item['dimensions']); ?>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <div class="media-actions">
+                                            <?php if ($tinyMCEMode): ?>
+                                                <a href="#" class="media-table-action select-media" title="Auswählen">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                            <?php else: ?>
+
+                                                <a href="../<?= $item['cache_bust_url']; ?>" class="media-table-action" title="Ansehen" target="_blank">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+
+                                                <a href="#" class="media-table-action delete" title="Löschen" data-id="<?= htmlspecialchars($item['filename']); ?>" data-title="<?= htmlspecialchars($item['filename']); ?>">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            <?php endif; ?>
+            </div>
         </main>
     </div>
     
