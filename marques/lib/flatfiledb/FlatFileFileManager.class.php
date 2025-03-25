@@ -9,185 +9,275 @@ use JsonException;
 use Throwable;
 
 /**
- * Liest und schreibt Datensätze in einer JSON-Lines-Datei (Append-Only).
+ * Liest und schreibt Datensätze in einer JSON-Lines-Datei (Append-Only) mit Komprimierung.
  */
 class FlatFileFileManager
 {
     private FlatFileConfig $config;
-    
+    private $compressionLevel;
+
+    private $readHandle = null;
+    private ?int $readHandleMTime = null;
+    private $writeHandle = null;
+    private ?int $writeHandleMTime = null;
+
     /**
      * @param FlatFileConfig $config Konfiguration der Tabelle
+     * @param int $compressionLevel Kompressionslevel (0-9, 0 = keine, 9 = max)
      */
-    public function __construct(FlatFileConfig $config)
+    public function __construct(FlatFileConfig $config, int $compressionLevel = 6)
     {
         $this->config = $config;
+        $this->compressionLevel = $compressionLevel;
         $dataFile = $this->config->getDataFile();
         $dataDir = dirname($dataFile);
-        
-        // Verzeichnis erstellen falls erforderlich
+
         if (!is_dir($dataDir) && !mkdir($dataDir, 0755, true)) {
             throw new RuntimeException("Daten-Verzeichnis '$dataDir' konnte nicht erstellt werden.");
         }
-        
         if (!file_exists($dataFile)) {
             touch($dataFile);
         }
     }
-    
+
+    private function getReadHandle()
+    {
+        $dataFile = $this->config->getDataFile();
+        clearstatcache(true, $dataFile);
+        $currentMTime = filemtime($dataFile);
+        if ($this->readHandle !== null && $this->readHandleMTime === $currentMTime) {
+            return $this->readHandle;
+        }
+        if ($this->readHandle !== null) {
+            fclose($this->readHandle);
+        }
+        $handle = fopen($dataFile, 'rb');
+        if (!$handle) {
+            throw new RuntimeException("Could not open data file for reading: $dataFile");
+        }
+        $this->readHandle = $handle;
+        $this->readHandleMTime = $currentMTime;
+        return $handle;
+    }
+
+    // Neue Methode: Liefert einen persistenten Schreib-Handle
+    private function getWriteHandle()
+    {
+        $dataFile = $this->config->getDataFile();
+        clearstatcache(true, $dataFile);
+        $currentMTime = filemtime($dataFile);
+        if ($this->writeHandle !== null && $this->writeHandleMTime === $currentMTime) {
+            return $this->writeHandle;
+        }
+        if ($this->writeHandle !== null) {
+            fclose($this->writeHandle);
+        }
+        $handle = fopen($dataFile, 'a+b'); // Lese-/Schreibmodus im Append-Modus
+        if (!$handle) {
+            throw new RuntimeException("Fehler beim Öffnen der Datei '$dataFile' für Schreibzugriffe.");
+        }
+        $this->writeHandle = $handle;
+        $this->writeHandleMTime = $currentMTime;
+        return $handle;
+    }
+
+    public function __destruct()
+    {
+        if ($this->readHandle !== null) {
+            fclose($this->readHandle);
+        }
+        if ($this->writeHandle !== null) {
+            fclose($this->writeHandle);
+        }
+    }
+
     /**
      * Hängt einen Datensatz an das Datei-Ende an und gibt dessen Byte-Offset zurück.
-     * 
+     *
      * @param array $record Der zu speichernde Datensatz
-     * @return int Byte-Offset des Datensatzes
+     * @return int Byte-Offset des Datensatzes (unkomprimiert)
      * @throws RuntimeException wenn der Datensatz nicht geschrieben werden kann
      */
     public function appendRecord(array $record): int
     {
-        $dataFile = $this->config->getDataFile();
-    
-        // Check if the file exists. If not, create it.
-        if (!file_exists($dataFile)) {
-            if (!touch($dataFile)) {
-                throw new RuntimeException("Data file '$dataFile' does not exist and could not be created.");
-            }
+        // Vorberechnung außerhalb des Locks
+        $json = json_encode($record, JSON_THROW_ON_ERROR);
+        $compressed = gzencode($json . "\n", $this->compressionLevel);
+        if ($compressed === false) {
+            throw new RuntimeException('Fehler beim Komprimieren des Datensatzes.');
         }
-    
-        // Open file in read/write append mode ('a+b') for stable pointer positioning
-        $handle = fopen($dataFile, 'a+b');
-        if (!$handle) {
-            throw new RuntimeException("Fehler beim Öffnen der Datei '$dataFile'.");
+
+        $handle = $this->getWriteHandle();
+
+        // Exklusiver Lock – nur während des Schreibens
+        if (!flock($handle, LOCK_EX)) {
+            throw new RuntimeException('Konnte keine exklusive Sperre für die Datei erhalten.');
         }
-    
-        $offset = null;
-    
-        try {
-            if (!flock($handle, LOCK_EX)) {
-                throw new RuntimeException('Konnte keine exklusive Sperre für die Datei erhalten.');
-            }
-            
-            // Sicherstellen, dass der Zeiger am Ende der Datei ist
-            fseek($handle, 0, SEEK_END);
-            $offset = ftell($handle);
-            
-            $json = json_encode($record, JSON_THROW_ON_ERROR);
-            if (fwrite($handle, $json . "\n") === false) {
-                throw new RuntimeException('Fehler beim Schreiben des Datensatzes.');
-            }
-    
-            fflush($handle); // Optional: Daten sofort in die Datei schreiben
-    
+        fseek($handle, 0, SEEK_END);
+        $offset = ftell($handle);
+
+        if (fwrite($handle, $compressed) === false) {
             flock($handle, LOCK_UN);
-        } catch (Throwable $e) {
-            throw new RuntimeException("Fehler beim Anhängen eines Datensatzes: " . $e->getMessage(), 0, $e);
-        } finally {
-            fclose($handle);
+            throw new RuntimeException('Fehler beim Schreiben des Datensatzes.');
         }
-        
+        fflush($handle);
+        flock($handle, LOCK_UN);
+
         return $offset;
     }
-    
+
     /**
-     * Liest eine Zeile ab einem bestimmten Byte-Offset.
-     * 
-     * @param int $offset Byte-Offset in der Datei
-     * @return array|null Der gelesene Datensatz oder null bei Fehler
+     * Liest einen Datensatz ab einem bestimmten unkomprimierten Offset mit effizienter Dekompression.
+     *
+     * @param int $offset Byte-Offset in der Datei (unkomprimiert)
+     * @return array Der gelesene Datensatz
+     * @throws RuntimeException Bei Fehlern beim Lesen oder Dekodieren
      */
-    public function readRecordAtOffset(int $offset): ?array
+    public function readRecordAtOffset(int $offset): array
     {
-        $handle = fopen($this->config->getDataFile(), 'rb');
-        if (!$handle) {
-            throw new RuntimeException("Datendatei konnte nicht zum Lesen geöffnet werden");
-        }
+        $handle = $this->getReadHandle();
         
         try {
+            // Shared Lock mit besserer Fehlerbehandlung
             if (!flock($handle, LOCK_SH)) {
                 throw new RuntimeException("Konnte keine Lesesperre für die Datei erhalten.");
             }
 
-            if (fseek($handle, $offset) !== 0) { // Check for fseek failure
-                throw new RuntimeException("Ungültiger Offset in der Datendatei: $offset"); // Improved error message
+            // Seek mit präziserer Fehlerbehandlung
+            if (fseek($handle, $offset) === -1) {
+                throw new RuntimeException("Ungültiger Offset in der Datendatei: $offset");
             }
 
-            if (feof($handle)) { // Check for EOF *before* fgets
-                throw new RuntimeException("Ende der Datei erreicht vor Offset: $offset"); // Correct EOF message
-            }
+            $compressedBuffer = '';
+            $windowSize = 8192; // Verdoppelte Fenstergröße für effizientere Lesevorgänge
+            $maxReadAttempts = 10; // Maximale Anzahl von Leseversuchs
 
-            $line = fgets($handle);
-            if ($line === false) {
-                throw new RuntimeException("Konnte keine Daten vom angegebenen Offset lesen: $offset");
-            }
-            
-            flock($handle, LOCK_UN);
-            
-            try {
-                $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
-                if ($decoded === null) {
-                    throw new RuntimeException("Invalid JSON data at offset: $offset");
+            for ($attempt = 0; $attempt < $maxReadAttempts; $attempt++) {
+                $chunk = gzread($handle, $windowSize);
+                
+                if ($chunk === false) {
+                    throw new RuntimeException("Fehler beim Lesen der komprimierten Daten ab Offset: $offset");
                 }
-                return $decoded;
 
-            } catch (JsonException $e) {
-                throw new RuntimeException("Error reading record at offset $offset: " . $e->getMessage(), 0, $e);
+                $compressedBuffer .= $chunk;
+                
+                // Optimierte Dekomprimierung mit Pufferung
+                $decompressed = @gzdecode($compressedBuffer);
+                
+                if ($decompressed !== false) {
+                    $lines = explode("\n", $decompressed, 2);
+                    
+                    if (!empty($lines[0])) {
+                        try {
+                            // Strikte JSON-Dekodierung mit Fehlerbehandlung
+                            return json_decode(trim($lines[0]), true, 512, JSON_THROW_ON_ERROR);
+                        } catch (JsonException $e) {
+                            throw new RuntimeException("Fehler beim Dekodieren des JSON-Datensatzes: " . $e->getMessage(), 0, $e);
+                        }
+                    }
+                }
+
+                // Exit-Bedingung, wenn kein weiterer Inhalt
+                if (feof($handle)) {
+                    break;
+                }
             }
+
+            throw new RuntimeException("Kein gültiger Datensatz gefunden ab Offset: $offset");
+        
         } finally {
-            fclose($handle);
+            // Sicherstellen, dass der Lock immer aufgehoben wird
+            flock($handle, LOCK_UN);
         }
     }
-    
+
     /**
      * Liest alle Datensätze aus der Datei.
-     * 
-     * @return array<int, array> Liste aller Datensätze mit ihren Offsets
+     *
+     * @return array<int, array> Liste aller Datensätze mit ihren Offsets (unkomprimiert)
      */
     public function readAllRecords(): array
     {
         $result = [];
         $dataFile = $this->config->getDataFile();
         $handle = fopen($dataFile, 'rb');
-        
+
         if (!$handle) {
             throw new RuntimeException("Could not open data file for reading: $dataFile");
         }
-        
+
         try {
             if (!flock($handle, LOCK_SH)) {
                 throw new RuntimeException("Konnte keine Lesesperre für die Datei erhalten.");
             }
-            
+
+            $compressedBuffer = ''; // GEÄNDERT: Buffer für komprimierte Daten
+            $offset = 0;
+
             while (!feof($handle)) {
-                $position = ftell($handle);
-                $line = fgets($handle);
-                
-                if ($line === false) {
-                    break;
+                $chunk = gzread($handle, 8192);  // GEÄNDERT: gzread für komprimierte Daten
+                if ($chunk === false) {
+                    break; // Fehler beim Lesen, Schleife verlassen
                 }
-                
-                try {
-                    $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
-                    $result[$position] = $decoded;
-                } catch (JsonException $e) {
-                    throw new RuntimeException("Error decoding JSON at offset $position: " . $e->getMessage(), 0, $e);
+                $compressedBuffer .= $chunk;
+
+
+                // Versuche, vollständige Datensätze aus dem Buffer zu extrahieren
+                while (true) { // Innere Schleife zum Extrahieren mehrerer Datensätze
+                    $decompressed = @gzdecode($compressedBuffer); // GEÄNDERT: Dekomprimierung
+                    if ($decompressed === false) {
+                        break; // Nicht genug Daten zum Dekomprimieren, äußere Schleife fortsetzen
+                    }
+
+                    try {
+                        // Versuche, alle JSON-Objekte zu parsen
+                        $lines = explode("\n", rtrim($decompressed, "\n"));
+                        $lastCompleteLine = '';
+                        $completeRecords = [];
+
+
+                        foreach($lines as $line) {
+                            $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+                            if ($decoded !== null) {
+                                $completeRecords[] = $decoded; // Füge den Datensatz hinzu
+                                $lastCompleteLine = $line;
+                            }
+                        }
+
+                        if(empty($completeRecords)){
+                            break; // Keine vollständigen Datensätze gefunden.
+                        }
+
+                        // Berechne den neuen Offset NACH dem letzten vollständigen Datensatz
+                        $bytesConsumed = strlen(gzencode($lastCompleteLine . "\n", $this->compressionLevel)); // Länge des *komprimierten* Datensatzes
+                        $compressedBuffer = substr($compressedBuffer, $bytesConsumed); // Entferne den verarbeiteten Teil
+                        foreach($completeRecords as $record){
+                            $result[$offset] = $record; // Füge den Datensatz mit dem *unkomprimierten* Offset hinzu
+                            $offset += strlen(json_encode($record, JSON_THROW_ON_ERROR) . "\n"); // Inkrementiere den Offset um die Länge des *unkomprimierten* Datensatzes.
+                        }
+
+                    } catch (JsonException $e) {
+                        // Kein vollständiges JSON, Schleife verlassen
+                        break;
+                    }
                 }
             }
-            
+
+
             flock($handle, LOCK_UN);
         } catch (Throwable $e) {
             throw new RuntimeException("Error during readAllRecords in file $dataFile: " . $e->getMessage(), 0, $e);
         } finally {
             fclose($handle);
         }
-        
+
         return $result;
     }
-    
+
+
     /**
      * Kompaktiert die Datei, indem alle Datensätze eingelesen und pro ID
-     * nur der letzte Eintrag übernommen wird. Wird der letzte Eintrag als gelöscht markiert,
-     * so wird die ID nicht in die neue Datei geschrieben.
-     *
-     * @param array &$newIndex Referenz auf das neue Index-Array
-     * @return array Das neue Index-Array
-     * @throws RuntimeException wenn die Kompaktierung fehlschlägt
+     * nur der letzte Eintrag übernommen wird.  ... (Rest der Methode ist unten)
      */
     public function compactData(array &$newIndex): array
     {
@@ -206,24 +296,59 @@ class FlatFileFileManager
             if (!flock($readHandle, LOCK_SH)) {
                 throw new RuntimeException("Konnte keine Lesesperre für die Datei erhalten.");
             }
-    
-            while (($line = fgets($readHandle)) !== false) {
-                try {
-                    $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
-                    if (is_array($decoded) && isset($decoded['id'])) {
-                        // Überschreibe vorherige Einträge – so gewinnt der letzte Eintrag
-                        $records[$decoded['id']] = $decoded;
+
+            $compressedBuffer = ''; // GEÄNDERT: Buffer für komprimierte Daten
+
+            while (!feof($readHandle)) {
+                $chunk = gzread($readHandle, 8192); // GEÄNDERT: gzread
+                if ($chunk === false) {
+                    break;
+                }
+                $compressedBuffer .= $chunk;
+
+                // Versuche, vollständige Datensätze aus dem Buffer zu extrahieren (wie in readAllRecords)
+                while(true){
+                    $decompressed = @gzdecode($compressedBuffer); //GEÄNDERT
+                    if($decompressed === false){
+                        break;
                     }
-                } catch (JsonException $e) {
-                    // Ungültige Zeile überspringen
-                    continue;
+
+                    try {
+                        $lines = explode("\n", rtrim($decompressed, "\n"));
+                        $lastCompleteLine = '';
+                        $completeRecords = [];
+
+                        foreach($lines as $line){
+                            $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+                            if (is_array($decoded) && isset($decoded['id'])) {
+                                // Überschreibe vorherige Einträge – so gewinnt der letzte Eintrag
+                                $records[$decoded['id']] = $decoded;
+                                $completeRecords[] = $decoded;
+                                $lastCompleteLine = $line;
+                            }
+                        }
+
+                        if(empty($completeRecords)){
+                            break;
+                        }
+
+                        $bytesConsumed = strlen(gzencode($lastCompleteLine . "\n", $this->compressionLevel));
+                        $compressedBuffer = substr($compressedBuffer, $bytesConsumed);
+
+                    } catch (JsonException $e) {
+                        // Kein vollständiges JSON, Schleife verlassen
+                        break;
+                    }
+
                 }
             }
-    
+
             flock($readHandle, LOCK_UN);
         } finally {
             fclose($readHandle);
         }
+
+
 
         $writeHandle = fopen($tempFile, 'wb');
         if (!$writeHandle) {
@@ -234,22 +359,23 @@ class FlatFileFileManager
             if (!flock($writeHandle, LOCK_EX)) {
                 throw new RuntimeException("Konnte keine Schreibsperre für die temporäre Datei erhalten.");
             }
-    
+
             foreach ($records as $id => $record) {
                 // Überspringe den Datensatz, wenn er als gelöscht markiert ist
                 if (!empty($record['_deleted'])) {
                     continue;
                 }
-    
-                $offsetInNewFile = ftell($writeHandle);
+
+                $offsetInNewFile = ftell($writeHandle); // Offset *vor* dem Schreiben
                 $encoded = json_encode($record, JSON_THROW_ON_ERROR);
-                if (fwrite($writeHandle, $encoded . "\n") === false) {
+                $compressed = gzencode($encoded . "\n", $this->compressionLevel); // GEÄNDERT: Komprimierung
+                if (fwrite($writeHandle, $compressed) === false) { // GEÄNDERT: Schreibe komprimierte Daten
                     throw new RuntimeException('Fehler beim Schreiben während der Kompaktierung.');
                 }
-    
-                $newIndex[$id] = $offsetInNewFile;
+
+                $newIndex[$id] = $offsetInNewFile; // Speichere den *unkomprimierten* Offset
             }
-    
+
             flock($writeHandle, LOCK_UN);
         } finally {
             fclose($writeHandle);
@@ -259,7 +385,7 @@ class FlatFileFileManager
         if (!copy($dataFile, $backupFile)) {
             throw new RuntimeException('Failed to create backup during compaction.');
         }
-    
+
         // 4. Ersetze die alte Datei durch die neue.  *Zuerst* löschen, *dann* umbenennen.
         if (!unlink($dataFile)) {
             throw new RuntimeException('Alte Daten-Datei konnte nicht gelöscht werden.');
@@ -285,10 +411,10 @@ class FlatFileFileManager
         return $newIndex;
     }
 
-    
+
     /**
      * Erstellt ein Backup der Datendatei.
-     * 
+     *
      * @param string $backupDir Verzeichnis für das Backup
      * @return string Pfad zur Backup-Datei
      */
@@ -297,17 +423,18 @@ class FlatFileFileManager
         if (!is_dir($backupDir) && !mkdir($backupDir, 0755, true)) {
             throw new RuntimeException("Backup-Verzeichnis konnte nicht erstellt werden.");
         }
-        
+
         $dataFile = $this->config->getDataFile();
         $timestamp = date('YmdHis');
         $backupFile = $backupDir . '/' . basename($dataFile) . '.' . $timestamp;
-        
+
         if (!copy($dataFile, $backupFile)) {
             throw new RuntimeException("Datei-Backup konnte nicht erstellt werden.");
         }
-        
+
         return $backupFile;
     }
+
 
     // Generator-based approach (better for large files)
     public function readRecordsGenerator(): Generator
@@ -324,21 +451,54 @@ class FlatFileFileManager
                 throw new RuntimeException("Konnte keine Lesesperre für die Datei erhalten.");
             }
 
-            while (!feof($handle)) {
-                $position = ftell($handle);
-                $line = fgets($handle);
+            $compressedBuffer = ''; // GEÄNDERT: Buffer für komprimierte Daten
+            $offset = 0;
 
-                if ($line === false) {
+            while (!feof($handle)) {
+                $chunk = gzread($handle, 8192); // GEÄNDERT: gzread
+                if ($chunk === false) {
                     break;
                 }
+                $compressedBuffer .= $chunk;
 
-                try {
-                    $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
-                    yield $position => $decoded; // Yield the record and its offset
-                } catch (JsonException $e) {
-                    throw new RuntimeException("Error decoding JSON at offset $position: " . $e->getMessage(), 0, $e);
+                // Extrahiere Datensätze (wie in readAllRecords)
+                while(true){
+                    $decompressed = @gzdecode($compressedBuffer);  //GEÄNDERT
+                    if($decompressed === false){
+                        break;
+                    }
+
+                    try{
+                        $lines = explode("\n", rtrim($decompressed, "\n"));
+                        $lastCompleteLine = '';
+                        $completeRecords = [];
+
+                        foreach($lines as $line){
+                            $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+                            if($decoded !== null){
+                                $completeRecords[] = $decoded;
+                                $lastCompleteLine = $line;
+                            }
+                        }
+
+                        if(empty($completeRecords)){
+                            break;
+                        }
+
+
+                        $bytesConsumed = strlen(gzencode($lastCompleteLine . "\n", $this->compressionLevel));
+                        $compressedBuffer = substr($compressedBuffer, $bytesConsumed);
+                        foreach($completeRecords as $record){
+                            yield $offset => $record; // Yield *unkomprimierten* offset
+                            $offset += strlen(json_encode($record, JSON_THROW_ON_ERROR) . "\n");
+                        }
+
+                    } catch (JsonException $e) {
+                        break;
+                    }
                 }
             }
+
 
             flock($handle, LOCK_UN);
         } catch (Throwable $e) {

@@ -7,32 +7,42 @@ use RuntimeException;
 use JsonException;
 use Throwable;
 
-/**
- * Verwaltet Index-Einträge: ID -> Byte-Offset
- */
 class FlatFileIndexBuilder
 {
-    private array $indexData = [];
-    private bool $indexDirty = false;
+    private array $indexData = []; // Primary index (id -> offset)
+    private array $secondaryIndexes = []; // Field name -> [value -> [recordId]]
+    private array $secondaryIndexesDirty = []; // Track which secondary indexes are dirty.  CORRECTED: Now an array
     private FlatFileConfig $config;
-    private int $nextId = 1; // Nächste verfügbare ID
-    
-    /**
-     * @param FlatFileConfig $config Konfiguration der Tabelle
-     */
+    private int $nextId = 1;
+    private string $tableName; // Store table name for file naming
+    private bool $indexDirty = false;
+
     public function __construct(FlatFileConfig $config)
     {
         $this->config = $config;
+        // Extract table name from data file path
+        $this->tableName = $this->getTableNameFromConfig();
         $this->loadIndex();
-        $this->nextId = empty($this->indexData) ? 1 : max(array_keys($this->indexData)) + 1; // Initialisierung
+        $this->nextId = empty($this->indexData) ? 1 : max(array_keys($this->indexData)) + 1;
+        $this->loadSecondaryIndexes(); // Load secondary indexes
     }
-    
-    /**
-     * Lädt den Index aus der Datei.
-     * Bei Problemen mit dem Format wird ein Backup der defekten Datei erstellt und ein leeres Index-Array verwendet.
-     */
+
+    public function getCurrentIndex(): array
+    {
+        return $this->indexData;
+    }
+
+    private function getTableNameFromConfig(): string
+    {
+        $dataFile = $this->config->getDataFile();
+        $baseName = basename($dataFile, FlatFileDBConstants::DATA_FILE_EXTENSION);
+        // Extract table name, handling potential suffixes like "_data"
+        return preg_replace('/_data$/', '', $baseName);
+    }
+
     private function loadIndex(): void
     {
+        // ... (Existing loadIndex method, no changes needed here) ...
         $indexFile = $this->config->getIndexFile();
 
         if (!file_exists($indexFile)) {
@@ -69,7 +79,7 @@ class FlatFileIndexBuilder
             if ($this->indexData === null) {
                 throw new JsonException("Ungültiges Indexdateiformat (json_decode returned null)");
             }
-        
+
             if (!is_array($this->indexData)) {
                 throw new JsonException("Ungültiges Indexdateiformat");
             }
@@ -96,7 +106,6 @@ class FlatFileIndexBuilder
         }
     }
 
-    // Neue Methode (atomar mit File Locking):
     public function getNextId(): int
     {
         $lockFile = $this->config->getIndexFile() . '.lock';
@@ -111,7 +120,7 @@ class FlatFileIndexBuilder
             $this->loadIndex(); // Index innerhalb des Locks neu laden!
             $id = $this->nextId;
             $this->nextId++;
-            $this->indexDirty = true;
+            $this->indexDirty = true; // CORRECTED:  Use $this->indexDirty
             $this->commitIndex(); // Index innerhalb des Locks speichern!
         } finally {
             flock($lockHandle, LOCK_UN);
@@ -120,14 +129,10 @@ class FlatFileIndexBuilder
         }
         return $id;
     }
-    
-    /**
-     * Speichert den Index in die Datei.
-     * 
-     * @throws RuntimeException wenn die Index-Datei nicht geschrieben werden kann
-     */
+
     public function commitIndex(): void
     {
+        
         if ($this->indexDirty) {
             $indexFile = $this->config->getIndexFile();
             $tmpFile = $indexFile . '.tmp'; // Use a temporary file
@@ -156,86 +161,289 @@ class FlatFileIndexBuilder
             }
         }
     }
-    
-    /**
-     * Setzt einen Index-Eintrag.
-     * 
-     * @param string $recordId ID des Datensatzes
-     * @param int $offset Byte-Offset in der Datendatei
-     */
+
     public function setIndex(int $recordId, int $offset): void
     {
+         // ... (Existing setIndex method, no changes needed here) ...
         $this->indexData[$recordId] = $offset;
         $this->indexDirty = true;
         $this->commitIndex();
     }
-    
-    /**
-     * Entfernt einen Index-Eintrag.
-     * 
-     * @param string $recordId ID des Datensatzes
-     */
+
     public function removeIndex(int $recordId): void
     {
+        // ... (Existing removeIndex method, no changes needed here) ...
         unset($this->indexData[$recordId]);
         $this->indexDirty = true;
         $this->commitIndex();
     }
-    
-    /**
-     * Gibt den Byte-Offset eines Datensatzes zurück.
-     * 
-     * @param string $recordId ID des Datensatzes
-     * @return int|null Byte-Offset oder null wenn nicht gefunden
-     */
+
     public function getIndexOffset(int $recordId): ?int
     {
+        // ... (Existing getIndexOffset method, no changes needed here) ...
         return $this->indexData[$recordId] ?? null;
     }
-    
-    /**
-     * Gibt alle IDs im Index zurück.
-     * 
-     * @return string[] Liste aller IDs
-     */
+
     public function getAllKeys(): array
     {
+        // ... (Existing getAllKeys method, no changes needed here) ...
         return array_keys($this->indexData); // Gibt Integer-Schlüssel zurück
     }
-    
-    /**
-     * Prüft, ob eine ID im Index existiert.
-     * 
-     * @param string $recordId ID des Datensatzes
-     * @return bool True wenn vorhanden, sonst false
-     */
+
     public function hasKey(int $recordId): bool
     {
+        // ... (Existing hasKey method, no changes needed here) ...
         return isset($this->indexData[$recordId]);
     }
-    
-    /**
-     * Gibt die Anzahl der Index-Einträge zurück.
-     * 
-     * @return int Anzahl der Einträge
-     */
+
     public function count(): int
     {
+        // ... (Existing count method, no changes needed here) ...
         return count($this->indexData);
     }
 
-    /**
-     * Aktualisiert den gesamten Index.
-     *
-     * @param array<string, int> $newIndex Das neue Index-Array.
-     */
-    public function updateIndex(array $newIndex): void
+     public function updateIndex(array $newIndex): void
     {
+        // ... (Existing updateIndex method, no changes needed here) ...
         $this->indexData = array_combine(
             array_map('intval', array_keys($newIndex)),
             array_values($newIndex)
         );
         $this->indexDirty = true;
         $this->commitIndex();
+    }
+
+
+    // --- Secondary Index Methods ---
+
+    public function getSecondaryIndexFilePath(string $fieldName): string
+    {
+        return "{$this->config->getDataFile()}_index_{$fieldName}" . FlatFileDBConstants::INDEX_FILE_EXTENSION;
+    }
+
+    private function loadSecondaryIndexes(): void
+    {
+        // No explicit loading here; lazy-load on demand
+        $this->secondaryIndexes = [];
+        $this->secondaryIndexesDirty = [];  // Already correctly initialized as an array
+    }
+
+
+     public function createIndex(string $fieldName): void
+    {
+        if (isset($this->secondaryIndexes[$fieldName])) {
+            return; // Index already exists
+        }
+
+        $this->secondaryIndexes[$fieldName] = [];
+        $this->secondaryIndexesDirty[$fieldName] = true; // Correct: Setting the array element
+        $this->commitSecondaryIndex($fieldName); // Create the empty index file
+    }
+
+
+    private function loadSecondaryIndex(string $fieldName): void
+    {
+       $indexFile = $this->getSecondaryIndexFilePath($fieldName);
+
+        if (!file_exists($indexFile)) {
+            $this->secondaryIndexes[$fieldName] = []; // Empty index
+            return;
+        }
+
+        $handle = fopen($indexFile, 'rb');
+        if (!$handle) {
+            throw new RuntimeException("Secondary index file '$indexFile' could not be opened.");
+        }
+
+        try {
+            if (!flock($handle, LOCK_SH)) {
+                throw new RuntimeException("Could not acquire lock for secondary index file '$indexFile'.");
+            }
+
+            $content = '';
+            while (!feof($handle)) {
+                $content .= fread($handle, 8192);
+            }
+
+            if ($content === '') {
+                $this->secondaryIndexes[$fieldName] = []; // Empty file
+                return;
+            }
+
+            $indexData = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+
+            if ($indexData === null || !is_array($indexData)) {
+                throw new JsonException("Invalid secondary index file format for '$indexFile'.");
+            }
+
+            // Ensure keys are strings and values are arrays of integers
+            $validatedIndexData = [];
+            foreach ($indexData as $value => $ids) {
+                if (!is_array($ids)) {
+                    throw new JsonException("Invalid secondary index file format for '$indexFile' (values must be arrays).");
+                }
+                $validatedIndexData[(string)$value] = array_map('intval', $ids);
+            }
+
+            $this->secondaryIndexes[$fieldName] = $validatedIndexData;
+
+        } catch (JsonException $e) {
+            $backupFile = $indexFile . '.corrupted.' . time();
+            if (file_exists($indexFile)) {
+               if(!rename($indexFile, $backupFile)){
+                    throw new RuntimeException("Fehler beim Laden des Index: " . $e->getMessage() . ".  Ein Backup der beschädigten Datei konnte nicht erstellt werden.", 0, $e);
+                }
+            }
+            $this->secondaryIndexes[$fieldName] = [];
+            throw new RuntimeException("Error loading secondary index '$fieldName': " . $e->getMessage() . ".  A backup of the corrupted file was created.", 0, $e);
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
+
+    public function commitSecondaryIndex(string $fieldName): void
+    {
+        if (!isset($this->secondaryIndexesDirty[$fieldName]) || !$this->secondaryIndexesDirty[$fieldName]) {
+            return;
+        }
+        if (!isset($this->secondaryIndexes[$fieldName])){
+            $this->loadSecondaryIndex($fieldName);
+        }
+
+        $indexFile = $this->getSecondaryIndexFilePath($fieldName);
+        $tmpFile = $indexFile . '.tmp';
+
+        try {
+            $encoded = json_encode($this->secondaryIndexes[$fieldName], JSON_THROW_ON_ERROR | JSON_NUMERIC_CHECK);
+            $result = file_put_contents($tmpFile, $encoded);
+
+            if ($result === false) {
+                throw new RuntimeException("Secondary index file '$indexFile' could not be written.");
+            }
+
+            if (!rename($tmpFile, $indexFile)) {
+                throw new RuntimeException("Temporary secondary index file '$tmpFile' could not be renamed to '$indexFile'.");
+            }
+
+            $this->secondaryIndexesDirty[$fieldName] = false; // Correct: Setting the array element
+        } catch (Throwable $e) {
+            if (file_exists($tmpFile)) {
+                @unlink($tmpFile);
+            }
+            throw new RuntimeException("Error saving secondary index '$fieldName': " . $e->getMessage(), 0, $e);
+        }
+    }
+
+
+    public function setSecondaryIndex(string $fieldName, string $value, int $recordId): void
+    {
+        if (!isset($this->secondaryIndexes[$fieldName])) {
+            $this->loadSecondaryIndex($fieldName);
+        }
+
+        // Ensure the value exists as a key, and it's an array
+        if (!isset($this->secondaryIndexes[$fieldName][$value])) {
+            $this->secondaryIndexes[$fieldName][$value] = [];
+        }
+
+        // Add the recordId to the array, if not already exists.
+        if (!in_array($recordId, $this->secondaryIndexes[$fieldName][$value], true)) {
+            $this->secondaryIndexes[$fieldName][$value][] = $recordId;
+            $this->secondaryIndexesDirty[$fieldName] = true;  // Correct: Setting the array element
+            $this->commitSecondaryIndex($fieldName); // Commit after each change
+        }
+    }
+
+    public function removeSecondaryIndex(string $fieldName, string $value, int $recordId): void
+    {
+        if (!isset($this->secondaryIndexes[$fieldName])) {
+            $this->loadSecondaryIndex($fieldName);
+        }
+
+        if (isset($this->secondaryIndexes[$fieldName][$value])) {
+            $index = array_search($recordId, $this->secondaryIndexes[$fieldName][$value], true);
+            if ($index !== false) {
+                array_splice($this->secondaryIndexes[$fieldName][$value], $index, 1);
+                // If the array is now empty, remove the key
+                if (empty($this->secondaryIndexes[$fieldName][$value])) {
+                    unset($this->secondaryIndexes[$fieldName][$value]);
+                }
+                $this->secondaryIndexesDirty[$fieldName] = true; // Correct: Setting the array element
+                $this->commitSecondaryIndex($fieldName); // Commit after each change
+            }
+        }
+    }
+
+
+    public function getRecordIdsByFieldValue(string $fieldName, string $value): array
+    {
+        if (!isset($this->secondaryIndexes[$fieldName])) {
+            $this->loadSecondaryIndex($fieldName);
+        }
+
+        return $this->secondaryIndexes[$fieldName][$value] ?? [];
+    }
+
+    public function removeAllSecondaryIndexesForRecord(int $recordId): void
+    {
+        foreach (array_keys($this->secondaryIndexes) as $fieldName) {
+            $this->removeRecordFromSecondaryIndex($fieldName, $recordId);
+        }
+    }
+
+    private function removeRecordFromSecondaryIndex(string $fieldName, int $recordId): void
+    {
+        // No need to load - it will be lazy-loaded if needed.
+        if(isset($this->secondaryIndexes[$fieldName])){
+            foreach ($this->secondaryIndexes[$fieldName] as $value => $ids) {
+                $index = array_search($recordId, $ids, true);
+                if ($index !== false) {
+                    array_splice($ids, $index, 1);
+                    if (empty($ids)) {
+                        unset($this->secondaryIndexes[$fieldName][$value]);
+                    }
+                    $this->secondaryIndexes[$fieldName][$value] = $ids; // Reassign
+                    $this->secondaryIndexesDirty[$fieldName] = true; // Correct: Setting the array element
+                    $this->commitSecondaryIndex($fieldName); // Commit after each change
+                }
+            }
+        }
+    }
+
+
+    public function commitAllSecondaryIndexes(): void
+    {
+        foreach (array_keys($this->secondaryIndexesDirty) as $fieldName) { // Corrected: Use array_keys
+            $this->commitSecondaryIndex($fieldName);
+        }
+    }
+
+    public function updateSecondaryIndex(string $fieldName, array $newIndex): void {
+
+        $validatedIndexData = [];
+        foreach ($newIndex as $value => $ids) {
+            if (!is_array($ids)) {
+                continue; // Skip invalid entries
+            }
+            $validatedIndexData[(string)$value] = array_map('intval', $ids);
+        }
+
+        $this->secondaryIndexes[$fieldName] = $validatedIndexData;
+        $this->secondaryIndexesDirty[$fieldName] = true; // Correct: Setting the array element
+        $this->commitSecondaryIndex($fieldName);
+    }
+
+    public function dropIndex(string $fieldName): void
+    {
+        $indexFile = $this->getSecondaryIndexFilePath($fieldName);
+        if (file_exists($indexFile)) {
+            if (!unlink($indexFile)) {
+                throw new RuntimeException("Could not delete secondary index file: " . $indexFile);
+            }
+        }
+        unset($this->secondaryIndexes[$fieldName]);
+        unset($this->secondaryIndexesDirty[$fieldName]); // Correct: Unsetting the array element
     }
 }
