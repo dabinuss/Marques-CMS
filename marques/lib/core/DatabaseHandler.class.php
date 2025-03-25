@@ -20,7 +20,7 @@ class DatabaseHandler {
     }
 
     /**
-     * Setzt den Tabellenkontext, auf dem weitere Operationen ausgeführt werden sollen.
+     * Setzt den globalen Tabellenkontext.
      *
      * @param string $tableName
      * @return self
@@ -31,69 +31,112 @@ class DatabaseHandler {
     }
 
     /**
-     * Liefert den aktuell gesetzten Tabellenkontext.
+     * Liefert den aktuellen Tabellenkontext, optional überschrieben durch $tableName.
      *
+     * @param string|null $tableName
      * @return mixed
-     * @throws \Exception wenn kein Tabellenkontext gesetzt ist.
+     * @throws \Exception wenn kein Tabellenkontext gefunden wurde.
      */
-    public function getCurrentTable() {
-        if ($this->currentTable === null) {
-            throw new \Exception("Kein Tabellenkontext gesetzt. Bitte rufe useTable('tablename') auf.");
+    private function getTable(?string $tableName = null) {
+        if ($tableName !== null) {
+            return $this->config->getTable($tableName);
         }
+        
+        if ($this->currentTable === null) {
+            throw new \Exception("Kein Tabellenkontext gesetzt. Bitte rufe useTable('tablename') auf oder übergebe einen Tabellennamen.");
+        }
+        
         return $this->currentTable;
     }
 
     /**
-     * Sucht einen einzelnen Datensatz anhand der Record-ID.
+     * Überprüft, ob es sich bei den Daten um Bulk-Daten handelt.
      *
-     * @param int $recordId
-     * @return array|null
-     */
-    public function findRecord(int $recordId) {
-        return $this->getCurrentTable()->selectRecord($recordId);
-    }
-
-    /**
-     * Liefert alle Datensätze der aktuellen Tabelle.
-     *
-     * @return array
-     */
-    public function getAllRecords(): array {
-        return $this->getCurrentTable()->selectAllRecords();
-    }
-
-    /**
-     * Aktualisiert einen Datensatz in der aktuellen Tabelle.
-     *
-     * @param int $recordId
      * @param array $data
      * @return bool
      */
-    public function updateRecord(int $recordId, array $data): bool {
-        return $this->getCurrentTable()->updateRecord($recordId, $data);
+    private function isBulkData(array $data): bool {
+        return !empty($data) && is_array(reset($data));
     }
 
     /**
-     * Fügt einen neuen Datensatz in der aktuellen Tabelle ein.
-     * Falls $recordId übergeben wird, wird er ignoriert, da das System eine neue ID generiert.
+     * Fügt einen neuen Datensatz ein oder führt eine Bulk-Insert-Operation aus.
      *
      * @param array $data
-     * @param int|null $recordId (wird ignoriert)
-     * @return int Neue ID des eingefügten Datensatzes
+     * @param int|null $recordId Wird ignoriert, wenn Bulk-Daten vorliegen.
+     * @param string|null $tableName Optionaler Tabellenname
+     * @return mixed Neue ID oder Ergebnis der Bulk-Operation
      */
-    public function insertRecord(array $data, ?int $recordId = null) {
-        // $recordId wird ignoriert – die ID wird intern generiert.
-        return $this->getCurrentTable()->insertRecord($data);
+    public function insertRecord(array $data, ?int $recordId = null, ?string $tableName = null) {
+        if ($this->isBulkData($data)) {
+            return $this->bulkInsertRecords($data, $tableName);
+        }
+        
+        return $this->getTable($tableName)->insertRecord($data);
     }
 
     /**
-     * Löscht einen Datensatz in der aktuellen Tabelle.
+     * Führt einen Bulk-Insert durch.
+     *
+     * @param array $data
+     * @param string|null $tableName
+     * @return mixed
+     */
+    public function bulkInsertRecords(array $data, ?string $tableName = null) {
+        return $this->getTable($tableName)->bulkInsertRecords($data);
+    }
+
+    /**
+     * Aktualisiert einen Datensatz oder führt eine Bulk-Update-Operation aus.
      *
      * @param int $recordId
+     * @param array $data
+     * @param string|null $tableName
      * @return bool
      */
-    public function deleteRecord(int $recordId): bool {
-        return (bool)$this->getCurrentTable()->deleteRecord($recordId);
+    public function updateRecord(int $recordId, array $data, ?string $tableName = null): bool {
+        if ($this->isBulkData($data)) {
+            return $this->bulkUpdateRecords($data, $tableName);
+        }
+        
+        return $this->getTable($tableName)->updateRecord($recordId, $data);
+    }
+
+    /**
+     * Führt einen Bulk-Update durch.
+     *
+     * @param array $data
+     * @param string|null $tableName
+     * @return bool
+     */
+    public function bulkUpdateRecords(array $data, ?string $tableName = null): bool {
+        return $this->getTable($tableName)->bulkUpdateRecords($data);
+    }
+
+    /**
+     * Löscht einen Datensatz oder führt eine Bulk-Delete-Operation durch.
+     *
+     * @param int|array $recordId Einzelne ID oder Array von IDs
+     * @param string|null $tableName
+     * @return bool
+     */
+    public function deleteRecord($recordId, ?string $tableName = null): bool {
+        if (is_array($recordId)) {
+            return $this->bulkDeleteRecords($recordId, $tableName);
+        }
+        
+        return (bool)$this->getTable($tableName)->deleteRecord($recordId);
+    }
+
+    /**
+     * Führt einen Bulk-Delete durch.
+     *
+     * @param array $recordIds
+     * @param string|null $tableName
+     * @return bool
+     */
+    public function bulkDeleteRecords(array $recordIds, ?string $tableName = null): bool {
+        return $this->getTable($tableName)->bulkDeleteRecords($recordIds);
     }
 
     /**
