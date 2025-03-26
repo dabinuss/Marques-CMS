@@ -91,9 +91,7 @@ class MarquesAdmin
                 MARQUES_CONTENT_DIR
             );
         });
-        // AdminAuthService benötigt User und AppConfig (hier über DatabaseHandler)
         $this->adminContainer->register(AdminAuthService::class, function(AppNode $container) {
-            // Wir holen hier AppConfig über den DatabaseHandler (alternativ könntest du AppConfig als eigenen Service registrieren)
             $config = $container->get(DatabaseHandler::class)->getAllSettings();
             return new AdminAuthService($container->get(User::class), $config);
         });

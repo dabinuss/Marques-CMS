@@ -13,32 +13,34 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
 header("X-Frame-Options: DENY");
 header("X-Content-Type-Options: nosniff");
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// AppConfig initialisieren
-$configManager = \Marques\Core\AppConfig::getInstance();
-$system_config = $configManager->load('system') ?: [];
-
-// Einbinden der benötigten Klassen
+use Marques\Admin\MarquesAdmin;
+use Marques\Core\DatabaseHandler;
 use Marques\Core\User;
 use Marques\Admin\AdminAuthService;
 
-$user = new User();
-$authService = new AdminAuthService($user);
+$adminApp = new MarquesAdmin();
+$container = $adminApp->getContainer();
 
-// Verwende den existierenden CSRF-Token oder generiere einen, falls noch nicht vorhanden
+$dbHandler = $container->get(DatabaseHandler::class);
+$dbHandler->useTable('user');
+
+$authService = $container->get(AdminAuthService::class);
+
 $csrf_token = $authService->generateCsrfToken();
 
-// Bestimme, ob die Standardpasswort-Meldung für den Admin angezeigt werden soll
 $showAdminDefaultPassword = false;
-$users = $configManager->load('users') ?: [];
-if (isset($users['admin'])) {
-    if (empty($users['admin']['password']) || (isset($users['admin']['first_login']) && $users['admin']['first_login'] === true)) {
+$usersData = $dbHandler->getAllSettings() ?: [];
+if (isset($usersData['admin'])) {
+    $adminData = $usersData['admin'];
+    if (empty($adminData['password']) || (isset($adminData['first_login']) && $adminData['first_login'] === true)) {
         $showAdminDefaultPassword = true;
     }
 }
 
-// Falls bereits eingeloggt, leite zum Dashboard weiter
 if ($authService->isLoggedIn()) {
     header('Location: index.php');
     exit;
@@ -48,26 +50,29 @@ $error = '';
 $username = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // CSRF-Token validieren
+
     if (!isset($_POST['csrf_token']) || !$authService->validateCsrfToken($_POST['csrf_token'])) {
-        $error = 'Ungültige Anfrage. Bitte versuchen Sie es erneut.';
+        $error = 'Ungültige oder abgelaufene Anfrage. Bitte laden Sie die Seite neu und versuchen Sie es erneut.';
     } else {
-        $username = $_POST['username'] ?? '';
+        $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
-        
-        if ($authService->login($username, $password)) {
-            // Nach erfolgreichem Login den CSRF-Token beibehalten oder erneuern (optional)
-            // $authService->generateCsrfToken();
-            
+
+        if (!empty($username) && !empty($password) && $authService->login($username, $password)) {
+
+            session_regenerate_id(true);
+            $csrf_token = $authService->generateCsrfToken(true);
+
             if (isset($_SESSION['marques_user']['initial_login']) && $_SESSION['marques_user']['initial_login'] === true) {
                 header('Location: user-edit.php?username=admin&initial_setup=true');
                 exit;
             }
-            
+
             header('Location: index.php');
             exit;
+
         } else {
-            $error = 'Ungültiger Benutzername oder Passwort';
+            $error = 'Ungültiger Benutzername oder Passwort.';
         }
     }
+    $username = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
 }
