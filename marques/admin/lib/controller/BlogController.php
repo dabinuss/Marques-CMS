@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Marques\Admin\Controller;
+namespace Admin\Controller;
 
 use Marques\Data\Database\Handler as DatabaseHandler;
-use Marques\Admin\AdminTemplate;
+use Admin\Core\Template;
 use Marques\Service\BlogManager;
 use Marques\Util\Helper;
 
@@ -12,7 +12,7 @@ class BlogController
 {
 
     public function __construct(
-        AdminTemplate $adminTemplate, 
+        Template $adminTemplate, 
         BlogManager $blogManager,
         Helper $helper
     ) {

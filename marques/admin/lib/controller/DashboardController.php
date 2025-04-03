@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Marques\Admin\Controller;
+namespace Admin\Controller;
 
 // Benötigte Klassen importieren
-use Marques\Admin\AdminTemplate;
-use Marques\Admin\AdminStatistics;
-use Marques\Admin\AdminRouter;
+use Admin\Core\Template;
+use Admin\Core\Statistics;
+use Admin\Http\Router;
 use Marques\Util\Helper;
 use Marques\Http\Request;
 use Marques\Data\Database\Handler as DatabaseHandler;
@@ -18,9 +18,9 @@ use Marques\Core\Logger;
 
 class DashboardController
 {
-    private AdminTemplate $template;
-    private AdminStatistics $adminStats;
-    private AdminRouter $adminRouter;
+    private Template $template;
+    private Statistics $adminStats;
+    private Router $adminRouter;
     private Helper $helper;
     private DatabaseHandler $dbHandler;
     private PageManager $pageManager;
@@ -31,9 +31,9 @@ class DashboardController
     private array $systemConfig = [];
 
     public function __construct(
-        AdminTemplate $template,
-        AdminStatistics $adminStats,
-        AdminRouter $adminRouter,
+        Template $template,
+        Statistics $adminStats,
+        Router $adminRouter,
         Helper $helper,
         DatabaseHandler $dbHandler,
         PageManager $pageManager,
@@ -118,7 +118,7 @@ class DashboardController
         $loggedInUsername = $this->userManager->getCurrentDisplayName(); // Annahme: Methode existiert
 
         // Letzter Login Zeitstempel (aus der Session holen - unsicher, besser aus DB)
-        // Hinweis: Session-Zugriff im Controller ist nicht ideal. Besser über AuthService oder User-Objekt.
+        // Hinweis: Session-Zugriff im Controller ist nicht ideal. Besser über Service oder User-Objekt.
         $lastLoginTimestamp = $_SESSION['marques_user']['last_login'] ?? time(); // Fallback auf jetzt
 
         // 2. Daten für das Template zusammenstellen
@@ -138,7 +138,7 @@ class DashboardController
             'chartLabels'         => $chartLabels,
             'chartData'           => $chartData,
             'helper'              => $this->helper, // Helper für URLs etc. im Template
-            'authService'         => null, // Übergabe nicht mehr nötig, wenn Logik im Controller ist
+            'Service'         => null, // Übergabe nicht mehr nötig, wenn Logik im Controller ist
             'dbHandler'           => null, // Übergabe nicht mehr nötig
             // CSRF Token wird nur für Formulare benötigt, nicht unbedingt global im Dashboard
         ];

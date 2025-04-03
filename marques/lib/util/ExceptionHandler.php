@@ -129,23 +129,26 @@ class ExceptionHandler
     private function handleAdminException(\Throwable $exception): void
     {
         // Versuchen, AdminTemplate zu verwenden, falls verfügbar
-        if (class_exists('\\Marques\\Admin\\AdminTemplate') && $this->getAdminTemplate()) {
-            try {
-                $data = [
-                    'error_code' => $this->getStatusCodeFromException($exception),
-                    'error_message' => $exception->getMessage(),
-                    'exception_details' => $this->debugMode ? [
-                        'class' => get_class($exception),
-                        'file' => $exception->getFile(),
-                        'line' => $exception->getLine(),
-                        'trace' => $this->formatTrace($exception)
-                    ] : null
-                ];
-                
-                $this->getAdminTemplate()->render($data, 'error');
-                return;
-            } catch (\Throwable $e) {
-                // Fallback, wenn Template-Rendering fehlschlägt
+        if (class_exists('\\Marques\\Admin\\AdminTemplate')) {
+            $adminTemplate = $this->getAdminTemplate();
+            if ($adminTemplate) {  // <-- Hier prüfen, ob getAdminTemplate ein Objekt zurückgibt
+                try {
+                    $data = [
+                        'error_code' => $this->getStatusCodeFromException($exception),
+                        'error_message' => $exception->getMessage(),
+                        'exception_details' => $this->debugMode ? [
+                            'class' => get_class($exception),
+                            'file' => $exception->getFile(),
+                            'line' => $exception->getLine(),
+                            'trace' => $this->formatTrace($exception)
+                        ] : null
+                    ];
+                    
+                    $adminTemplate->render($data, 'error');
+                    return;
+                } catch (\Throwable $e) {
+                    // Fallback, wenn Template-Rendering fehlschlägt
+                }
             }
         }
         
@@ -162,12 +165,24 @@ class ExceptionHandler
      */
     private function getAdminTemplate()
     {
-        // Dies ist ein Beispiel - der genaue Weg hängt von deiner Container-Implementierung ab
         global $adminContainer;
         
         if ($adminContainer && method_exists($adminContainer, 'get')) {
             try {
-                return $adminContainer->get('\\Marques\\Admin\\AdminTemplate');
+                // Versuche verschiedene Wege, die Klasse zu bekommen
+                try {
+                    return $adminContainer->get(\Admin\Core\Template::class);
+                } catch (\Throwable $e1) {
+                    try {
+                        return $adminContainer->get('Admin\AdminTemplate');
+                    } catch (\Throwable $e2) {
+                        try {
+                            return $adminContainer->get('AdminTemplate');
+                        } catch (\Throwable $e3) {
+                            return null;
+                        }
+                    }
+                }
             } catch (\Throwable $e) {
                 return null;
             }

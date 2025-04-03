@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Marques\Admin\Controller;
+namespace Admin\Controller;
 
-use Marques\Admin\AdminAuthService;
-use Marques\Admin\AdminTemplate;
+use Admin\Auth\Service;
+use Admin\Core\Template;
 use Marques\Util\Helper;
 
 class AuthController
 {
 
-    public function __construct(AdminTemplate $adminTemplate, AdminAuthService $adminAuthService, Helper $helper) {
+    public function __construct(Template $adminTemplate, Service $Service, Helper $helper) {
         
     }
 }

@@ -37,15 +37,17 @@ class Handler {
      * @throws \InvalidArgumentException
      */
     public function table(string $tableName): FlatFileDatabaseHandler {
-
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $tableName)) {
             throw new \InvalidArgumentException("Invalid table name");
         }
+        
+        // Tabelle automatisch registrieren, falls sie nicht existiert
         if (!$this->db->hasTable($tableName)) {
-            throw new \InvalidArgumentException("Tabelle '{$tableName}' ist nicht bei der Datenbank registriert.");
+            $this->db->registerTable($tableName);
         }
-        $handler = clone $this->libraryHandler;
-        return $handler->table($tableName);
+        
+        // Die bereits existierende Handler-Instanz verwenden
+        return $this->libraryHandler->table($tableName);
     }
 
     /**
@@ -60,7 +62,10 @@ class Handler {
         if (!$this->db->hasTable($tableName)) {
             $this->db->registerTable($tableName);
         }
-        $table = $this->table($tableName);
+        
+        // Verwende die bestehende Handler-Instanz
+        $table = $this->libraryHandler->table($tableName);
+        
         if (method_exists($table, 'setSchema')) {
             $table->setSchema($requiredFields, $fieldTypes);
         }

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Marques\Util;
 
+use Marques\Util\Helper;
+
 /**
  * Class SafetyXSS
  *

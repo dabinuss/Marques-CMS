@@ -34,39 +34,31 @@ spl_autoload_register(function (string $class): void {
     
     // Namespace-Mapping
     $namespaceMap = [
+        'Marques\\Admin\\' => MARQUES_ROOT_DIR . '/admin/lib/',
         'Marques\\' => MARQUES_ROOT_DIR . '/lib/',
-        'Marques\\Admin\\' => MARQUES_ADMIN_DIR . '/lib/',
+
+        'Marques\\Core\\' => MARQUES_ROOT_DIR . '/lib/core/',
         'FlatFileDB\\' => MARQUES_ROOT_DIR . '/lib/flatfiledb/'
     ];
     
     // Prüfe, ob die Klasse zu einem bekannten Namespace gehört
     foreach ($namespaceMap as $prefix => $dir) {
-        // Wenn die Klasse mit diesem Namespace beginnt
         if (strpos($class, $prefix) === 0) {
-            // Extrahiere den relativen Klassenpfad (ohne Namespace-Präfix)
             $relativeClass = substr($class, strlen($prefix));
-            
-            // Klassenname für die Datei (CamelCase behalten)
             $className = basename(str_replace('\\', '/', $relativeClass));
-            
-            // Pfad für die Ordnerstruktur (in Kleinbuchstaben)
             $relativePath = dirname(str_replace('\\', '/', $relativeClass));
             $relativePath = $relativePath === '.' ? '' : strtolower($relativePath) . '/';
-            
-            // Zusammengesetzter Pfad: Basisverzeichnis + Ordnerstruktur klein + Klassendatei CamelCase
             $filePath = $dir . $relativePath . $className . '.php';
             
-            if (file_exists($filePath)) {
-                require_once $filePath;
-                $classCache[$class] = true;
-                return;
-            }
+            // Debug-Ausgabe
+            error_log("Suche nach Klasse: $class");
+            error_log("Relativer Pfad: $relativePath");
+            error_log("Vollständiger Pfad: $filePath");
+            error_log("Datei existiert: " . (file_exists($filePath) ? 'Ja' : 'Nein'));
             
-            // Fehlerbehandlung - nur einen sinnvollen Pfad anzeigen
-            throw new Exception(
-                "Autoloader konnte die Klasse '{$class}' nicht laden. " .
-                "Gesuchter Pfad: {$filePath}"
-            );
+            if (file_exists($filePath)) {
+                // ...
+            }
         }
     }
 });

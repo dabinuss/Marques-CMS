@@ -30,20 +30,112 @@ class Config {
     public const TABLE_URLMAPPING = 'urlmapping';
 
     public function __construct(DatabaseHandler $dbHandler, string $baseDir = 'data', int $compactionInterval = 3600) {
-
-        // Falls baseDir relativ ist, an MARQUES_ROOT_DIR anhängen
+        // 1. Basis-Pfade initialisieren
+        $this->initializePaths($baseDir);
+        $this->compactionInterval = $compactionInterval;
+        
+        // 2. Datenbank-Instanzen setzen
+        $this->db = $dbHandler;
+        $this->libraryDatabase = $this->db->getLibraryDatabase();
+    
+        // 3. Datenverzeichnis prüfen
+        $this->ensureDataDirectoryExists();
+        
+        // 4. Tabellen initialisieren mit Wiederholungsmechanismus
+        $this->initializeTablesWithRetry();
+    
+        // 5. Erst danach CronJob starten
+        $this->runCronJob();
+    }
+    
+    private function initializePaths(string $baseDir): void {
         if ($baseDir[0] !== '/' && defined('MARQUES_ROOT_DIR')) {
             $baseDir = MARQUES_ROOT_DIR . '/' . $baseDir;
         }
         $this->baseDir = rtrim($baseDir, '/');
-        $this->compactionInterval = $compactionInterval;
-
-        $this->db = $dbHandler;
-        $this->libraryDatabase = $this->db->getLibraryDatabase();
-
         $this->lastCompactionFile = $this->baseDir . '/last_compaction.txt';
-        $this->initializeTables();
-        $this->runCronJob();
+    }
+    
+    private function ensureDataDirectoryExists(): void {
+        if (!is_dir($this->baseDir)) {
+            if (!mkdir($this->baseDir, 0755, true)) {
+                throw new RuntimeException("Datenverzeichnis konnte nicht erstellt werden: " . $this->baseDir);
+            }
+        }
+        
+        // Testdatei erstellen um Schreibrechte zu prüfen
+        $testFile = $this->baseDir . '/.test_write';
+        if (!@file_put_contents($testFile, 'test')) {
+            throw new RuntimeException("Datenverzeichnis ist nicht beschreibbar: " . $this->baseDir);
+        }
+        unlink($testFile);
+    }
+    
+    private function initializeTablesWithRetry(int $maxAttempts = 3): void {
+        $attempt = 0;
+        
+        while ($attempt < $maxAttempts) {
+            try {
+                // Versuche Tabellen zu erstellen
+                $this->initializeTables();
+                
+                // Manuelle Prüfung jeder Tabelle
+                $this->verifyTablesExist();
+                
+                return; // Erfolg - verlassen der Schleife
+                
+            } catch (\Exception $e) {
+                $attempt++;
+                error_log("Initialisierungsversuch $attempt fehlgeschlagen: " . $e->getMessage());
+                
+                if ($attempt >= $maxAttempts) {
+                    throw new RuntimeException("Tabellen-Initialisierung nach $maxAttempts Versuchen fehlgeschlagen", 0, $e);
+                }
+                
+                usleep(200000 * $attempt); // Progressive Backoff
+            }
+        }
+    }
+    
+    private function verifyTablesExist(): void {
+        $tables = [
+            self::TABLE_SETTINGS,
+            self::TABLE_NAVIGATION,
+            self::TABLE_URLMAPPING,
+            self::TABLE_USER
+        ];
+        
+        foreach ($tables as $table) {
+            $this->verifyTableAccessible($table);
+        }
+    }
+    
+    private function verifyTableAccessible(string $tableName): void {
+        $retries = 0;
+        $maxRetries = 2;
+        
+        while ($retries <= $maxRetries) {
+            try {
+                // Versuche eine harmlose Operation auf der Tabelle
+                $result = $this->db->table($tableName)->limit(0)->find();
+                
+                // Wenn wir hier ankommen, ist die Tabelle zugänglich
+                return;
+                
+            } catch (\InvalidArgumentException $e) {
+                // Tabelle existiert nicht - neu erstellen
+                error_log("Tabelle $tableName nicht gefunden, versuche Neuerstellung...");
+                $this->db->createTableWithSchema($tableName, [], []);
+                
+            } catch (\Exception $e) {
+                // Anderer Fehler
+                if ($retries >= $maxRetries) {
+                    throw new RuntimeException("Zugriff auf Tabelle $tableName fehlgeschlagen: " . $e->getMessage());
+                }
+                $retries++;
+                usleep(100000 * $retries); // Kurz warten
+            }
+        }
     }
 
     /**
@@ -127,13 +219,14 @@ class Config {
     
         // Erstelle die Tabelle und prüfe, ob der Datensatz existiert:
         $table = $this->db->createTableWithSchema(self::TABLE_SETTINGS, $schemaSettings['requiredFields'], $schemaSettings['fieldTypes']);
-        if ($table->where('id', '=', 1)->first() === null) {
-            $defaultSettings['id'] = 1;
-            // Vor dem Insert Tabelle erneut auswählen – da der erste Aufruf den Zustand zurücksetzt:
-            $table = $this->db->table(self::TABLE_SETTINGS);
-            if (!$table->data($defaultSettings)->insert()) {
-                throw new RuntimeException("Standarddaten für Tabelle '" . self::TABLE_SETTINGS . "' konnten nicht eingefügt werden.");
-            }
+
+        if (!$this->db->getLibraryDatabase()->hasTable(self::TABLE_SETTINGS)) {
+            throw new RuntimeException("Tabelle '".self::TABLE_SETTINGS."' konnte nicht erstellt werden.");
+        }
+
+        $checkTable = $this->db->table(self::TABLE_SETTINGS);
+        if (!$checkTable->data($defaultSettings)->insert()) {
+            throw new RuntimeException("Standarddaten für Tabelle '" . self::TABLE_SETTINGS . "' konnten nicht eingefügt werden.");
         }
     }    
 

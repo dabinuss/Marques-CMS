@@ -6,6 +6,8 @@ namespace Marques\Util;
 use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Service\ThemeManager;
 
+use Exception;
+
 class Helper {
 
     private array $config = [];
@@ -262,5 +264,16 @@ class Helper {
             default:
                 return "blog/" . ($post['slug'] ?? '');
         }
+    }
+
+    public function safe_implode(string $glue, $array): string {
+        if (!is_array($array)) {
+            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+            $caller = $trace[1] ?? $trace[0];
+            $file = $caller['file'] ?? 'unbekannte Datei';
+            $line = $caller['line'] ?? 'unbekannte Zeile';
+            throw new Exception("safe_implode erwartet ein Array, aber " . gettype($array) . " übergeben in $file, Zeile $line.");
+        }
+        return implode($glue, $array);
     }
 }

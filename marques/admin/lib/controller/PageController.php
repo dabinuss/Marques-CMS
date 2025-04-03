@@ -1,20 +1,21 @@
 <?php
 declare(strict_types=1);
 
-namespace Marques\Admin\Controller;
+namespace Admin\Controller;
 
 use Marques\Service\PageManager;
-use Marques\Admin\AdminTemplate;
 use Marques\Util\Helper;
 use Marques\Service\VersionManager; // Fehlender Import
 
+use Admin\Core\Template;
+
 class PageController
 {
-    private AdminTemplate $adminTemplate;
+    private Template $adminTemplate;
     private PageManager $pageManager;
     private Helper $helper;
 
-    public function __construct(AdminTemplate $adminTemplate, PageManager $pageManager, Helper $helper) {
+    public function __construct(Template $adminTemplate, PageManager $pageManager, Helper $helper) {
         $this->adminTemplate = $adminTemplate;
         $this->pageManager = $pageManager;
         $this->helper = $helper;

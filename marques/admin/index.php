@@ -46,8 +46,8 @@ error_reporting(E_ALL);
 
 $rootContainer = require_once __DIR__ . '/../lib/boot/bootstrap.php';
 
-require_once MARQUES_ADMIN_DIR . '/lib/admin/MarquesAdmin.php';
+require_once MARQUES_ROOT_DIR . '/admin/lib/core/MarquesAdmin.php';
 
-$adminApp = new \Marques\Admin\MarquesAdmin($rootContainer);
+$adminApp = new \Admin\Core\MarquesAdmin($rootContainer);
 $adminApp->init();
 $adminApp->run();
