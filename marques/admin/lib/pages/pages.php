@@ -10,10 +10,8 @@
 
 use Marques\Admin\MarquesAdmin;
 use \Marques\Data\Database\Handler as DatabaseHandler;
-use \Marques\Core\PageManager;
+use \Marques\Service\PageManager;
 
-
-// Hole den DatabaseHandler via DI
 
 $pageManager = $container->get(PageManager::class);
 

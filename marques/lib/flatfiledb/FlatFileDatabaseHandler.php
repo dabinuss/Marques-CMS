@@ -61,7 +61,7 @@ class FlatFileDatabaseHandler
      */
     public function table(string $tableName): self
     {
-        error_log("Handler table() called for: " . $tableName . " (Object Hash: " . spl_object_hash($this) . ")");
+        //error_log("Handler table() called for: " . $tableName . " (Object Hash: " . spl_object_hash($this) . ")");
         $this->resetState(); // Reset first
         try {
             $this->db->table($tableName); // Check if table exists/get engine
@@ -550,12 +550,6 @@ class FlatFileDatabaseHandler
      */
     private function resetState(): void
     {
-        if ($this->tableName !== null) {
-            error_log("Handler resetState() called. Resetting tableName from: " . $this->tableName . " (Object Hash: " . spl_object_hash($this) . ")");
-        } else {
-            error_log("Handler resetState() called. tableName was already null. (Object Hash: " . spl_object_hash($this) . ")");
-        }
-        $this->tableName = null;
         $this->conditions = [];
         $this->data = null;
         $this->limit = 0;

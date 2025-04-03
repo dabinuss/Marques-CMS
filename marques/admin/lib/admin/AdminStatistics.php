@@ -6,7 +6,7 @@ namespace Marques\Admin;
 use Marques\Core\Statistics;
 use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Service\User;
-use Marques\Core\PageManager;
+use Marques\Service\PageManager;
 use Marques\Service\BlogManager;
 use Marques\Data\MediaManager;
 

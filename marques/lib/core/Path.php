@@ -22,7 +22,6 @@ class Path
             'root'      => $root,
             'core'      => $root . '/lib/core',
             'logs'      => $root . '/logs',
-            'config'    => $root . '/config',
             'content'   => $root . '/content',
             'templates' => $root . '/templates',
             'cache'     => $root . '/lib/cache',

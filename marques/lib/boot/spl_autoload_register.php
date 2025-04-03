@@ -22,6 +22,7 @@ if (!function_exists('safe_implode')) {
  * spl_autoload_register
  * 
  * Autoloads classes from the Marques namespace.
+ * Folgt der Konvention: Ordnernamen sind kleingeschrieben, Dateien folgen dem CamelCase-Format.
  */
 spl_autoload_register(function (string $class): void {
     // Caching der bereits geladenen Klassen
@@ -31,7 +32,7 @@ spl_autoload_register(function (string $class): void {
         return; // Klasse wurde bereits geladen
     }
     
-    // Wir brauchen nur ein Basis-Mapping:
+    // Namespace-Mapping
     $namespaceMap = [
         'Marques\\' => MARQUES_ROOT_DIR . '/lib/',
         'Marques\\Admin\\' => MARQUES_ADMIN_DIR . '/lib/',
@@ -45,44 +46,26 @@ spl_autoload_register(function (string $class): void {
             // Extrahiere den relativen Klassenpfad (ohne Namespace-Präfix)
             $relativeClass = substr($class, strlen($prefix));
             
-            // Konvertiere Namespace-Separatoren zu Verzeichnis-Separatoren
-            $filePath = $dir . str_replace('\\', '/', $relativeClass);
+            // Klassenname für die Datei (CamelCase behalten)
+            $className = basename(str_replace('\\', '/', $relativeClass));
             
-            // Mögliche Dateiformate
-            $formats = [
-                '.class.php',
-                '.php'
-            ];
+            // Pfad für die Ordnerstruktur (in Kleinbuchstaben)
+            $relativePath = dirname(str_replace('\\', '/', $relativeClass));
+            $relativePath = $relativePath === '.' ? '' : strtolower($relativePath) . '/';
             
-            // Versuche, die Datei in verschiedenen Formaten zu laden
-            foreach ($formats as $format) {
-                $file = $filePath . $format;
-                if (file_exists($file)) {
-                    require_once $file;
-                    $classCache[$class] = true;
-                    return;
-                }
-                
-                // Versuche mit Kleinbuchstaben
-                $fileLower = strtolower($filePath) . $format;
-                if (file_exists($fileLower)) {
-                    require_once $fileLower;
-                    $classCache[$class] = true;
-                    return;
-                }
+            // Zusammengesetzter Pfad: Basisverzeichnis + Ordnerstruktur klein + Klassendatei CamelCase
+            $filePath = $dir . $relativePath . $className . '.php';
+            
+            if (file_exists($filePath)) {
+                require_once $filePath;
+                $classCache[$class] = true;
+                return;
             }
             
-            // Klasse nicht gefunden - sammle und zeige die gesuchten Pfade
-            $searchedPaths = [];
-            foreach ($formats as $format) {
-                $searchedPaths[] = $filePath . $format;
-                $searchedPaths[] = strtolower($filePath) . $format;
-            }
-            
-            // Werfe eine Exception mit den gesuchten Pfaden
+            // Fehlerbehandlung - nur einen sinnvollen Pfad anzeigen
             throw new Exception(
                 "Autoloader konnte die Klasse '{$class}' nicht laden. " .
-                "Gesuchte Pfade: " . implode(', ', $searchedPaths)
+                "Gesuchter Pfad: {$filePath}"
             );
         }
     }

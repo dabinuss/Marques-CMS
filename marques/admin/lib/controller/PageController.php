@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Marques\Admin\Controller;
 
-use Marques\Core\PageManager;
+use Marques\Service\PageManager;
 use Marques\Admin\AdminTemplate;
 use Marques\Util\Helper;
 use Marques\Service\VersionManager; // Fehlender Import

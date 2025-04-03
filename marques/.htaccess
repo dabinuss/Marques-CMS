@@ -13,7 +13,6 @@ RewriteRule ^admin(/.*)?$ admin/index.php [L]
 RewriteRule ^system/.* - [F,L]
 # Erlaubt .md-Dateien für direkte Entwicklung, blockt PHP
 RewriteRule ^content/.*\.(php|phtml|phar)$ - [F,L]
-RewriteRule ^config/.* - [F,L]
 
 # Statische Dateien und Theme-Assets direkt ausliefern
 RewriteCond %{REQUEST_FILENAME} -f

@@ -25,6 +25,13 @@ class FlatFileDatabase
 
         $realBaseDir = realpath($baseDir);
 
+        if (!is_dir($baseDir)) {
+            if (!mkdir($baseDir, 0755, true)) {
+                throw new RuntimeException("Datenbank-Verzeichnis '{$baseDir}' konnte nicht erstellt werden.");
+            }
+        }
+
+        $realBaseDir = realpath($baseDir);
         if ($realBaseDir === false) {
             throw new InvalidArgumentException("Invalid base directory: '$baseDir'");
         }

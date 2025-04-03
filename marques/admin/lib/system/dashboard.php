@@ -8,7 +8,7 @@ use Marques\Core\Cache;
 use Marques\Service\ThemeManager;
 use Marques\Admin\AdminStatistics;
 use Marques\Service\BlogManager;
-use Marques\Core\PageManager;
+use Marques\Service\PageManager;
 use Marques\Data\MediaManager;
 use Marques\Service\User;
 use Marques\Data\FileManager;

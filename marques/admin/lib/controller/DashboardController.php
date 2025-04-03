@@ -10,7 +10,7 @@ use Marques\Admin\AdminRouter;
 use Marques\Util\Helper;
 use Marques\Http\Request;
 use Marques\Data\Database\Handler as DatabaseHandler;
-use Marques\Core\PageManager;
+use Marques\Service\PageManager;
 use Marques\Service\BlogManager;
 use Marques\Core\Cache;
 use Marques\Service\User;

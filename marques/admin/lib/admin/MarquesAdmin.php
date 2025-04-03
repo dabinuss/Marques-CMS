@@ -8,25 +8,24 @@ use Marques\Core\Node;
 use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Core\Logger;
 use Marques\Core\Events;
-use Marques\Core\Cache;    // Wird für Controller-DI benötigt
-use Marques\Core\Path;      // Wird für Template-DI benötigt
-use Marques\Util\Helper;       // Wird für Controller-DI benötigt
-use Marques\Service\ThemeManager; // Wird für Template-DI benötigt
-use Marques\Service\User;         // Wird für Controller-DI und AuthService benötigt
+use Marques\Core\Cache;
+use Marques\Core\Path;
+use Marques\Util\Helper;
+use Marques\Service\ThemeManager;
+use Marques\Service\User;
 use Marques\Http\Router;
 use Marques\Http\Request;
-use Marques\Core\PageManager;  // Wird für Controller-DI benötigt
-use Marques\Service\BlogManager;   // Wird für Controller-DI benötigt
+use Marques\Service\PageManager;
+use Marques\Service\BlogManager; 
 use Marques\Data\MediaManager; 
 use Marques\Admin\AdminRouter;
 
 // --- Admin spezifische Klassen ---
 use Marques\Admin\AdminTemplate;
 use Marques\Admin\AdminAuthService;
-use Marques\Admin\AdminStatistics; // Wird für Controller-DI benötigt
+use Marques\Admin\AdminStatistics;
 
 // --- Controller ---
-// Nur die Controller importieren, die für Routen-Definition (::class) benötigt werden
 use Marques\Admin\Controller\DashboardController;
 use Marques\Admin\Controller\AuthController;
 use Marques\Admin\Controller\PageController;

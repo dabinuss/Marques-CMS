@@ -10,7 +10,7 @@ declare(strict_types=1);
  * @subpackage core
  */
 
-namespace Marques\Core;
+namespace Marques\Service;
 
 use Marques\Data\Database\Handler as DatabaseHandler;
 
