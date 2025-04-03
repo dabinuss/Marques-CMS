@@ -4,3 +4,5 @@ php.ini
 php-errors.log
 *.json
 *.jsonl
+error_log.txt
+.log
