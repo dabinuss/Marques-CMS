@@ -9,13 +9,12 @@
 */
 
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\User;
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Service\User;
 
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
 
-$dbHandler = $container->get(DatabaseHandler::class);
+
+
 $dbHandler->useTable('settings');
 
 // Benutzer-Objekt initialisieren

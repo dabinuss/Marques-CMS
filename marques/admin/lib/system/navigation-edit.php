@@ -3,14 +3,15 @@
  * marques CMS - Navigation Management (Content for Editing)
  */
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\Helper;
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Util\Helper;
 
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
 
-$dbHandler = $container->get(DatabaseHandler::class);
+
+
 $dbHandler->useTable('navigation');
+
+$helper = $container->get(Helper::class);
 
 $success_message = '';
 $error_message   = '';
@@ -25,8 +26,7 @@ $menu_item = [
 // Menüpunkt anhand der übergebenen ID laden
 if (isset($_GET['id']) && !empty($_GET['id'])) {
     $item_id = $_GET['id'];
-    // Hier wird angenommen, dass getRecord($id) den Eintrag als Array zurückliefert
-    $menu_item = $dbHandler->getRecord($item_id);
+    $menu_item = $dbHandler->get($item_id);
     if (!$menu_item) {
         $error_message = 'Menüpunkt nicht gefunden.';
     }
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($menu_item['title']) || empty($menu_item['url'])) {
             $error_message = 'Bitte füllen Sie alle erforderlichen Felder aus.';
         } else {
-            if ($dbHandler->updateRecord($menu_item['id'], $menu_item)) {
+            if ($dbHandler->update($menu_item['id'], $menu_item)) {
                 $success_message = 'Menüpunkt erfolgreich aktualisiert.';
             } else {
                 $error_message = 'Fehler beim Aktualisieren des Menüpunkts.';
@@ -52,10 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $commonUrls = [
-    ['title' => 'Startseite', 'url' => Helper::getSiteUrl()],
-    ['title' => 'Blog', 'url' => Helper::getSiteUrl('blog')],
-    ['title' => 'Über uns', 'url' => Helper::getSiteUrl('about')],
-    ['title' => 'Kontakt', 'url' => Helper::getSiteUrl('contact')]
+    ['title' => 'Startseite', 'url' => $helper->getSiteUrl()],
+    ['title' => 'Blog', 'url' => $helper->getSiteUrl('blog')],
+    ['title' => 'Über uns', 'url' => $helper->getSiteUrl('about')],
+    ['title' => 'Kontakt', 'url' => $helper->getSiteUrl('contact')]
 ];
 
 // Nun stehen $menu_item, $success_message, $error_message und $commonUrls zur Verfügung.

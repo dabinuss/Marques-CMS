@@ -2,9 +2,6 @@
 // Aktuelle Seite ermitteln
 $current_page = $_GET['page'] ?? '';
 
-// AppConfig für das Logo verwenden
-$configManager = \Marques\Core\AppConfig::getInstance();
-$systemConfig = $configManager->load('system') ?: [];
 ?>
 
 <aside>
@@ -12,7 +9,7 @@ $systemConfig = $configManager->load('system') ?: [];
         <div class="sidebar-header">
             <div class="logo">
                 <a href="index.php">
-                    <img src="<?= \Marques\Core\Helper::getSiteUrl('admin/assets/images/logo-text-bg.jpg'); ?>"
+                    <img src="<?= htmlspecialchars($helper->getSiteUrl('admin/assets/images/logo-text-bg.jpg'), ENT_QUOTES, 'UTF-8'); ?>" 
                         alt="marques CMS" style="max-width:240px;" />
                 </a>
                 <!-- marques CMS -->
@@ -31,55 +28,55 @@ $systemConfig = $configManager->load('system') ?: [];
                 </a>
             </div>
             <div class="nav-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=pages'); ?>"
+                <a href="<?= htmlspecialchars($helper->appQueryParam('page=pages'), ENT_QUOTES, 'UTF-8'); ?>"
                     class="nav-link <?= $current_page === 'pages' || $current_page === 'page-edit' ? 'active' : ''; ?>">
                     <?= $this->renderIcon('files', 'nav-menu-icon', '24'); ?>
                     Seiten
                 </a>
             </div>
             <div class="nav-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=navigation'); ?>"
+                <a href="<?= htmlspecialchars($helper->appQueryParam('page=navigation'), ENT_QUOTES, 'UTF-8'); ?>"
                     class="nav-link <?= $current_page === 'navigation' ? 'active' : ''; ?>">
                     <?= $this->renderIcon('menu-3', 'nav-menu-icon', '24'); ?>
                     Menüs
                 </a>
             </div>
             <div class="nav-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=media'); ?>"
+                <a href="<?= htmlspecialchars($helper->appQueryParam('page=media'), ENT_QUOTES, 'UTF-8'); ?>"
                     class="nav-link <?= $current_page === 'media' ? 'active' : ''; ?>">
                     <?= $this->renderIcon('library-photo', 'nav-menu-icon', '24'); ?>
                     Medien
                 </a>
             </div>
             <div class="nav-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>"
+                <a href="<?= htmlspecialchars($helper->appQueryParam('page=blog'), ENT_QUOTES, 'UTF-8'); ?>"
                     class="nav-link <?= $current_page === 'blog' || $current_page === 'blog-categories' || $current_page === 'blog-tags' || $current_page === 'blog-edit' ? 'active' : ''; ?>">
                     <?= $this->renderIcon('news', 'nav-menu-icon', '24'); ?>
                     Blog
                 </a>
                 <div class="nav-sub-item">
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog'); ?>"
+                    <a href="<?= htmlspecialchars($helper->appQueryParam('page=blog'), ENT_QUOTES, 'UTF-8'); ?>"
                         class="nav-link <?= $current_page === 'blog' ? 'active' : ''; ?>">
                         <?= $this->renderIcon('point', 'nav-menu-icon', '14'); ?>
                         Alle Beiträge
                     </a>
                 </div>
                 <div class="nav-sub-item">
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-edit'); ?>"
+                    <a href="<?= htmlspecialchars($helper->appQueryParam('page=blog-edit'), ENT_QUOTES, 'UTF-8'); ?>"
                         class="nav-link <?= $current_page === 'blog-edit' ? 'active' : ''; ?>">
                         <?= $this->renderIcon('point', 'nav-menu-icon', '14'); ?>
                         Neuer Beitrag
                     </a>
                 </div>
                 <div class="nav-sub-item">
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-categories'); ?>"
+                    <a href="<?= htmlspecialchars($helper->appQueryParam('page=blog-categories'), ENT_QUOTES, 'UTF-8'); ?>"
                         class="nav-link <?= $current_page === 'blog-categories' ? 'active' : ''; ?>">
                         <?= $this->renderIcon('point', 'nav-menu-icon', '14'); ?>
                         Kategorien
                     </a>
                 </div>
                 <div class="nav-sub-item">
-                    <a href="<?= \Marques\Core\Helper::appQueryParam('page=blog-tags'); ?>"
+                    <a href="<?= htmlspecialchars($helper->appQueryParam('page=blog-tags'), ENT_QUOTES, 'UTF-8'); ?>"
                         class="nav-link <?= $current_page === 'blog-tags' ? 'active' : ''; ?>">
                         <?= $this->renderIcon('point', 'nav-menu-icon', '14'); ?>
                         Tags
@@ -87,14 +84,14 @@ $systemConfig = $configManager->load('system') ?: [];
                 </div>
             </div>
             <div class="nav-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=users'); ?>"
+                <a href="<?= htmlspecialchars($helper->appQueryParam('page=users'), ENT_QUOTES, 'UTF-8'); ?>"
                     class="nav-link <?= $current_page === 'users' || $current_page === 'user-edit' ? 'active' : ''; ?>">
                     <?= $this->renderIcon('users-group', 'nav-menu-icon', '24'); ?>
                     Benutzer
                 </a>
             </div>
             <div class="nav-item">
-                <a href="<?= \Marques\Core\Helper::appQueryParam('page=settings'); ?>"
+                <a href="<?= htmlspecialchars($helper->appQueryParam('page=settings'), ENT_QUOTES, 'UTF-8'); ?>"
                     class="nav-link <?= $current_page === 'settings' ? 'active' : ''; ?>">
                     <?= $this->renderIcon('adjustments-cog', 'nav-menu-icon', '24'); ?>
                     Einstellungen

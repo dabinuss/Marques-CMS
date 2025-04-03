@@ -3,14 +3,15 @@
  * marques CMS - Navigation Management (Content for List)
  */
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\Helper;
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Util\Helper;
 
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
 
-$dbHandler = $container->get(DatabaseHandler::class);
+
+
 $dbHandler->useTable('navigation');
+
+$helper = $container->get(Helper::class);
 
 $success_message = '';
 $error_message   = '';
@@ -19,7 +20,7 @@ $error_message   = '';
 $activeMenu = (isset($_GET['tab']) && $_GET['tab'] === 'footer') ? 'footer_menu' : 'main_menu';
 
 // Alle Navigationseinträge laden
-$navigationItems = $dbHandler->getAllRecords();
+$navigationItems = $dbHandler->findAll();
 
 // Aktionen verarbeiten (Löschen und Sortierung)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -40,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 if ($index !== null) {
-                    if ($dbHandler->deleteRecord($menuItemId)) {
+                    if ($dbHandler->delete($menuItemId)) {
                         $success_message = 'Menüpunkt erfolgreich gelöscht.';
                         unset($navigationItems[$index]);
                         $navigationItems = array_values($navigationItems);
@@ -63,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach ($navigationItems as $item) {
                         if ((int)$item['id'] === (int)$itemId && $item['menu_type'] === $menuType) {
                             $item['order'] = $index + 1;
-                            if (!$dbHandler->updateRecord((int)$itemId, $item)) {
+                            if (!$dbHandler->update((int)$itemId, $item)) {
                                 $error_message = "Fehler beim Speichern der Sortierung für ID $itemId.";
                                 $sort_success = false;
                                 break 2;
@@ -85,15 +86,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     // Nach POST-Daten: Navigation neu laden
-    $navigationItems = $dbHandler->getAllRecords();
+    $navigationItems = $dbHandler->findAll();
 }
 
 // Häufig verwendete URLs
 $commonUrls = [
-    ['title' => 'Startseite', 'url' => Helper::getSiteUrl()],
-    ['title' => 'Blog', 'url' => Helper::getSiteUrl('blog')],
-    ['title' => 'Über uns', 'url' => Helper::getSiteUrl('about')],
-    ['title' => 'Kontakt', 'url' => Helper::getSiteUrl('contact')]
+    ['title' => 'Startseite', 'url' => $helper->getSiteUrl()],
+    ['title' => 'Blog', 'url' => $helper->getSiteUrl('blog')],
+    ['title' => 'Über uns', 'url' => $helper->getSiteUrl('about')],
+    ['title' => 'Kontakt', 'url' => $helper->getSiteUrl('contact')]
 ];
 
 // Menüs aus den Navigationseinträgen trennen und nach 'order' sortieren

@@ -1,12 +1,18 @@
 # Dynamische RewriteBase
 RewriteEngine On
 RewriteBase /
+
+# ADMIN-BEREICH - Diese Regel ZUERST platzieren!
+# Erfasst sowohl /admin als auch /admin/ und weitere Unterpfade
+RewriteRule ^admin(/.*)?$ admin/index.php [L]
+
 # Wenn in Unterverzeichnis installiert, diese Zeile anpassen
 # RewriteBase /marques/
 
-# Systemdateien schützen
+# Systemdateien schützen, aber .md Dateien erlauben
 RewriteRule ^system/.* - [F,L]
-RewriteRule ^content/.* - [F,L]
+# Erlaubt .md-Dateien für direkte Entwicklung, blockt PHP
+RewriteRule ^content/.*\.(php|phtml|phar)$ - [F,L]
 RewriteRule ^config/.* - [F,L]
 
 # Statische Dateien und Theme-Assets direkt ausliefern
@@ -25,16 +31,21 @@ RewriteRule ^assets/ - [L]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^(.+\.php)$ $1 [L]
 
-# Admin-Bereich spezielle Behandlung
-RewriteCond %{REQUEST_URI} ^/admin/
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ admin/index.php [L]
+# Explizite Regel für die Startseite
+RewriteRule ^$ index.php [L]
+
+# Explizite Regel für normale Content-Seiten
+RewriteRule ^([a-zA-Z0-9_-]+)/?$ index.php [L]
 
 # Alle anderen Anfragen an index.php weiterleiten
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
+
+# Fehlerseiten anpassen
+ErrorDocument 404 /index.php
+ErrorDocument 403 /index.php
+ErrorDocument 500 /index.php
 
 # .htaccess-Datei schützen
 <Files .htaccess>
@@ -47,3 +58,28 @@ RewriteRule ^ index.php [L]
   Order Allow,Deny
   Deny from all
 </FilesMatch>
+
+# Zusätzliche Performance- und Sicherheitseinstellungen
+<IfModule mod_headers.c>
+  # Security Headers
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-XSS-Protection "1; mode=block"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  
+  # Cache-Control für statische Assets
+  <FilesMatch "\.(ico|pdf|jpg|jpeg|png|gif|js|css|svg|woff|woff2|ttf|eot)$">
+    Header set Cache-Control "max-age=2592000, public"
+  </FilesMatch>
+</IfModule>
+
+# PHP-Einstellungen
+<IfModule mod_php8.c>
+  php_flag register_globals off
+  php_flag magic_quotes_gpc off
+  php_flag session.auto_start off
+  php_value max_execution_time 300
+  php_value memory_limit 512M
+  php_value post_max_size 50M
+  php_value upload_max_filesize 50M
+</IfModule>

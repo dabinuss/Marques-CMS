@@ -9,18 +9,15 @@
  */
 
 use Marques\Admin\MarquesAdmin;
-use \Marques\Core\DatabaseHandler;
-use Marques\Core\MediaManager;
-
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
+use \Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Data\MediaManager;
 
 // Hole den DatabaseHandler via DI
-$dbHandler = $container->get(DatabaseHandler::class);
+
 $mediaManager = $container->get(MediaManager::class);
 
 $dbHandler->useTable('settings');
-$system_config = $dbHandler->getAllSettings();
+$system_config = $dbHandler->table('settings')->where('id', '=', 1)->first() ?: [];
 
 // CSRF-Token generieren
 if (!isset($_SESSION['csrf_token'])) {

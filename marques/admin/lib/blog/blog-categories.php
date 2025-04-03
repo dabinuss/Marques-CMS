@@ -9,14 +9,11 @@
 */
 
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\BlogManager;
-
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Service\BlogManager;
 
 // Hole den DatabaseHandler via DI
-$dbHandler = $container->get(DatabaseHandler::class);
+
 $blogManager = $container->get(BlogManager::class);
 
 $blogManager->initCatalogFiles();

@@ -12,13 +12,20 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Data\Database\Handler as DatabaseHandler;
+
 class PageManager {
     private array $_config;
     private DatabaseHandler $dbHandler;
 
     public function __construct(DatabaseHandler $dbHandler) {
         $this->dbHandler = $dbHandler;
-        $this->_config = $dbHandler->getAllSettings() ?: [];
+        try {
+            $this->_config = $this->dbHandler->table('settings')->where('id', '=', 1)->first() ?: [];
+        } catch (\Exception $e) {
+            $this->_config = [];
+            // Optional: Logging des Fehlers
+        }
     }
     
     /**
@@ -31,21 +38,33 @@ class PageManager {
         $pagesDir = MARQUES_CONTENT_DIR . '/pages';
         
         if (!is_dir($pagesDir)) {
-            return $pages;
+            // Verzeichnis erstellen, wenn es nicht existiert
+            if (!mkdir($pagesDir, 0755, true) && !is_dir($pagesDir)) {
+                return $pages; // Rückgabe leeres Array, wenn Verzeichnis nicht erstellt werden kann
+            }
         }
         
         $files = glob($pagesDir . '/*.md');
         
+        if (!is_array($files)) {
+            return $pages; // Schutz vor glob() Fehler
+        }
+        
         foreach ($files as $file) {
+            if (!is_readable($file)) continue; // Überspringe nicht lesbare Dateien
+            
             $filename = basename($file, '.md');
             $content = file_get_contents($file);
+            
+            if ($content === false) continue; // Überspringe bei Lesefehlern
+            
             $metadata = $this->extractFrontmatter($content);
             
             $pages[] = [
                 'id' => $filename,
                 'title' => $metadata['title'] ?? $filename,
-                'date_created' => $metadata['date_created'] ?? '',
-                'date_modified' => $metadata['date_modified'] ?? '',
+                'date_created' => $metadata['date_created'] ?? date('Y-m-d'),
+                'date_modified' => $metadata['date_modified'] ?? date('Y-m-d'),
                 'path' => $filename
             ];
         }
@@ -57,7 +76,7 @@ class PageManager {
         
         return $pages;
     }
-    
+
     /**
      * Gibt eine einzelne Seite zurück
      *
@@ -106,102 +125,6 @@ class PageManager {
     }
     
     /**
-     * Erstellt oder aktualisiert eine Seite
-     *
-     * @param array $pageData Seiten-Daten
-     * @return bool True bei Erfolg
-     */
-    public function savePage(array $pageData): bool {
-        if (empty($pageData['id'])) {
-            // Neue Seite - ID aus Titel generieren
-            $pageData['id'] = $this->generateSlug($pageData['title']);
-        }
-        
-        // Sicherheitscheck
-        if (strpos($pageData['id'], '/') !== false || strpos($pageData['id'], '\\') !== false) {
-            return false;
-        }
-        
-        $file = MARQUES_CONTENT_DIR . '/pages/' . $pageData['id'] . '.md';
-        
-        // Wenn Datei existiert, zuvor eine Version erstellen
-        if (file_exists($file)) {
-            // Version erstellen
-            $versionManager = new VersionManager();
-            $currentUsername = isset($_SESSION['marques_user']) ? $_SESSION['marques_user']['username'] : 'system';
-            $versionManager->createVersion('pages', $pageData['id'], file_get_contents($file), $currentUsername);
-        }
-        
-        // Frontmatter vorbereiten
-        $frontmatter = [
-            'title' => $pageData['title'] ?? '',
-            'description' => $pageData['description'] ?? '',
-            'template' => $pageData['template'] ?? 'page',
-            'featured_image' => $pageData['featured_image'] ?? ''
-        ];
-        
-        // Datumsfelder vorbereiten
-        if (file_exists($file)) {
-            // Bestehendes Erstellungsdatum beibehalten
-            $existingPage = $this->getPage($pageData['id']);
-            $frontmatter['date_created'] = $existingPage['date_created'] ?? date('Y-m-d');
-        } else {
-            // Neues Erstellungsdatum
-            $frontmatter['date_created'] = date('Y-m-d');
-        }
-        
-        // Änderungsdatum aktualisieren
-        $frontmatter['date_modified'] = date('Y-m-d');
-        
-        // Frontmatter in YAML konvertieren
-        $yamlContent = '';
-        foreach ($frontmatter as $key => $value) {
-            $yamlContent .= $key . ': "' . str_replace('"', '\"', $value) . "\"\n";
-        }
-        
-        // Inhalt zusammensetzen
-        $content = "---\n" . $yamlContent . "---\n\n" . $pageData['content'];
-        
-        // Datei speichern
-        if (file_put_contents($file, $content) === false) {
-            return false;
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Löscht eine Seite
-     *
-     * @param string $id Seiten-ID
-     * @return bool True bei Erfolg
-     */
-    public function deletePage(string $id): bool {
-        // Sicherheitscheck
-        if (strpos($id, '/') !== false || strpos($id, '\\') !== false) {
-            return false;
-        }
-        
-        $file = MARQUES_CONTENT_DIR . '/pages/' . $id . '.md';
-        
-        if (!file_exists($file)) {
-            return false;
-        }
-        
-        // Optional: Sicherungskopie erstellen
-        $backupDir = MARQUES_CONTENT_DIR . '/versions/pages';
-        if (!is_dir($backupDir)) {
-            mkdir($backupDir, 0755, true);
-        }
-        
-        $backupFile = $backupDir . '/' . $id . '_' . date('YmdHis') . '.md';
-        copy($file, $backupFile);
-        
-        // Datei löschen
-        return unlink($file);
-    }
-    
-    /**
      * Extrahiert Frontmatter aus Dateiinhalt
      *
      * @param string $content Dateiinhalt
@@ -212,32 +135,46 @@ class PageManager {
             return [];
         }
         
-        $parts = preg_split('/[\r\n]*---[\r\n]+/', $content, 3);
-        
-        if (count($parts) !== 3) {
+        // Prüfen, ob Frontmatter vorhanden ist (zwischen --- Markierungen)
+        $pattern = '/^---[\r\n]+(.*?)[\r\n]+---[\r\n]+/s';
+        if (!preg_match($pattern, $content, $matches)) {
             return [];
         }
         
-        $frontmatter = $parts[1];
+        $frontmatter = $matches[1];
         $metadata = [];
         
         $lines = explode("\n", $frontmatter);
         foreach ($lines as $line) {
             $line = trim($line);
-            if (empty($line)) {
+            if (empty($line) || strpos($line, '#') === 0) { // Überspringe leere Zeilen und Kommentare
                 continue;
             }
-            if (preg_match('/^([^:]+):\s*(.*)$/', $line, $matches)) {
+            
+            // Verbesserte Schlüssel-Wert-Extraktion mit Fehlerbehandlung für verschiedene YAML-Formate
+            if (preg_match('/^([^:]+):(?:\s*[\'"]?(.*?)[\'"]?)?$/', $line, $matches)) {
                 $key = trim($matches[1]);
-                $value = trim($matches[2]);
-                if (preg_match('/^["\'](.*)["\']$/', $value, $stringMatches)) {
+                $value = isset($matches[2]) ? trim($matches[2]) : '';
+                
+                // Entfernen von umschließenden Anführungszeichen, falls vorhanden
+                if (preg_match('/^[\'"](.*)[\'"]\s*$/', $value, $stringMatches)) {
                     $value = $stringMatches[1];
                 }
+                
                 $metadata[$key] = $value;
             }
         }
         
         return $metadata;
+    }
+
+    /**
+     * Sicherheitsüberprüfung für Datei-IDs
+     */
+    private function isValidFileId(string $id): bool {
+        return preg_match('/^[a-z0-9_-]+$/i', $id) && 
+               strpos($id, '/') === false && 
+               strpos($id, '\\') === false;
     }
     
     /**
@@ -246,15 +183,30 @@ class PageManager {
      * @param string $text Eingangstext
      * @return string Slug
      */
-    public function generateSlug($text) {
-        // Transliteration (Umlaute etc. umwandeln)
-        $text = iconv('UTF-8', 'ASCII//TRANSLIT', $text);
+    public function generateSlug($text): string {
+        if (!is_string($text) || empty($text)) {
+            return 'unnamed-' . substr(md5(uniqid()), 0, 8);
+        }
+        
+        // Transliteration (Umlaute etc. umwandeln) mit Fallback
+        try {
+            $text = transliterator_transliterate('Any-Latin; Latin-ASCII', $text);
+        } catch (\Exception $e) {
+            // Fallback für Server ohne intl-Extension
+            $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
+        }
+        
         // Alles in Kleinbuchstaben umwandeln
         $text = strtolower($text);
         // Alle nicht-alphanumerischen Zeichen durch Bindestriche ersetzen
         $text = preg_replace('/[^a-z0-9]+/', '-', $text);
         // Führende und nachfolgende Bindestriche entfernen
         $text = trim($text, '-');
+        
+        // Fallback für leeren Slug
+        if (empty($text)) {
+            return 'page-' . substr(md5(uniqid()), 0, 8);
+        }
         
         return $text;
     }

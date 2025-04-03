@@ -9,15 +9,14 @@
 */
 
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\BlogManager;
-use Marques\Core\VersionManager;
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Service\BlogManager;
+use Marques\Service\VersionManager;
 
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
+
 
 // Hole den DatabaseHandler via DI
-$dbHandler = $container->get(DatabaseHandler::class);
+
 $blogManager = $container->get(BlogManager::class);
 $versionManager = $container->get(VersionManager::class);
 

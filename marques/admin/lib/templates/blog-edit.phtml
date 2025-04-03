@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $editing ? 'Beitrag bearbeiten' : 'Neuen Beitrag erstellen'; ?> - Admin-Panel - <?= htmlspecialchars($system_config['site_name'] ?? 'marques CMS'); ?></title>
-    <link rel="stylesheet" href="assets/css/admin-style.css">
-    <link rel="stylesheet" href="assets/css/marques-panel-style.css">
+    <link rel="stylesheet" href="/admin/assets/css/admin-style.css">
+    <link rel="stylesheet" href="/admin/assets/css/marques-panel-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="assets/js/tinymce/tinymce.min.js"></script>
-    <script src="assets/js/tinymce-config.js"></script>
-    <style>
+    <script src="/admin/assets/js/tinymce/tinymce.min.js"></script>
+    <script src="/admin/assets/js/tinymce-config.js"></script>
+    <style nonce="<?= CSP_NONCE ?>">
         .tag-container {
             display: flex;
             flex-wrap: wrap;
@@ -86,7 +86,7 @@
                     if ($editing): 
                     
                         // Erzeuge die URL für den aktuellen Beitrag:
-                        $blogUrl = \Marques\Core\Helper::formatBlogUrl($post);
+                        $blogUrl = $helper->formatBlogUrl($post);
                     ?>
                     <a href="<?= htmlspecialchars($blogUrl); ?>" target="_blank">
                         <span class="btn-icon"><i class="fas fa-eye"></i></span>
@@ -165,7 +165,7 @@
                     <div class="form-column">
                         <div class="form-group">
                             <label class="form-label">Kategorien</label>
-                            <input type="hidden" id="categories" name="categories" value="<?= htmlspecialchars(implode(',', $post['categories'])); ?>">
+                            <input type="hidden" id="categories" name="categories" value="<?= htmlspecialchars(safe_implode(',', $post['categories'])); ?>">
                             <div class="tag-container" id="categoryContainer">
                                 <?php foreach ($post['categories'] as $category): ?>
                                     <?php if (!empty($category)): ?>
@@ -184,7 +184,7 @@
                     <div class="form-column">
                         <div class="form-group">
                             <label class="form-label">Tags</label>
-                            <input type="hidden" id="tags" name="tags" value="<?= htmlspecialchars(implode(',', $post['tags'])); ?>">
+                            <input type="hidden" id="tags" name="tags" value="<?= htmlspecialchars(safe_implode(',', $post['tags'])); ?>">
                             <div class="tag-container" id="tagContainer">
                                 <?php foreach ($post['tags'] as $tag): ?>
                                     <?php if (!empty($tag)): ?>
@@ -222,8 +222,8 @@
         </main>
     </div>
     
-    <script src="assets/js/tagsystem-setup.js"></script>
-    <script>
+    <script src="/admin/assets/js/tagsystem-setup.js"></script>
+    <script nonce="<?= CSP_NONCE ?>">
         document.addEventListener('DOMContentLoaded', function() {
             // TinyMCE initialisieren
             initTinyMCE('.content-editor');

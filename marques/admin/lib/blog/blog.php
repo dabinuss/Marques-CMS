@@ -9,14 +9,13 @@
 */
 
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\BlogManager;
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Service\BlogManager;
 
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
+
 
 // Hole den DatabaseHandler via DI
-$dbHandler = $container->get(DatabaseHandler::class);
+
 $blogManager = $container->get(BlogManager::class);
 
 // Erfolgsmeldung und Fehlermeldung initialisieren

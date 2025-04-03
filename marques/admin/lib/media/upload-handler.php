@@ -12,15 +12,12 @@
 header('Content-Type: application/json');
 
 use Marques\Admin\MarquesAdmin;
-use \Marques\Core\DatabaseHandler;
+use \Marques\Data\Database\Handler as DatabaseHandler;
 
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
 
-$dbHandler = $container->get(DatabaseHandler::class);
 
 $dbHandler->useTable('settings');
-$system_config = $dbHandler->getAllSettings();
+$system_config = $dbHandler->table('settings')->where('id', '=', 1)->first() ?: [];
 
 // Fehlerfunktion
 function returnError($message) {

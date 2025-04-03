@@ -8,43 +8,36 @@
  * @subpackage admin
  */
 
-// HTTP Security Headers setzen
-header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'");
-header("X-Frame-Options: DENY");
-header("X-Content-Type-Options: nosniff");
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\User;
-use Marques\Admin\AdminAuthService;
-
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
-
-$dbHandler = $container->get(DatabaseHandler::class);
-$dbHandler->useTable('user');
-
-$authService = $container->get(AdminAuthService::class);
-
 $csrf_token = $authService->generateCsrfToken();
 
 $showAdminDefaultPassword = false;
-$usersData = $dbHandler->getAllSettings() ?: [];
-if (isset($usersData['admin'])) {
-    $adminData = $usersData['admin'];
-    if (empty($adminData['password']) || (isset($adminData['first_login']) && $adminData['first_login'] === true)) {
+try {
+    // Direkt $dbHandler verwenden
+    $adminUserData = $dbHandler->table(\Marques\Data\Database\Config::TABLE_USER) // Konstante verwenden!
+                               ->where('username', '=', 'admin')
+                               ->first();
+    if ($adminUserData && (empty($adminUserData['password']) || ($adminUserData['first_login'] ?? false) === true)) {
         $showAdminDefaultPassword = true;
     }
+} catch (\Exception $e) {
+    error_log("Login Template: Error checking admin default password: " . $e->getMessage());
+    // Fehlerbehandlung im Template ist schwierig, evtl. nur Loggen
 }
 
 if ($authService->isLoggedIn()) {
+    // Im Template ist ein header()-Redirect schwierig und unsauber.
+    // Das sollte *vor* dem Rendern in MarquesAdmin passieren.
+    // header('Location: index.php');
+    // exit;
+    echo "<p>Bereits eingeloggt. <a href='index.php'>Zum Dashboard</a></p>"; // Sicherere Alternative im Template
     header('Location: index.php');
     exit;
 }
+
 
 $error = '';
 $username = '';
@@ -60,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($username) && !empty($password) && $authService->login($username, $password)) {
 
             session_regenerate_id(true);
-            $csrf_token = $authService->generateCsrfToken(true);
+            $csrf_token = $authService->generateCsrfToken();
 
             if (isset($_SESSION['marques_user']['initial_login']) && $_SESSION['marques_user']['initial_login'] === true) {
                 header('Location: user-edit.php?username=admin&initial_setup=true');

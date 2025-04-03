@@ -2,42 +2,38 @@
 declare(strict_types=1);
 
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\Helper;
-use Marques\Core\AppCache;
-use Marques\Core\ThemeManager;
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Util\Helper;
+use Marques\Core\Cache;
+use Marques\Service\ThemeManager;
 use Marques\Admin\AdminStatistics;
-use Marques\Core\BlogManager;
+use Marques\Service\BlogManager;
 use Marques\Core\PageManager;
-use Marques\Core\MediaManager;
-use Marques\Core\User;
-use Marques\Core\FileManager;
+use Marques\Data\MediaManager;
+use Marques\Service\User;
+use Marques\Data\FileManager;
 
 // Starte die Admin-Anwendung, die den DI-Container initialisiert
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer(); // <-- Voraussetzung: öffentliche Getter-Methode in MarquesAdmin
-
+/*
+ // <-- Voraussetzung: öffentliche Getter-Methode in MarquesAdmin
+*/
 // Hole den DatabaseHandler via DI
-$dbHandler = $container->get(DatabaseHandler::class);
+
 
 // Debug-Einstellungen aus der Systemkonfiguration (falls vorhanden)
 if (isset($system_config['debug']) && $system_config['debug']) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 }
-$systemConfig = $dbHandler->getAllSettings() ?: [];
-
-// Hole den FileManager via Container (wird bereits mit AppCache und MARQUES_CONTENT_DIR konfiguriert)
-$fileManager = $container->get(FileManager::class);
+$systemConfig = $dbHandler->table('settings')->where('id', '=', 1)->first() ?: [];
 
 // Erzeuge weitere benötigte Objekte – hier nutzen wir den Container oder instanziieren sie direkt, wenn sie nicht registriert sind
-$user         = $container->get(User::class);
-$pageManager  = new PageManager($dbHandler);
-$blogManager  = new BlogManager($dbHandler, $fileManager);
-$mediaManager = new MediaManager($dbHandler);
+$pageManager  = $container->get(PageManager::class);
+$blogManager  = $container->get(BlogManager::class);
+$mediaManager = $container->get(MediaManager::class);
 
 // Erstelle das AdminStatistics-Objekt mit allen Abhängigkeiten
-$adminStats   = new AdminStatistics($dbHandler, $user, $pageManager, $blogManager, $mediaManager);
+$adminStats   = $container->get(AdminStatistics::class);
 $statsSummary = $adminStats->getAdminSummary();   // Textuelle Zusammenfassung der Statistiken
 $systemInfo   = $adminStats->getSystemInfoArray();   // Gruppierte Systeminformationen
 
@@ -86,10 +82,10 @@ try {
 
 // Cache-Daten ermitteln
 try {
-    $cacheManager       = new AppCache();
+    $cacheManager       = new Cache();
     $numCached          = $cacheManager->getCacheFileCount();
     $cacheSize          = $cacheManager->getCacheSize();
-    $cacheSizeFormatted = Helper::formatBytes($cacheSize);
+    $cacheSizeFormatted = $helper->formatBytes($cacheSize);
     $cacheStats         = $cacheManager->getStatistics();
 } catch (\Exception $e) {
     error_log("Fehler beim Laden der Cache-Daten: " . $e->getMessage());
@@ -306,7 +302,7 @@ if (!empty($pages) && is_array($pages)) {
                 'type'  => 'page',
                 'title' => $pageInfo['title'] ?? 'Unbenannte Seite',
                 'date'  => $pageInfo['date_modified'],
-                'url'   => Helper::appQueryParam('page=page-edit&id=' . ($pageInfo['id'] ?? 0)),
+                'url'   => $helper->appQueryParam('page=page-edit&id=' . ($pageInfo['id'] ?? 0)),
                 'icon'  => 'file-alt'
             ];
         }
@@ -320,7 +316,7 @@ if (!empty($recentPosts) && is_array($recentPosts)) {
             'type'  => 'post',
             'title' => $post['title'],
             'date'  => $post['date_modified'] ?? $post['date_created'] ?? $post['date'] ?? date('Y-m-d H:i:s'),
-            'url'   => Helper::appQueryParam('page=blog-edit&id=' . ($post['id'] ?? 0)),
+            'url'   => $helper->appQueryParam('page=blog-edit&id=' . ($post['id'] ?? 0)),
             'icon'  => 'blog'
         ];
     }

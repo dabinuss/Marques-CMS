@@ -11,15 +11,17 @@ declare(strict_types=1);
  */
 
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\ThemeManager;
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Service\ThemeManager;
+/*
 
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
-
+*/
 // Hole den DatabaseHandler via DI
-$dbHandler = $container->get(DatabaseHandler::class);
+
 $themeManager = $container->get(ThemeManager::class);
+
+$dbTable = $dbHandler->useTable("settings");
+$dbRecordId = 1;
 
 $themes = $themeManager->getThemes();
 $activeTheme = $themeManager->getActiveTheme();
@@ -40,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Einstellungen basierend auf der Gruppe aktualisieren
         switch ($group) {
             case 'general':
-                $dbHandler->setMultipleSettings([
+                $dbHandler->update($dbRecordId, [
                     'site_name'        => $_POST['site_name'] ?? '',
                     'site_description' => $_POST['site_description'] ?? '',
                     'admin_email'      => $_POST['admin_email'] ?? '',
@@ -58,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'content':
-                $dbHandler->setMultipleSettings([
+                $dbHandler->update($dbRecordId, [
                     'posts_per_page'   => (int)($_POST['posts_per_page'] ?? 10),
                     'excerpt_length'   => (int)($_POST['excerpt_length'] ?? 150),
                     'comments_enabled' => isset($_POST['comments_enabled']),
@@ -67,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'system':
-                $dbHandler->setMultipleSettings([
+                $dbHandler->update($dbRecordId, [
                     'debug'              => isset($_POST['debug']),
                     'cache_enabled'      => isset($_POST['cache_enabled']),
                     'maintenance_mode'   => isset($_POST['maintenance_mode']),
@@ -79,13 +81,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'appearance':
-                $dbHandler->setMultipleSettings([
+                $dbHandler->update($dbRecordId, [
                     'active_theme' => $_POST['active_theme'] ?? '',
                 ]);
                 break;
 
             case 'seo':
-                $dbHandler->setMultipleSettings([
+                $dbHandler->update($dbRecordId, [
                     'meta_keywords'       => $_POST['meta_keywords'] ?? '',
                     'meta_author'         => $_POST['meta_author'] ?? '',
                     'google_analytics_id' => $_POST['google_analytics_id'] ?? '',
@@ -111,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Aktuelle Einstellungen laden
-$current_settings = $dbHandler->getAllSettings();
+$current_settings = $dbHandler->table('settings')->where('id', '=', 1)->first() ?: [];
 
 // Aktiven Tab bestimmen
 $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';

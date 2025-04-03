@@ -1,9 +1,0 @@
-# Konfigurationsverzeichnis vor direktem Zugriff schützen
-Order deny,allow
-Deny from all
-
-# Zusätzlicher Schutz für alle Dateien im Verzeichnis
-<Files *>
-    Order deny,allow
-    Deny from all
-</Files>

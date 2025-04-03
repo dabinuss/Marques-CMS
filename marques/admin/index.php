@@ -1,7 +1,34 @@
 <?php
 declare(strict_types=1);
 
-ini_set('display_errors', 1);
+ini_set('display_errors', '1'); // Fehler im Browser anzeigen (Unsicher für Produktion!)
+ini_set('display_startup_errors', '1'); // Auch Startfehler anzeigen
+error_reporting(E_ALL); // Alle Fehler melden
+
+// HTTP Security Headers setzen
+
+// 👇 Nonce für CSP (Cryptographically Secure)
+$nonce = base64_encode(random_bytes(16));
+define('CSP_NONCE', $nonce);
+
+// 👇 Strict Policy mit Safe Defaults
+header("Content-Security-Policy: " . implode('; ', [
+    "default-src 'none'", // 👈 Default: Alles verboten
+    "script-src 'self' 'nonce-".CSP_NONCE."'",
+    "style-src 'self' 'nonce-".CSP_NONCE."'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "form-action 'self'",
+    "frame-src 'none'", // 👇 Keine Iframes erlaubt
+    "base-uri 'self'" // 👉 Schutz gegen DOM-Manipulation
+]));
+
+// 👇 Essential Security Headers
+header("X-Frame-Options: DENY");
+header("X-Content-Type-Options: nosniff");
+header("Referrer-Policy: strict-origin-when-cross-origin");
+header("Permissions-Policy: geolocation=(), microphone=(), camera=()");
 
 /**
  * marques CMS - Admin-Panel index.php
@@ -10,33 +37,17 @@ ini_set('display_errors', 1);
  *
  * @package marques
  * @subpackage admin
- */
+*/
 
-// Basispfad definieren
-define('MARQUES_ROOT_DIR', dirname(__DIR__));
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+ini_set('error_log', __DIR__ . '/error_log.txt');
+error_reporting(E_ALL);
 
-/*
- * Constants definition for admin | FALLBACK FOR ADMIN (DEPRECIATED CONSTANTS)
- */
-define('MARQUES_VERSION', '0.3.0'); // FALLBACK
-define('MARQUES_SYSTEM_DIR',    MARQUES_ROOT_DIR . '/lib');
-define('MARQUES_CONFIG_DIR',    MARQUES_ROOT_DIR . '/config');
-define('MARQUES_CONTENT_DIR',   MARQUES_ROOT_DIR . '/content');
-define('MARQUES_TEMPLATE_DIR',  MARQUES_ROOT_DIR . '/templates'); /* DEPRECIATED */
-define('MARQUES_CACHE_DIR',     MARQUES_SYSTEM_DIR . '/cache');
-define('MARQUES_ADMIN_DIR',     MARQUES_ROOT_DIR . '/admin');
-define('MARQUES_THEMES_DIR',    MARQUES_ROOT_DIR . '/themes');
+$rootContainer = require_once __DIR__ . '/../lib/boot/bootstrap.php';
 
-// Autoloading
-require_once MARQUES_ROOT_DIR . '/lib/bootstrap/spl_autoload_register.php';
+require_once MARQUES_ADMIN_DIR . '/lib/admin/MarquesAdmin.class.php';
 
-// Exception Handling
-require_once MARQUES_ROOT_DIR . '/lib/bootstrap/set_exception_handler.php';
-
-// Bootstrap laden (Autoloader, Konfiguration etc.)
-// require_once MARQUES_ROOT_DIR . '/lib/core/Bootstrap.inc.php';
-
-// Instanz der Admin-Anwendung erzeugen, initialisieren und starten
-$adminApp = new \Marques\Admin\MarquesAdmin();
+$adminApp = new \Marques\Admin\MarquesAdmin($rootContainer);
 $adminApp->init();
 $adminApp->run();

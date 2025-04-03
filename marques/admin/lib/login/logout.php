@@ -8,17 +8,12 @@
  * @subpackage admin
  */
 
-// Setze HTTP-Sicherheitsheader
-header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'");
-header("X-Frame-Options: DENY");
-header("X-Content-Type-Options: nosniff");
-
 // Stelle sicher, dass die Session gestartet wurde
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-use Marques\Core\User;
+use Marques\Service\User;
 use Marques\Admin\AdminAuthService;
 
 // Erstelle das User-Modell und initialisiere den AuthService

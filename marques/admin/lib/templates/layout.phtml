@@ -1,0 +1,83 @@
+<?php
+// File: admin/lib/templates/layout.phtml
+declare(strict_types=1);
+
+// Verwende SafetyXSS für sichere Ausgabe
+use Marques\Util\SafetyXSS;
+
+// --- Variablen aus dem Template ---
+/** @var string $page_title Titel der aktuellen Seite */
+/** @var array $system_config Die Systemkonfiguration */
+/** @var string $username Anzeigename des eingeloggten Benutzers */
+/** @var \Marques\Util\Helper $helper Helper-Objekt für URL-Generierung etc. */
+/** @var \Marques\Admin\AdminRouter $router Router für URL-Generierung */
+/** @var string $content Der gerenderte Inhalt der spezifischen View-Datei */
+/** @var string $csrf_token Der aktuelle CSRF-Token */
+?>
+<!DOCTYPE html>
+<html lang="<?= SafetyXSS::escapeOutput($system_config['admin_language'] ?? 'de', 'attr') ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= SafetyXSS::escapeOutput($page_title ?? 'Admin Panel') ?> - <?= SafetyXSS::escapeOutput($system_config['site_name'] ?? 'marques CMS') ?></title>
+    <link rel="stylesheet" href="<?= SafetyXSS::escapeOutput($helper->getSiteUrl('admin/assets/css/marques-panel-style.css'), 'url') ?>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <?php
+        // Sidebar einbinden
+        $sidebarPath = __DIR__ . '/sidebar.phtml';
+        if (file_exists($sidebarPath)) {
+            include $sidebarPath;
+        } else {
+            echo "<!-- Sidebar not found at: " . SafetyXSS::escapeOutput($sidebarPath) . " -->";
+        }
+        ?>
+
+        <main class="main-content">
+            <div class="header">
+                <h1><?= SafetyXSS::escapeOutput($page_title ?? '') ?></h1>
+                <div class="header-actions">
+                    <!-- Router direkt für URL-Generierung verwenden -->
+                    <a href="<?= SafetyXSS::escapeOutput($router->getAdminUrl('admin.pages.add'), 'url') ?>" title="Neue Seite erstellen">
+                        <button class="btn btn-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </button>
+                    </a>
+                    <a href="<?= SafetyXSS::escapeOutput($router->getAdminUrl('admin.blog.add'), 'url') ?>" title="Neuen Beitrag erstellen">
+                        <button class="btn btn-icon">
+                             <i class="fas fa-pencil-alt"></i>
+                        </button>
+                    </a>
+                    <a href="<?= SafetyXSS::escapeOutput($router->getAdminUrl('admin.media.upload'), 'url') ?>" title="Datei hochladen">
+                        <button class="btn btn-icon">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                    </a>
+                    <a href="<?= SafetyXSS::escapeOutput($helper->getBaseUrl(false), 'url') ?>" title="Website ansehen" target="_blank">
+                        <button class="btn">
+                            <i class="fas fa-external-link-alt"></i>
+                            Website ansehen
+                        </button>
+                    </a>
+                </div>
+            </div>
+
+            <?= $content ?? '<p class="error">Inhalt konnte nicht geladen werden.</p>'; ?>
+        </main>
+    </div>
+
+    <!-- Admin JavaScript laden -->
+    <script src="<?= SafetyXSS::escapeOutput($helper->getSiteUrl('admin/assets/js/admin-script.js'), 'url') ?>" defer></script>
+    
+    <!-- CSRF-Token und Basis-URLs für JavaScript -->
+    <script>
+        // Globale JS-Variablen
+        window.csrfToken = '<?= SafetyXSS::escapeOutput($csrf_token ?? '', 'js') ?>';
+        window.baseUrl = '<?= SafetyXSS::escapeOutput($helper->getBaseUrl(false), 'js') ?>';
+        window.adminBaseUrl = '<?= SafetyXSS::escapeOutput($router->getAdminUrl('admin.home'), 'js') ?>';
+    </script>
+</body>
+</html>

@@ -3,14 +3,15 @@
  * marques CMS - Navigation Management (Content for Adding)
  */
 use Marques\Admin\MarquesAdmin;
-use Marques\Core\DatabaseHandler;
-use Marques\Core\Helper;
+use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Util\Helper;
 
-$adminApp = new MarquesAdmin();
-$container = $adminApp->getContainer();
 
-$dbHandler = $container->get(DatabaseHandler::class);
+
+
 $dbHandler->useTable('navigation');
+
+$helper = $container->get(Helper::class);
 
 $success_message = '';
 $error_message   = '';
@@ -33,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_message = 'Bitte füllen Sie alle Felder aus.';
         } else {
             // Bestimme die höchste Order für den aktuellen Menütyp
-            $navigationItems = $dbHandler->getAllRecords();
+            $navigationItems = $dbHandler->findAll();
             $maxOrder = 0;
             foreach ($navigationItems as $item) {
                 if ($item['menu_type'] === $activeMenu && isset($item['order']) && $item['order'] > $maxOrder) {
@@ -41,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             $menuItem['order'] = $maxOrder + 1;
-            $newId = $dbHandler->insertRecord($menuItem);
+            $newId = $dbHandler->insert($menuItem);
             if ($newId !== false) {
                 $success_message = 'Menüpunkt erfolgreich hinzugefügt. (ID: ' . $newId . ')';
             } else {
@@ -52,10 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $commonUrls = [
-    ['title' => 'Startseite', 'url' => Helper::getSiteUrl()],
-    ['title' => 'Blog', 'url' => Helper::getSiteUrl('blog')],
-    ['title' => 'Über uns', 'url' => Helper::getSiteUrl('about')],
-    ['title' => 'Kontakt', 'url' => Helper::getSiteUrl('contact')]
+    ['title' => 'Startseite', 'url' => $helper->getSiteUrl()],
+    ['title' => 'Blog', 'url' => $helper->getSiteUrl('blog')],
+    ['title' => 'Über uns', 'url' => $helper->getSiteUrl('about')],
+    ['title' => 'Kontakt', 'url' => $helper->getSiteUrl('contact')]
 ];
 
 // Nun stehen $success_message, $error_message, $activeMenu und $commonUrls zur Verfügung.
