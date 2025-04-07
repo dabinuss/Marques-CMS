@@ -188,65 +188,6 @@ class MarquesAdmin
          // Registriere hier weitere Controller (UserController, MediaController etc.)
     }
 
-    /**
-     * Definiert die Routen für den Admin-Bereich.
-     */
-    private function defineAdminRoutes(AdminRouter $router): AdminRouter // Typ-Hint zu AdminRouter ändern
-    {
-        $adminBase = rtrim(MARQUES_ADMIN_DIR, '/'); // Hole den Admin-Pfad (z.B. /admin)
-    
-        $router->group(['prefix' => $adminBase], function(AdminRouter $adminRouterGroup) { // Hauptgruppe für /admin
-    
-            // --- Routen OHNE Auth-Schutz ---
-            $adminRouterGroup->get('/login', AuthController::class . '@showLoginForm')->name('admin.login');
-            $adminRouterGroup->post('/login', AuthController::class . '@handleLogin')->name('admin.login.post');
-            $adminRouterGroup->get('/logout', AuthController::class . '@logout')->name('admin.logout');
-    
-            // --- Geschützte Routen mit Middleware ---
-            $Middleware = new Middleware($this->adminContainer->get(Service::class));
-            $csrfMiddleware = function(Request $req, array $params, callable $next) {
-                if ($req->getMethod() === 'POST') {
-                    // Korrekte Methode zum Abrufen von POST-Daten verwenden
-                    $postData = $req->getAllPost(); // <-- KORRIGIERT
-                    $token = $postData['csrf_token'] ?? '';
-                    if (!$this->Service->validateCsrfToken($token)) {
-                        throw new UnexpectedValueException("CSRF-Token validation failed", 403);
-                    }
-                }
-                return $next($req, $params);
-            };
-    
-            // Untergruppe für geschützte Routen (Pfade sind relativ zu /admin)
-            $adminRouterGroup->group(['middleware' => [$Middleware, $csrfMiddleware]], function(AdminRouter $protectedRouter) {
-                // Dashboard
-                // Die Route für den Admin-Root-Pfad (/admin) sollte einen leeren String als Pattern haben
-                $protectedRouter->get('', DashboardController::class . '@index')->name('admin.home'); // <-- Wichtig: Leerer String für /admin/
-                $protectedRouter->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard'); // Alias, falls benötigt
-    
-                // Seiten
-                $protectedRouter->get('/pages', PageController::class . '@list')->name('admin.pages.list');
-                $protectedRouter->get('/pages/add', PageController::class . '@showAddForm')->name('admin.pages.add');
-                $protectedRouter->post('/pages/add', PageController::class . '@handleAddForm')->name('admin.pages.add.post');
-                // Stelle sicher, dass die Regex für {id} korrekt ist
-                $protectedRouter->get('/pages/edit/{id:\d+}', PageController::class . '@showEditForm')->name('admin.pages.edit');
-                $protectedRouter->post('/pages/edit/{id:\d+}', PageController::class . '@handleEditForm')->name('admin.pages.edit.post');
-                $protectedRouter->post('/pages/delete/{id:\d+}', PageController::class . '@handleDelete')->name('admin.pages.delete.post');
-    
-                // Einstellungen
-                $protectedRouter->get('/settings', SettingsController::class . '@showForm')->name('admin.settings');
-                $protectedRouter->post('/settings', SettingsController::class . '@handleForm')->name('admin.settings.post');
-    
-                // Blog
-                $protectedRouter->get('/blog', BlogController::class . '@listPosts')->name('admin.blog.list');
-                $protectedRouter->get('/blog/edit/{id:\d+}', BlogController::class . '@showEditForm')->name('admin.blog.edit');
-                $protectedRouter->post('/blog/edit/{id:\d+}', BlogController::class . '@handleEditForm')->name('admin.blog.edit.post');
-            }); // Ende der Middleware-Gruppe
-    
-        }); // Ende der /admin Hauptgruppe
-    
-        return $router;
-    }
-
     public function getContainer(): Node
     {
         return $this->adminContainer;
@@ -276,11 +217,6 @@ class MarquesAdmin
 
         if (!defined('MARQUES_ROOT_DIR')) exit('Direkter Zugriff ist nicht erlaubt.');
 
-
-        $adminRouter = $this->adminContainer->get(AdminRouter::class);
-        $this->defineAdminRoutes($adminRouter);
-
-
         $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
         $basePath = '';
         $requestPath = str_replace($basePath, '', $requestPath);
@@ -288,11 +224,21 @@ class MarquesAdmin
         $isAdminPath = strpos($requestPath, MARQUES_ADMIN_DIR) === 0;
         $loginPath = MARQUES_ADMIN_DIR . '/login';
 
+        /*
         if ($isAdminPath && $requestPath !== $loginPath && !$this->Service->isLoggedIn()) {
             $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
             $loginUrl = $scheme . '://' . $host . $basePath . MARQUES_ADMIN_DIR . '/login';
     
+            header('Location: ' . $loginUrl, true, 302);
+            exit;
+        }
+*/
+        if ($isAdminPath && strpos($requestPath, $loginPath) !== 0 && !$this->Service->isLoggedIn()) {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $loginUrl = $scheme . '://' . $host . $basePath . MARQUES_ADMIN_DIR . '/login';
+
             header('Location: ' . $loginUrl, true, 302);
             exit;
         }
@@ -318,6 +264,11 @@ class MarquesAdmin
             $adminRouter = $this->adminContainer->get(AdminRouter::class);
             
             // Stelle sicher, dass die erforderlichen Routen vorhanden sind
+            if (method_exists($adminRouter, 'defineRoutes')) {
+                $adminRouter->defineRoutes();
+            }
+            
+            // Prüfe auf erforderliche Routen
             if (method_exists($adminRouter, 'ensureRoutes')) {
                 $adminRouter->ensureRoutes();
             }

@@ -32,7 +32,7 @@ class Middleware {
             }
             
             // Bei normalen Anfragen: Auf Login-Seite umleiten
-            $loginUrl = MARQUES_ADMIN_DIR . '/login';
+            $loginUrl = '/admin/login';
             
             // Optional: Ursprüngliche URL als Redirect-Parameter mitgeben
             $returnUrl = urlencode($request->getPath());

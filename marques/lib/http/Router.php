@@ -195,53 +195,58 @@ class Router {
      * Verarbeitet eingehende Requests - Hauptmethode des Routers.
      */
     public function dispatch(?Request $request = null): mixed {
-        $this->ensureRoutesLoaded();
-        $request = $request ?? $this->createRequestFromGlobals();
-    
-        // Kern-Pipeline definieren
-        $pipeline = function(Request $req, array $params = []) {
-            $matchResult = $this->findMatchingRoute($req);
-            
-            if (!$matchResult) {
-                throw new RuntimeException(
-                    "Seite nicht gefunden [" . $req->getMethod() . ": " . 
-                    SafetyXSS::escapeOutput($req->getPath()) . "]", 
-                    404
-                );
-            }
-            
-            $matchedRoute = $matchResult['route'];
-            $params = $matchResult['params'] ?? [];
-    
-            // Parameter validieren
-            if (!empty($matchedRoute['options']['schema']) && 
-                !$this->validateParameters($params, $matchedRoute['options']['schema'])) {
-                throw new InvalidArgumentException(
-                    "Ungültige Parameter für Route '" . $matchedRoute['pattern'] . "'.", 
-                    400
-                );
-            }
-    
-            // Handler-Ausführung definieren
-            $handlerExecution = function(Request $finalReq, array $finalParams = []) use ($matchedRoute) {
-                return $this->executeHandler($matchedRoute['handler'], $finalReq, $finalParams);
+        try {
+            $this->ensureRoutesLoaded();
+            $request = $request ?? $this->createRequestFromGlobals();
+        
+            // Kern-Pipeline definieren
+            $pipeline = function(Request $req, array $params = []) {
+                $matchResult = $this->findMatchingRoute($req);
+                
+                if (!$matchResult) {
+                    throw new RuntimeException(
+                        "Seite nicht gefunden [" . $req->getMethod() . ": " . 
+                        SafetyXSS::escapeOutput($req->getPath()) . "]", 
+                        404
+                    );
+                }
+                
+                $matchedRoute = $matchResult['route'];
+                $params = $matchResult['params'] ?? [];
+        
+                // Parameter validieren
+                if (!empty($matchedRoute['options']['schema']) && 
+                    !$this->validateParameters($params, $matchedRoute['options']['schema'])) {
+                    throw new InvalidArgumentException(
+                        "Ungültige Parameter für Route '" . $matchedRoute['pattern'] . "'.", 
+                        400
+                    );
+                }
+        
+                // Handler-Ausführung definieren
+                $handlerExecution = function(Request $finalReq, array $finalParams = []) use ($matchedRoute) {
+                    return $this->executeHandler($matchedRoute['handler'], $finalReq, $finalParams);
+                };
+        
+                // Middleware anwenden oder direkt ausführen
+                if (!empty($matchedRoute['options']['middleware'])) {
+                    $routeMiddlewareChain = $this->buildMiddlewareChain(
+                        $handlerExecution, 
+                        $matchedRoute['options']['middleware']
+                    );
+                    return $routeMiddlewareChain($req, $params);
+                } else {
+                    return $handlerExecution($req, $params);
+                }
             };
-    
-            // Middleware anwenden oder direkt ausführen
-            if (!empty($matchedRoute['options']['middleware'])) {
-                $routeMiddlewareChain = $this->buildMiddlewareChain(
-                    $handlerExecution, 
-                    $matchedRoute['options']['middleware']
-                );
-                return $routeMiddlewareChain($req, $params);
-            } else {
-                return $handlerExecution($req, $params);
-            }
-        };
-    
-        // Globale Middleware + Kern-Pipeline ausführen
-        $globalChain = $this->buildMiddlewareChain($pipeline, $this->globalMiddleware);
-        return $globalChain($request, []);
+        
+            // Globale Middleware + Kern-Pipeline ausführen
+            $globalChain = $this->buildMiddlewareChain($pipeline, $this->globalMiddleware);
+            return $globalChain($request, []);
+        } catch (RuntimeException $e) {
+            error_log("Router Dispatch Error: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**

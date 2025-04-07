@@ -47,18 +47,47 @@ class Router extends AppRouter
      */
     public function defineRoutes(): self
     {
-        // Login / Logout (kein Auth-Schutz)
-        $this->get('/login', AuthController::class . '@showLoginForm')->name('admin.login');
-        $this->post('/login', AuthController::class . '@handleLogin')->name('admin.login.post');
-        $this->get('/logout', AuthController::class . '@logout')->name('admin.logout');
-
-        $Middleware = new Middleware($this->container->get(Service::class));
-
-        $this->group(['middleware' => [$Middleware]], function(Router $router) {
+        // Admin-Middleware
+        $authMiddleware = new Middleware($this->container->get(Service::class));
+        
+        // CSRF-Middleware (nur für POST-Anfragen)
+        $csrfMiddleware = function(Request $req, array $params, callable $next) {
+            if ($req->getMethod() === 'POST') {
+                $postData = $req->getAllPost();
+                $token = $postData['csrf_token'] ?? '';
+                if (!$this->container->get(Service::class)->validateCsrfToken($token)) {
+                    throw new \RuntimeException("CSRF-Token validation failed", 403);
+                }
+            }
+            return $next($req, $params);
+        };
+        
+        // WICHTIG: Alle URLs mit absolutem Pfad beginnend mit "/admin"
+        
+        // Login/Logout-Routen (ohne Auth-Middleware)
+        $this->get('/admin/login', AuthController::class . '@showLoginForm')->name('admin.login');
+        $this->post('/admin/login', AuthController::class . '@handleLogin', [
+            'middleware' => [$csrfMiddleware]
+        ])->name('admin.login.post');
+        $this->get('/admin/logout', AuthController::class . '@logout')->name('admin.logout');
+        
+        // Root-Admin-Routen mit Auth-Middleware
+        $this->get('/admin', DashboardController::class . '@index', [
+            'middleware' => [$authMiddleware]
+        ])->name('admin.home');
+        
+        $this->get('/admin/', DashboardController::class . '@index', [
+            'middleware' => [$authMiddleware]
+        ])->name('admin.home.slash');
+        
+        // Gruppe für alle weiteren Admin-Routen
+        $this->group([
+            'prefix' => '/admin', 
+            'middleware' => [$authMiddleware, $csrfMiddleware]
+        ], function(Router $router) {
             // Dashboard
             $router->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard');
-            $router->get('/', DashboardController::class . '@index')->name('admin.home');
-
+            
             // Seiten
             $router->get('/pages', PageController::class . '@list')->name('admin.pages.list');
             $router->get('/pages/add', PageController::class . '@showAddForm')->name('admin.pages.add');
