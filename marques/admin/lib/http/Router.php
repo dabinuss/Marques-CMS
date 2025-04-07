@@ -106,6 +106,25 @@ class Router extends AppRouter
             $router->post('/blog/edit/{id}', BlogController::class . '@handleEditForm')->name('admin.blog.edit.post');
         });
 
+        $this->get('/admin/assets/{path:.*}', function(Request $req, array $params) {
+            $filePath = MARQUES_ADMIN_DIR . '/assets/' . $params['path'];
+            if (file_exists($filePath)) {
+                $extension = pathinfo($filePath, PATHINFO_EXTENSION);
+                $contentTypes = [
+                    'css' => 'text/css',
+                    'js' => 'application/javascript',
+                    // andere MIME-Typen nach Bedarf...
+                ];
+                $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+                header('Content-Type: ' . $contentType);
+                readfile($filePath);
+                exit;
+            }
+            http_response_code(404);
+            echo "File not found";
+            exit;
+        })->name('admin.assets');
+
         return $this;
     }
 

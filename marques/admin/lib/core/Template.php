@@ -19,6 +19,7 @@ class Template extends AppTemplate {
     protected string $layoutFile = 'layout.phtml'; // Standard-Layout-Datei
     protected Helper $helper;
     protected Router $adminRouter;
+    protected SafetyXSS $safetyXSS; // Sicherheitstools für XSS-Schutz
 
     // Cache für Dateiexistenz (kann bleiben)
     protected static array $fileExistenceCache = [];
@@ -32,12 +33,14 @@ class Template extends AppTemplate {
         Cache $cache,
         Helper $helper,
         Router $adminRouter,
+        SafetyXSS $safetyXSS = null, // Sicherheitstools für XSS-Schutz
         string $templateDir = null // Optionaler Parameter
     ) {
         $this->templateDir = $templateDir ?? $appPath->getPath('admin_template');
         $this->layoutFile = rtrim($this->templateDir, '/') . '/' . $this->layoutFile;
         $this->helper = $helper;
         $this->adminRouter = $adminRouter;
+        $this->safetyXSS = $safetyXSS; // Sicherheitstools für XSS-Schutz
     }
 
     /**
@@ -49,74 +52,84 @@ class Template extends AppTemplate {
      * @throws \Exception Falls die View- oder Layout-Datei nicht gefunden wird.
      */
     public function render(array $vars = [], string $templateKey = 'dashboard'): void {
-
-        $baseVars = [
-            'helper' => $this->helper,
-            'router' => $this->adminRouter, // Router im AppTemplate verfügbar machen
-            'is_admin' => true
-        ];
-
-        $vars = array_merge($baseVars, $vars);
-        $safeVars = $this->sanitizeVariables($vars);
-
-        // AppTemplate-Schlüssel validieren
-        if (!preg_match('/^[a-z0-9_-]+$/i', $templateKey)) {
-            throw new \InvalidArgumentException("Ungültiger AppTemplate-Schlüssel: " . htmlspecialchars($templateKey));
-        }
-        
-        // View-Datei-Pfad erstellen
-        $viewFile = rtrim($this->templateDir, '/') . '/' . $templateKey . '.phtml';
-
-        // Prüfe, ob View-Datei existiert
-        if (!$this->fileExistsCached($viewFile)) {
-            throw new \RuntimeException("Admin View-Datei nicht gefunden: " . htmlspecialchars($viewFile));
-        }
-        
-        // Prüfe, ob Layout-Datei existiert
-        $layoutExists = $this->fileExistsCached($this->layoutFile);
-
-        // --- Rendern des spezifischen Views ---
-        ob_start();
         try {
-            // Variablen für den View extrahieren
-            extract($safeVars, EXTR_SKIP);
+            $baseVars = [
+                'helper' => $this->helper,
+                'router' => $this->adminRouter, // Router im AppTemplate verfügbar machen
+                'safetyXSS' => $this->safetyXSS, // Sicherheitstools für XSS-Schutz
+                'is_admin' => true
+            ];
+    
+            $vars = array_merge($baseVars, $vars);
+            $safeVars = $this->sanitizeVariables($vars);
+    
+            // AppTemplate-Schlüssel validieren
+            if (!preg_match('/^[a-z0-9_-]+$/i', $templateKey)) {
+                throw new \InvalidArgumentException("Ungültiger AppTemplate-Schlüssel: " . htmlspecialchars($templateKey));
+            }
             
-            // View einbinden
-            include $viewFile;
+            // View-Datei-Pfad erstellen
+            $viewFile = rtrim($this->templateDir, '/') . '/' . $templateKey . '.phtml';
+    
+            // Prüfe, ob View-Datei existiert
+            if (!$this->fileExistsCached($viewFile)) {
+                throw new \RuntimeException("Admin View-Datei nicht gefunden: " . htmlspecialchars($viewFile));
+            }
             
-        } catch (\Throwable $e) {
-            ob_end_clean();
-            throw new \RuntimeException("Fehler beim Rendern der View '{$templateKey}': " . $e->getMessage(), 0, $e);
-        }
-        
-        $contentForLayout = ob_get_clean();
-
-        // --- Rendern des Layouts, falls vorhanden ---
-        if ($layoutExists) {
+            // Prüfe, ob Layout-Datei existiert
+            $layoutExists = $this->fileExistsCached($this->layoutFile);
+    
+            // Gesamte Ausgabe in einem Buffer halten
+            ob_start();
+            
+            // --- Rendern des spezifischen Views ---
             ob_start();
             try {
-                // Content-Variable für das Layout hinzufügen
-                $safeVars['content'] = $contentForLayout;
-                
-                // Variablen für das Layout extrahieren
+                // Variablen für den View extrahieren
                 extract($safeVars, EXTR_SKIP);
                 
-                // Layout einbinden
-                include $this->layoutFile;
+                // View einbinden
+                include $viewFile;
                 
-                // Ausgabe senden
-                echo ob_get_clean();
-                
+                $contentForLayout = ob_get_clean();
             } catch (\Throwable $e) {
-                ob_end_clean();
-                error_log("Fehler beim Rendern des Admin-Layouts: " . $e->getMessage());
-                
-                // Fallback: Nur den View-Inhalt ausgeben
+                ob_end_clean(); // View-Buffer leeren
+                throw new \RuntimeException("Fehler beim Rendern der View '{$templateKey}': " . $e->getMessage(), 0, $e);
+            }
+    
+            // --- Rendern des Layouts, falls vorhanden ---
+            if ($layoutExists) {
+                try {
+                    // Content-Variable für das Layout hinzufügen
+                    $safeVars['content'] = $contentForLayout;
+                    
+                    // Variablen für das Layout extrahieren
+                    extract($safeVars, EXTR_SKIP);
+                    
+                    // Layout einbinden
+                    include $this->layoutFile;
+                } catch (\Throwable $e) {
+                    // Fehler beim Layout-Rendering
+                    ob_clean(); // Gesamtbuffer leeren
+                    echo $contentForLayout; // Nur den View ohne Layout anzeigen
+                    error_log("Fehler beim Rendern des Admin-Layouts: " . $e->getMessage());
+                }
+            } else {
+                // Kein Layout vorhanden, nur den View-Inhalt ausgeben
                 echo $contentForLayout;
             }
-        } else {
-            // Kein Layout vorhanden, nur den View-Inhalt ausgeben
-            echo $contentForLayout;
+            
+            // Gesamtausgabe ausgeben
+            ob_end_flush();
+            
+        } catch (\Throwable $e) {
+            // Alle noch offenen Buffer leeren
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            
+            // Fehler weiterwerfen für zentrale Fehlerbehandlung
+            throw $e;
         }
     }
 

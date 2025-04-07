@@ -18,6 +18,7 @@ use Marques\Http\Request;
 use Marques\Service\PageManager;
 use Marques\Service\BlogManager; 
 use Marques\Data\MediaManager; 
+use Marques\Util\SafetyXSS;
 
 // --- Admin spezifische Klassen ---
 use Admin\Http\Router as AdminRouter;
@@ -73,7 +74,8 @@ class MarquesAdmin
                 $container->get(Path::class),
                 $container->get(Cache::class),
                 $container->get(Helper::class),
-                $container->get(AdminRouter::class) // AdminRouter ist jetzt verfügbar
+                $container->get(AdminRouter::class), // AdminRouter ist jetzt verfügbar
+                $container->get(SafetyXSS::class), // Sicherheitstools für XSS-Schutz
             );
         });
 

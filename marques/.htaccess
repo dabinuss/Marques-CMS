@@ -3,6 +3,11 @@ RewriteEngine On
 RewriteBase /
 
 # ADMIN-BEREICH - Diese Regel ZUERST platzieren!
+# Ausnahme für statische Dateien im Admin-Bereich
+RewriteCond %{REQUEST_URI} ^/admin/assets/.*\.(css|js|jpe?g|png|gif|ico|svg|woff2?|ttf|eot)$
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
 # Erfasst sowohl /admin als auch /admin/ und weitere Unterpfade
 #RewriteRule ^admin(/.*)?$ admin/index.php [L]
 RewriteCond %{REQUEST_URI} ^/admin/?(.*)$
