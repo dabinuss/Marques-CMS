@@ -36,15 +36,20 @@ class AuthController
         // CSRF-Token generieren
         $csrf_token = $this->service->generateCsrfToken();
 
+        // Überprüfen, ob der Standard-Admin-Zugang angezeigt werden soll
+        // Hier könnten wir eine Konfiguration überprüfen oder auf Basis anderer Bedingungen entscheiden
+        $showAdminDefaultPassword = $this->checkIfShouldShowDefaultCredentials();
+
         // Daten für das Login-Template zusammenstellen
         $viewData = [
             'page_title' => 'Admin Login',
             'csrf_token' => $csrf_token,
-            'error'      => '',
-            'username'   => ''
+            'error' => '',
+            'username' => '',
+            'showAdminDefaultPassword' => $showAdminDefaultPassword
         ];
 
-        // Rendern des Login-Views (z.B. admin/lib/templates/login.phtml)
+        // Rendern des Login-Views
         $this->template->render($viewData, 'login');
     }
 
@@ -58,8 +63,9 @@ class AuthController
             $viewData = [
                 'page_title' => 'Admin Login',
                 'csrf_token' => $this->service->generateCsrfToken(),
-                'error'      => $error,
-                'username'   => htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8')
+                'error' => $error,
+                'username' => htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'),
+                'showAdminDefaultPassword' => $this->checkIfShouldShowDefaultCredentials()
             ];
             $this->template->render($viewData, 'login');
             return;
@@ -87,11 +93,33 @@ class AuthController
             $viewData = [
                 'page_title' => 'Admin Login',
                 'csrf_token' => $this->service->generateCsrfToken(),
-                'error'      => $error,
-                'username'   => htmlspecialchars($username, ENT_QUOTES, 'UTF-8')
+                'error' => $error,
+                'username' => htmlspecialchars($username, ENT_QUOTES, 'UTF-8'),
+                'showAdminDefaultPassword' => $this->checkIfShouldShowDefaultCredentials()
             ];
             $this->template->render($viewData, 'login');
         }
+    }
+
+    /**
+     * Prüft, ob die Standard-Anmeldedaten angezeigt werden sollen.
+     */
+    private function checkIfShouldShowDefaultCredentials(): bool {
+        // Beispielimplementierung: Prüfe, ob es sich um eine neue Installation handelt 
+        // oder ob der Standard-Admin-Account existiert und noch das Standard-Passwort hat
+        
+        // Du könntest hier eine Konfigurationsdatei prüfen
+        // oder den Datenbankstatus überprüfen (z.B. existieren Benutzer)
+        
+        // Beispiel: Angenommen, es gibt eine Konfigurationsdatei oder eine Datenbanktabelle
+        // die anzeigt, ob das CMS frisch installiert wurde
+       // $isNewInstallation = $this->helper->isNewInstallation() ?? false;
+        $isNewInstallation = false;
+        
+        return $isNewInstallation;
+        
+        // Alternativ, wenn diese Methode derzeit nicht implementiert werden kann:
+        // return false; // standardmäßig ausblenden
     }
 
     /**
