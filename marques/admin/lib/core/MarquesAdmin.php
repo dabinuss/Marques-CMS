@@ -156,7 +156,8 @@ class MarquesAdmin
             return new AuthController(
                 $container->get(AdminTemplate::class),
                 $container->get(Service::class),
-                $resolve(Helper::class)
+                $resolve(Helper::class),
+                $resolve(AdminRouter::class)
             );
         });
 
@@ -190,50 +191,59 @@ class MarquesAdmin
     /**
      * Definiert die Routen für den Admin-Bereich.
      */
-    private function defineAdminRoutes(AppRouter $router): AppRouter
+    private function defineAdminRoutes(AdminRouter $router): AdminRouter // Typ-Hint zu AdminRouter ändern
     {
-        // Login / Logout (kein Auth-Schutz)
-        $router->get('/login', AuthController::class . '@showLoginForm')->name('admin.login');
-        $router->post('/login', AuthController::class . '@handleLogin')->name('admin.login.post');
-        $router->get('/logout', AuthController::class . '@logout')->name('admin.logout');
-
-        // Geschützte Routen mit Middleware
-        $Middleware = new Middleware($this->adminContainer->get(Service::class));
-
-        $csrfMiddleware = function(Request $req, array $params, callable $next) {
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $token = $_POST['csrf_token'] ?? '';
-                if (!$this->Service->validateCsrfToken($token)) {
-                    throw new UnexpectedValueException("CSRF-Token validation failed", 403);
+        $adminBase = rtrim(MARQUES_ADMIN_DIR, '/'); // Hole den Admin-Pfad (z.B. /admin)
+    
+        $router->group(['prefix' => $adminBase], function(AdminRouter $adminRouterGroup) { // Hauptgruppe für /admin
+    
+            // --- Routen OHNE Auth-Schutz ---
+            $adminRouterGroup->get('/login', AuthController::class . '@showLoginForm')->name('admin.login');
+            $adminRouterGroup->post('/login', AuthController::class . '@handleLogin')->name('admin.login.post');
+            $adminRouterGroup->get('/logout', AuthController::class . '@logout')->name('admin.logout');
+    
+            // --- Geschützte Routen mit Middleware ---
+            $Middleware = new Middleware($this->adminContainer->get(Service::class));
+            $csrfMiddleware = function(Request $req, array $params, callable $next) {
+                if ($req->getMethod() === 'POST') {
+                    // Korrekte Methode zum Abrufen von POST-Daten verwenden
+                    $postData = $req->getAllPost(); // <-- KORRIGIERT
+                    $token = $postData['csrf_token'] ?? '';
+                    if (!$this->Service->validateCsrfToken($token)) {
+                        throw new UnexpectedValueException("CSRF-Token validation failed", 403);
+                    }
                 }
-            }
-            return $next($req, $params);
-        };
-
-        $router->group(['middleware' => [$Middleware, $csrfMiddleware]], function(AdminRouter $router) 
-        {
-            // Dashboard
-            $router->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard');
-            $router->get('/', DashboardController::class . '@index')->name('admin.dashboard');
+                return $next($req, $params);
+            };
     
-            // Seiten
-            $router->get('/pages', PageController::class . '@list')->name('admin.pages.list');
-            $router->get('/pages/add', PageController::class . '@showAddForm')->name('admin.pages.add');
-            $router->post('/pages/add', PageController::class . '@handleAddForm')->name('admin.pages.add.post');
-            $router->get('/pages/edit/{id:\d+}', PageController::class . '@showEditForm')->name('admin.pages.edit');
-            $router->post('/pages/edit/{id:\d+}', PageController::class . '@handleEditForm')->name('admin.pages.edit.post');
-            $router->post('/pages/delete/{id:\d+}', PageController::class . '@handleDelete')->name('admin.pages.delete.post');
+            // Untergruppe für geschützte Routen (Pfade sind relativ zu /admin)
+            $adminRouterGroup->group(['middleware' => [$Middleware, $csrfMiddleware]], function(AdminRouter $protectedRouter) {
+                // Dashboard
+                // Die Route für den Admin-Root-Pfad (/admin) sollte einen leeren String als Pattern haben
+                $protectedRouter->get('', DashboardController::class . '@index')->name('admin.home'); // <-- Wichtig: Leerer String für /admin/
+                $protectedRouter->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard'); // Alias, falls benötigt
     
-            // Einstellungen
-            $router->get('/settings', SettingsController::class . '@showForm')->name('admin.settings');
-            $router->post('/settings', SettingsController::class . '@handleForm')->name('admin.settings.post');
+                // Seiten
+                $protectedRouter->get('/pages', PageController::class . '@list')->name('admin.pages.list');
+                $protectedRouter->get('/pages/add', PageController::class . '@showAddForm')->name('admin.pages.add');
+                $protectedRouter->post('/pages/add', PageController::class . '@handleAddForm')->name('admin.pages.add.post');
+                // Stelle sicher, dass die Regex für {id} korrekt ist
+                $protectedRouter->get('/pages/edit/{id:\d+}', PageController::class . '@showEditForm')->name('admin.pages.edit');
+                $protectedRouter->post('/pages/edit/{id:\d+}', PageController::class . '@handleEditForm')->name('admin.pages.edit.post');
+                $protectedRouter->post('/pages/delete/{id:\d+}', PageController::class . '@handleDelete')->name('admin.pages.delete.post');
     
-            // Blog
-            $router->get('/blog', BlogController::class . '@listPosts')->name('admin.blog.list');
-            $router->get('/blog/edit/{id:\d+}', BlogController::class . '@showEditForm')->name('admin.blog.edit');
-            $router->post('/blog/edit/{id:\d+}', BlogController::class . '@handleEditForm')->name('admin.blog.edit.post');
-        });
-
+                // Einstellungen
+                $protectedRouter->get('/settings', SettingsController::class . '@showForm')->name('admin.settings');
+                $protectedRouter->post('/settings', SettingsController::class . '@handleForm')->name('admin.settings.post');
+    
+                // Blog
+                $protectedRouter->get('/blog', BlogController::class . '@listPosts')->name('admin.blog.list');
+                $protectedRouter->get('/blog/edit/{id:\d+}', BlogController::class . '@showEditForm')->name('admin.blog.edit');
+                $protectedRouter->post('/blog/edit/{id:\d+}', BlogController::class . '@handleEditForm')->name('admin.blog.edit.post');
+            }); // Ende der Middleware-Gruppe
+    
+        }); // Ende der /admin Hauptgruppe
+    
         return $router;
     }
 
@@ -266,28 +276,26 @@ class MarquesAdmin
 
         if (!defined('MARQUES_ROOT_DIR')) exit('Direkter Zugriff ist nicht erlaubt.');
 
-        // --- Einfache Auth-Prüfung (Platzhalter - durch Middleware ersetzen!) ---
+
+        $adminRouter = $this->adminContainer->get(AdminRouter::class);
+        $this->defineAdminRoutes($adminRouter);
+
+
         $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
-        // Bereinige den Pfad, entferne Query-String und evtl. Basis-Verzeichnis, falls Subfolder-Installation
-        $basePath = ''; // Anpassen, falls CMS in einem Unterordner läuft
+        $basePath = '';
         $requestPath = str_replace($basePath, '', $requestPath);
 
         $isAdminPath = strpos($requestPath, MARQUES_ADMIN_DIR) === 0;
         $loginPath = MARQUES_ADMIN_DIR . '/login';
 
         if ($isAdminPath && $requestPath !== $loginPath && !$this->Service->isLoggedIn()) {
-             // Baue Login-URL korrekt zusammen (relative Pfade vermeiden)
-             $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-             $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-             // Annahme: Admin index.php liegt im MARQUES_ADMIN_DIR Pfad
-             $loginUrl = $scheme . '://' . $host . $basePath . MARQUES_ADMIN_DIR . '/index.php'; // Oder direkter Pfad zur Login-Route, falls .htaccess aktiv ist
-             // Wenn .htaccess aktiv ist und /admin/login funktioniert:
-             // $loginUrl = $scheme . '://' . $host . $basePath . MARQUES_ADMIN_DIR . '/login';
-
-             header('Location: ' . $loginUrl, true, 302); // Expliziter Redirect-Code
-             exit;
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $loginUrl = $scheme . '://' . $host . $basePath . MARQUES_ADMIN_DIR . '/login';
+    
+            header('Location: ' . $loginUrl, true, 302);
+            exit;
         }
-        // --- Ende Auth-Prüfung ---
 
         // Fehler-Reporting und Zeitzone
         $debugMode = $this->systemConfig['debug'] ?? false;
@@ -339,26 +347,63 @@ class MarquesAdmin
 
     private function handleException(\Exception $e): void
     {
-        $showDetails = ($this->systemConfig['debug'] ?? false);
-        $safeMessage = htmlspecialchars($e->getMessage(), ENT_QUOTES);
-        
+        $statusCode = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+        http_response_code($statusCode); // Status Code setzen
+    
+        // Fehler loggen (wichtig!)
         try {
-            $this->template->render([
-                'error_code' => 500,
-                'error_message' => 'Ein interner Serverfehler ist aufgetreten.',
-                'exception_details' => $showDetails ? [
-                    'message' => $safeMessage,
-                    'trace' => array_map(
-                        fn($t) => htmlspecialchars(print_r($t, true), ENT_QUOTES),
-                        $e->getTrace()
-                    )
-                ] : null
-            ], 'error');
-        } catch (\Exception $renderError) {
-            echo '<h1>500 Internal Server Error</h1>';
-            if ($showDetails) {
-                echo '<pre>' . $safeMessage . '</pre>';
-            }
+             $this->adminContainer->get(Logger::class)->error($e->getMessage(), ['exception' => $e]);
+        } catch (\Throwable $logErr) {
+             error_log("FEHLER BEIM LOGGEN in handleException: " . $logErr->getMessage());
+             error_log("Ursprünglicher Fehler: " . $e->getMessage());
+        }
+    
+    
+        echo '<h1>Fehler ' . $statusCode . '</h1>';
+        echo '<p>Ein Problem ist aufgetreten.</p>';
+        // Debug-Infos nur wenn aktiviert
+        $showDetails = ($this->systemConfig['debug'] ?? false);
+        if ($showDetails) {
+            echo '<pre>';
+            echo 'Meldung: ' . htmlspecialchars($e->getMessage()) . "\n";
+            echo 'Datei: ' . htmlspecialchars($e->getFile()) . ' (Zeile ' . $e->getLine() . ")\n";
+            echo "Trace:\n" . htmlspecialchars($e->getTraceAsString());
+            echo '</pre>';
+        }
+    
+        /* // Temporär auskommentiert:
+        try {
+             $this->template->render([
+                 'error_code' => $statusCode,
+                 'error_message' => $this->getErrorMessageForCode($statusCode), // Evtl. Helfermethode erstellen
+                 'exception_details' => $showDetails ? [
+                     'message' => htmlspecialchars($e->getMessage(), ENT_QUOTES),
+                     'trace' => array_map(
+                         fn($t) => htmlspecialchars(print_r($t, true), ENT_QUOTES),
+                         $e->getTrace()
+                     )
+                 ] : null
+             ], 'error');
+         } catch (\Exception $renderError) {
+             error_log("FEHLER BEIM RENDERN DER FEHLERSEITE: " . $renderError->getMessage());
+             // Fallback, falls das Rendern fehlschlägt
+             echo '<h1>Fehler ' . $statusCode . '</h1><p>Ein kritisches Problem ist aufgetreten, die Fehlerseite konnte nicht angezeigt werden.</p>';
+             if ($showDetails) {
+                 echo '<pre>' . htmlspecialchars($e->getMessage()) . '</pre>';
+             }
+         }
+        */
+    
+        exit; // Wichtig: Skript beenden
+    }
+    
+    // Kleine Helfermethode (optional)
+    private function getErrorMessageForCode(int $code): string {
+        switch ($code) {
+            case 404: return 'Die angeforderte Seite wurde nicht gefunden.';
+            case 403: return 'Zugriff verweigert.';
+            case 500: return 'Ein interner Serverfehler ist aufgetreten.';
+            default: return 'Ein unerwarteter Fehler ist aufgetreten.';
         }
     }
 

@@ -6,7 +6,7 @@ use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Util\Helper;
 use Marques\Core\Cache;
 use Marques\Service\ThemeManager;
-use Admin\AdminStatistics;
+use Admin\Core\Statistics;
 use Marques\Service\BlogManager;
 use Marques\Service\PageManager;
 use Marques\Data\MediaManager;
@@ -33,7 +33,7 @@ $blogManager  = $container->get(BlogManager::class);
 $mediaManager = $container->get(MediaManager::class);
 
 // Erstelle das AdminStatistics-Objekt mit allen Abhängigkeiten
-$adminStats   = $container->get(AdminStatistics::class);
+$adminStats   = $container->get(Statistics::class);
 $statsSummary = $adminStats->getAdminSummary();   // Textuelle Zusammenfassung der Statistiken
 $systemInfo   = $adminStats->getSystemInfoArray();   // Gruppierte Systeminformationen
 

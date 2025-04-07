@@ -68,12 +68,8 @@ class DashboardController
      */
     public function index(Request $request, array $params): void
     {
-        // 1. Daten sammeln und aufbereiten
-
-        // Debug-Modus aus Config holen (wird evtl. für View benötigt)
         $isDebug = $this->systemConfig['debug'] ?? false;
 
-        // Admin Statistik Daten
         $statsSummary = "Statistiken konnten nicht geladen werden.";
         $systemInfo = [];
         try {
@@ -83,13 +79,10 @@ class DashboardController
             $this->logger->error("Fehler beim Laden der Admin-Statistiken.", ['exception' => $e]);
         }
 
-        // Website Zugriffsstatistiken
         $siteStats = $this->loadSiteStatisticsInternal();
 
-        // Letzte Aktivitäten
         $recentActivity = $this->buildRecentActivityInternal();
 
-        // Cache-Daten
         $numCached = 0;
         $cacheSize = 0;
         $cacheStats = ['total_requests' => 0, 'cache_hits' => 0, 'hit_rate' => 0, 'avg_access_time' => 0];
@@ -102,19 +95,15 @@ class DashboardController
         }
         $cacheSizeFormatted = $this->helper->formatBytes($cacheSize);
 
-        // Neueste Blog-Posts (für Tabelle im Dashboard)
         $recentPostsForTable = [];
         try {
-            // Holen mit Status etc., falls benötigt und von der Methode unterstützt
             $recentPostsForTable = $this->blogManager->getAllPosts(5, 0); // Beispiel: letzer Parameter für mehr Details?
         } catch (\Exception $e) {
              $this->logger->error("Fehler beim Laden der neuesten Posts für Tabelle.", ['exception' => $e]);
         }
 
-        // Chart-Daten vorbereiten
         list($chartLabels, $chartData) = $this->prepareChartData($siteStats);
 
-        // Eingeloggter Benutzername (aus dem User-Objekt)
         $loggedInUsername = $this->userManager->getCurrentDisplayName(); // Annahme: Methode existiert
 
         // Letzter Login Zeitstempel (aus der Session holen - unsicher, besser aus DB)
@@ -138,9 +127,9 @@ class DashboardController
             'chartLabels'         => $chartLabels,
             'chartData'           => $chartData,
             'helper'              => $this->helper, // Helper für URLs etc. im Template
-            'Service'         => null, // Übergabe nicht mehr nötig, wenn Logik im Controller ist
+            'Service'             => null, // Übergabe nicht mehr nötig, wenn Logik im Controller ist
             'dbHandler'           => null, // Übergabe nicht mehr nötig
-            // CSRF Token wird nur für Formulare benötigt, nicht unbedingt global im Dashboard
+
         ];
 
         // 3. Template rendern und Daten übergeben

@@ -39,11 +39,6 @@ header("Permissions-Policy: geolocation=(), microphone=(), camera=()");
  * @subpackage admin
 */
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-ini_set('error_log', __DIR__ . '/error_log.txt');
-error_reporting(E_ALL);
-
 $rootContainer = require_once __DIR__ . '/../lib/boot/bootstrap.php';
 
 require_once MARQUES_ROOT_DIR . '/admin/lib/core/MarquesAdmin.php';

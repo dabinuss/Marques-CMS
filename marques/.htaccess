@@ -4,6 +4,8 @@ RewriteBase /
 
 # ADMIN-BEREICH - Diese Regel ZUERST platzieren!
 # Erfasst sowohl /admin als auch /admin/ und weitere Unterpfade
+#RewriteRule ^admin(/.*)?$ admin/index.php [L]
+RewriteCond %{REQUEST_URI} ^/admin/?(.*)$
 RewriteRule ^admin(/.*)?$ admin/index.php [L]
 
 # Wenn in Unterverzeichnis installiert, diese Zeile anpassen
