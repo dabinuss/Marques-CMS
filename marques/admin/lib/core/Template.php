@@ -67,15 +67,16 @@ class Template extends AppTemplate {
             ];
 
             // Füge die aktuellen Benutzerdaten hinzu, wenn wir eingeloggt sind
-            if (isset($_SESSION['marques_user'])) {
-                // Session-Daten für Benutzer verwenden
-                $userData = $_SESSION['marques_user'];
-                if (!isset($vars['username'])) {
-                    $baseVars['username'] = $userData['username'] ?? 'Admin';
-                }
-                if (!isset($vars['user'])) {
-                    $baseVars['user'] = $userData; // Das gesamte User-Array aus der Session
-                }
+            $baseVars['marques_user'] = isset($_SESSION['marques_user']) ? $_SESSION['marques_user'] : ['username' => 'Admin'];
+
+            // Falls kein separater 'username'-Eintrag vorhanden, wähle den Wert aus "marques_user"
+            if (!isset($vars['username'])) {
+                $baseVars['username'] = $baseVars['marques_user']['username'] ?? 'Admin';
+            }
+            
+            // Falls kein separater "user"-Eintrag vorhanden, übernimm den kompletten Inhalt
+            if (!isset($vars['user'])) {
+                $baseVars['user'] = $baseVars['marques_user'];
             }
 
             // Mische Basisvariablen mit den übergebenen Variablen

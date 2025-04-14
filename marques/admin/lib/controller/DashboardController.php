@@ -106,9 +106,9 @@ class DashboardController
 
         $loggedInUsername = $this->userManager->getCurrentDisplayName(); // Annahme: Methode existiert
 
-        // Letzter Login Zeitstempel (aus der Session holen - unsicher, besser aus DB)
-        // Hinweis: Session-Zugriff im Controller ist nicht ideal. Besser über Service oder User-Objekt.
-        $lastLoginTimestamp = $_SESSION['marques_user']['last_login'] ?? time(); // Fallback auf jetzt
+        $lastLoginTimestamp = isset($_SESSION['marques_user']) && isset($_SESSION['marques_user']['last_login']) 
+        ? $_SESSION['marques_user']['last_login'] 
+        : time();
 
         // 2. Daten für das Template zusammenstellen
         $viewData = [

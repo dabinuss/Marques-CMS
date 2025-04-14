@@ -277,14 +277,16 @@ class MarquesAdmin
             $routeResult = $adminRouter->processRequest();
     
             // Wenn ein Array zurückgegeben wurde, übergib es an das Template
-            if (is_array($routeResult)) {
-                $templateKey = $routeResult['template'] ?? 'dashboard';
-    
-                // Entferne den Template-Key aus den Daten
+            if (is_array($routeResult) && isset($routeResult['template'])) {
+                $templateKey = $routeResult['template'];
                 unset($routeResult['template']);
-    
-                // Template rendern
                 $this->template->render($routeResult, $templateKey);
+            } else if ($routeResult === null) {
+                // Controller hat bereits eine Aktion ausgeführt (z.B. Redirect)
+                return;
+            } else {
+                // Fehlerfall - Controller hat kein vollständiges Ergebnis zurückgegeben
+                throw new \RuntimeException('Controller hat kein Template angegeben');
             }
     
             $this->triggerEvent('after_render');
