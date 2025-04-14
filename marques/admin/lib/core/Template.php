@@ -26,6 +26,8 @@ class Template extends AppTemplate {
     protected static array $fileExistenceCacheTTL = [];
     const FILE_CACHE_TTL = 60;
 
+    protected static array $fileContentCache = [];
+
     public function __construct(
         DatabaseHandler $dbHandler,
         ThemeManager $themeManager, // Wird evtl. für Assets im Layout gebraucht
@@ -101,7 +103,12 @@ class Template extends AppTemplate {
             try {
                 // Variablen für den View extrahieren (KEIN globales Escaping mehr hier!)
                 // $templateVars enthält jetzt die Originaldaten.
-                extract($templateVars, EXTR_SKIP);
+                foreach ($templateVars as $key => $value) {
+                    // Überprüfe, ob der Schlüssel ein valider Variablenname ist
+                    if (preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $key)) {
+                        ${$key} = $value;
+                    }
+                }
 
                 // Wir fangen die Ausgabe für den View ab
                 ob_start();
@@ -123,7 +130,12 @@ class Template extends AppTemplate {
                     $templateVars['content'] = $contentForLayout;
 
                     // Variablen für das Layout extrahieren (KEIN globales Escaping mehr hier!)
-                    extract($templateVars, EXTR_SKIP);
+                    foreach ($templateVars as $key => $value) {
+                        // Überprüfe, ob der Schlüssel ein valider Variablenname ist
+                        if (preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $key)) {
+                            ${$key} = $value;
+                        }
+                    }
 
                     // Wir fangen die Layout-Ausgabe ab
                     ob_start();
@@ -174,5 +186,19 @@ class Template extends AppTemplate {
         self::$fileExistenceCacheTTL[$filePath] = $now + self::FILE_CACHE_TTL;
         
         return self::$fileExistenceCache[$filePath];
+    }
+
+    private function getCachedFileContent(string $filePath): string {
+        $currentMTime = filemtime($filePath);
+        // Cache-Key basiert auf dem Dateipfad
+        if (isset(self::$fileContentCache[$filePath])) {
+            [$cachedContent, $cachedMTime] = self::$fileContentCache[$filePath];
+            if ($cachedMTime === $currentMTime) {
+                return $cachedContent;
+            }
+        }
+        $content = file_get_contents($filePath);
+        self::$fileContentCache[$filePath] = [$content, $currentMTime];
+        return $content;
     }
 }
