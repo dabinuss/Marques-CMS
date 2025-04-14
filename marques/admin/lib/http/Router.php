@@ -108,20 +108,23 @@ class Router extends AppRouter
 
         $this->get('/admin/assets/{path:.*}', function(Request $req, array $params) {
             $filePath = MARQUES_ADMIN_DIR . '/assets/' . $params['path'];
-            if (file_exists($filePath)) {
-                $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-                $contentTypes = [
-                    'css' => 'text/css',
-                    'js' => 'application/javascript',
-                    // andere MIME-Typen nach Bedarf...
-                ];
-                $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
-                header('Content-Type: ' . $contentType);
-                readfile($filePath);
+            // Absicherung: Stelle sicher, dass der reale Pfad innerhalb des erlaubten Assets-Verzeichnisses liegt.
+            $realBase = realpath(MARQUES_ADMIN_DIR . '/assets');
+            $realFile = realpath($filePath);
+            if ($realFile === false || strpos($realFile, $realBase) !== 0) {
+                http_response_code(404);
+                echo "File not found";
                 exit;
             }
-            http_response_code(404);
-            echo "File not found";
+            
+            $extension = pathinfo($realFile, PATHINFO_EXTENSION);
+            $contentTypes = [
+                'css' => 'text/css',
+                'js' => 'application/javascript',
+            ];
+            $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+            header('Content-Type: ' . $contentType);
+            readfile($realFile);
             exit;
         })->name('admin.assets');
 

@@ -38,6 +38,7 @@ class Router {
     private array $groupStack = [];
     private bool $persistRoutes;
     private DatabaseHandler $dbHandler;
+    private array $routeMatchCache = [];
 
     /**
      * Konstruktor.
@@ -401,17 +402,23 @@ class Router {
         if (isset($this->regexCache[$cacheKey])) {
             return $this->regexCache[$cacheKey];
         }
-
+    
         $regex = preg_replace_callback('#\{(\w+)(?::([^}]+))?\}#u', function ($matches) use ($pattern, $options) {
             $paramName = $matches[1];
             $paramPattern = $matches[2] ?? ($options['params'][$paramName] ?? '[^/]+');
-
-            // Validiere Regex-Muster
+    
+            // Zusätzliche Prüfung auf übermäßige Komplexität: z.B. zu viele Quantifier
+            $quantifiers = substr_count($paramPattern, '*') + substr_count($paramPattern, '+');
+            if ($quantifiers > 5) {
+                error_log("Regex-Muster '$paramPattern' in '$pattern' zu komplex – Fallback wird verwendet.");
+                $paramPattern = '[^/]+';
+            }
+            
             try {
                 $isValidPattern = @preg_match('#^' . $paramPattern . '$#u', '') !== false;
                 if (!$isValidPattern && $paramPattern !== '[^/]+') {
                     error_log("Ungültiges Regex-Muster '$paramPattern' in '$pattern'. Verwende Fallback.");
-                    $paramPattern = '[^/]+';
+                    $paramPattern = '[^/]+'; 
                 }
             } catch (Throwable $e) {
                 error_log("Regex-Fehler: " . $e->getMessage());
@@ -420,8 +427,7 @@ class Router {
             
             return '(?P<' . $paramName . '>' . $paramPattern . ')';
         }, $pattern);
-
-        // Kompiliere mit UTF-8-Unterstützung und exakter Übereinstimmung
+    
         $compiled = '#^' . $regex . '$#u';
         $this->regexCache[$cacheKey] = $compiled;
         return $compiled;
@@ -433,28 +439,28 @@ class Router {
     private function findMatchingRoute(Request $request): ?array {
         $path = '/' . trim($request->getPath(), '/');
         $method = $request->getMethod();
-        
+    
+        // Einfache Cache-Prüfung: Schlüssel besteht aus Methode + Pfad
+        $cacheKey = $method . ':' . $path;
+        if (isset($this->routeMatchCache[$cacheKey])) {
+            return $this->routeMatchCache[$cacheKey];
+        }
+    
         // Root-Pfad Behandlung
         if (empty(trim($path, '/'))) {
             $path = '/';
             error_log("Root-Pfad '/' erkannt");
         }
         
-        error_log("Suche Route für: {$method} {$path}");
-        
-        // Doppelte Slashes korrigieren
         if (strpos($path, '//') !== false) {
             $path = preg_replace('#/{2,}#', '/', $path);
         }
         
-        // Prüfe alle Routen
         foreach ($this->routes as $route) {
-            // Methode muss übereinstimmen
             if ($method !== $route['method']) {
                 continue;
             }
             
-            // Stelle sicher, dass Regex vorhanden ist
             $regex = $route['regex'] ?? '';
             if (empty($regex)) {
                 try {
@@ -465,20 +471,18 @@ class Router {
                 }
             }
             
-            // Prüfe Übereinstimmung
             try {
                 $matched = @preg_match($regex, $path, $matches);
-                
                 if ($matched === 1) {
-                    // Parameter extrahieren (benannte Gruppen)
                     $params = array_filter($matches, function($key) {
-                        return is_string($key) && !is_numeric($key);
+                        return is_string($key);
                     }, ARRAY_FILTER_USE_KEY);
-                    
-                    return [
+                    $result = [
                         'route' => $route,
                         'params' => $params
                     ];
+                    $this->routeMatchCache[$cacheKey] = $result; // Ergebnis cachen
+                    return $result;
                 }
             } catch (Throwable $e) {
                 error_log("Match-Fehler für '{$route['pattern']}': " . $e->getMessage());
@@ -516,6 +520,7 @@ class Router {
             ];
         }
         
+        $this->routeMatchCache[$cacheKey] = null;
         return null;
     }
 
