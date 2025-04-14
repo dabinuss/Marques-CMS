@@ -16,9 +16,10 @@ class Logger {
     // Entferne die statische getInstance()-Methode.
 
     public function log(string $level, string $message, array $context = []): void {
-        $timestamp = (new \DateTime())->format('Y-m-d H:i:s');
+        $now = new \DateTime();
+        $timestamp = $now->format('Y-m-d H:i:s');
         $formattedEntry = $this->formatLogEntry($timestamp, $level, $message, $context);
-        $logFile = $this->logDir . '/marques_' . (new \DateTime())->format('Y-m-d') . '.log';
+        $logFile = $this->logDir . '/marques_' . $now->format('Y-m-d') . '.log';
         file_put_contents($logFile, $formattedEntry, FILE_APPEND);
     }
     
