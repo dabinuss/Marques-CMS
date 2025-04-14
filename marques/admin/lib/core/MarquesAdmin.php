@@ -164,13 +164,9 @@ class MarquesAdmin
             );
         });
 
-        $this->adminContainer->register(AuthController::class, function(Node $container) use ($resolve) {
-            return new AuthController(
-                $container->get(AdminTemplate::class),
-                $container->get(Service::class),
-                $resolve(Helper::class),
-                $resolve(AdminRouter::class)
-            );
+        $this->adminContainer->register(AuthController::class, function(Node $container) {
+            // Neuer Ansatz: Übergebe den Container an den Controller
+            return new AuthController($container);
         });
 
         $this->adminContainer->register(PageController::class, function(Node $container) use ($resolve) {
@@ -220,10 +216,11 @@ class MarquesAdmin
                 'cookie_samesite' => 'Strict',
                 'use_strict_mode' => true
             ]);
-            
-            if (empty($_SESSION['csrf_token'])) {
-                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-            }
+        }
+        
+        // Generiere immer einen CSRF-Token (oder stelle sicher, dass einer existiert)
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
     }
 
@@ -231,6 +228,8 @@ class MarquesAdmin
     {
         // Starte ein Output-Buffer
         ob_start();
+
+        $this->startSession();
 
         // Request-Path + volle URI holen
         $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
@@ -276,35 +275,84 @@ class MarquesAdmin
             // Anfrage verarbeiten
             $routeResult = $adminRouter->processRequest();
     
-            // Wenn ein Array zurückgegeben wurde, übergib es an das Template
-            if (is_array($routeResult) && isset($routeResult['template'])) {
+            // Response verarbeiten
+            if ($routeResult instanceof \Marques\Http\Response\ViewResponse) {
+
+                try {
+                    // Versuchen wir dashboard als Fallback-Template
+                    $this->template->render([
+                        'username' => $_SESSION['marques_user']['username'] ?? 'Gast',
+                        'title' => 'Administration',
+                        'content' => 'Willkommen im Administrationsbereich. Bitte melden Sie sich an.',
+                        // Ggf. weitere benötigte Variablen
+                    ], 'dashboard');  // Versuche, ein bekanntes Admin-Template zu verwenden
+                } catch (\Exception $templateEx) {
+                    // Falls dashboard-Template auch nicht existiert, versuchen wir login
+                    try {
+                        $this->template->render([
+                            'username' => $_SESSION['marques_user']['username'] ?? '',
+                            'title' => 'Admin Login',
+                            // Ggf. weitere benötigte Variablen für Login
+                        ], 'login');
+                    } catch (\Exception $loginEx) {
+                        // Letzter Versuch: Direkte Ausgabe, wenn kein Template funktioniert
+                        echo '<!DOCTYPE html><html><head><title>Admin</title></head><body>';
+                        echo '<h1>Administration</h1>';
+                        echo '<p>Es gab ein Problem beim Laden der Administrationsseite.</p>';
+                        echo '<p>Bitte kontaktieren Sie den Systemadministrator.</p>';
+                        echo '</body></html>';
+                        
+                        // Logge den Fehler
+                        error_log("Fehler beim Laden der Admin-Templates: " . $templateEx->getMessage());
+                        error_log("Login-Template-Fehler: " . $loginEx->getMessage());
+                    }
+                }
+            } elseif ($routeResult instanceof \Marques\Http\Response) {
+                // Andere Response-Objekte normal ausführen
+                $routeResult->execute();
+            } elseif (is_array($routeResult) && isset($routeResult['template'])) {
+                // Rückwärtskompatibilität: Array mit Template-Key
                 $templateKey = $routeResult['template'];
                 unset($routeResult['template']);
                 $this->template->render($routeResult, $templateKey);
-            } else if ($routeResult === null) {
-                // Controller hat bereits eine Aktion ausgeführt (z.B. Redirect)
-                return;
+            } elseif ($routeResult === null) {
+                // Controller hat bereits Output generiert (alte Methode)
+                // Nichts tun
             } else {
-                // Fehlerfall - Controller hat kein vollständiges Ergebnis zurückgegeben
-                throw new \RuntimeException('Controller hat kein Template angegeben');
+                // Fehlerfall
+                throw new \RuntimeException(
+                    'Controller hat ungültiges Ergebnis zurückgegeben. Erwartet: Response-Objekt, Array mit template-Key oder null.'
+                );
             }
     
             $this->triggerEvent('after_render');
     
         } catch (\Exception $e) {
-            throw $e;
-        } finally {
-            // Sicherstellen, dass der Buffer am Ende geleert wird, falls noch aktiv
-            if (ob_get_level() > 0 && !headers_sent()) {
-                // Nur leeren, wenn keine Header gesendet wurden, um Warnungen zu vermeiden
-                // ob_end_flush(); // Oder ob_end_clean(), je nachdem, ob die Ausgabe gewünscht ist
-            } elseif (ob_get_level() > 0) {
-                 // Wenn Header gesendet wurden, aber Buffer noch aktiv ist -> Problem!
-                 error_log("[Run] WARNING: Output buffer still active but headers already sent!");
-                 ob_end_clean(); // Buffer verwerfen, um weitere Fehler zu vermeiden
+            // Zentrale Fehlerbehandlung
+            try {
+                // Versuche, einen Fehler anzuzeigen
+                echo '<!DOCTYPE html><html><head><title>Fehler</title></head><body>';
+                echo '<h1>Ein Fehler ist aufgetreten</h1>';
+                echo '<p>' . htmlspecialchars($e->getMessage()) . '</p>';
+                echo '</body></html>';
+            } catch (\Exception $displayEx) {
+                // Letzte Möglichkeit: Plain text
+                echo "FEHLER: " . $e->getMessage();
             }
-       }
-    }    
+            
+            // Logge den ursprünglichen Fehler
+            error_log("FATAL ERROR in run(): " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+        } finally {
+            // Output-Buffer-Handling
+            if (ob_get_level() > 0 && !headers_sent()) {
+                ob_end_flush();
+            } elseif (ob_get_level() > 0) {
+                error_log("[Run] WARNING: Output buffer still active but headers already sent!");
+                ob_end_clean();
+            }
+        }
+    }
 
     // Kleine Helfermethode (optional)
     private function getErrorMessageForCode(int $code): string {

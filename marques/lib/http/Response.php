@@ -6,10 +6,10 @@ namespace Marques\Http;
 /**
  * Response-Klasse für die Kapselung der Response-Daten.
  */
-class Response {
-    private string $content;
-    private int $statusCode;
-    private array $headers;
+abstract class Response {
+    protected string $content = '';
+    protected int $statusCode = 200;
+    protected array $headers = [];
     
     /**
      * Konstruktor
@@ -86,19 +86,44 @@ class Response {
     }
     
     /**
-     * Sendet die Response an den Client.
+     * Alias für withHeader (Kompatibilität mit dem neuen Pattern)
      */
-    public function send(): void {
-        // Setze HTTP-Status-Code
+    public function withHeader(string $name, string $value): self {
+        return $this->addHeader($name, $value);
+    }
+    
+    /**
+     * Alias für setStatusCode (Kompatibilität mit dem neuen Pattern)
+     */
+    public function withStatus(int $statusCode): self {
+        return $this->setStatusCode($statusCode);
+    }
+    
+    /**
+     * Sendet die HTTP-Header
+     */
+    protected function sendHeaders(): void {
+        if (headers_sent()) {
+            return;
+        }
+
         http_response_code($this->statusCode);
         
-        // Setze HTTP-Header
         foreach ($this->headers as $name => $value) {
             header("$name: $value");
         }
-        
-        // Ausgabe des Inhalts
-        echo $this->content;
-        exit;
+    }
+    
+    /**
+     * Führt die Response aus (abstrakte Methode für das neue Pattern)
+     */
+    abstract public function execute(): void;
+    
+    /**
+     * Sendet die Response an den Client (bestehende Methode)
+     * @deprecated Bitte stattdessen execute() verwenden
+     */
+    public function send(): void {
+        $this->execute();
     }
 }

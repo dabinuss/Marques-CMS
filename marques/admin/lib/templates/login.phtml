@@ -51,6 +51,10 @@
                 <i class="fas fa-sign-in-alt"></i> Anmelden
             </button>
 
+            <?php if (empty($csrf_token)): ?>
+            <div class="error-message">WARNUNG: CSRF-Token fehlt!</div>
+            <?php endif; ?>
+
             <input type="hidden" name="csrf_token" value="<?= $safetyXSS->escapeOutput($csrf_token ?? '', 'attr') ?>">
 
             <?php if (!empty($redirect ?? '')): ?>

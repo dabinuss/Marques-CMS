@@ -8,50 +8,7 @@ ini_set('display_errors', '1'); // Fehler im Browser anzeigen (Unsicher für Pro
 ini_set('display_startup_errors', '1'); // Auch Startfehler anzeigen
 error_reporting(E_ALL); // Alle Fehler melden
 
-if (session_status() === PHP_SESSION_NONE) {
-    // HTTPS-Erkennung (robust)
-    $isSecure = false;
-    if (isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on') {
-        $isSecure = true;
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') {
-        $isSecure = true; // Berücksichtigt Proxies
-    } elseif (!empty($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) === 'on') {
-        $isSecure = true; // Andere Proxy-Variante
-    } elseif (($_SERVER['SERVER_PORT'] ?? '80') == '443') {
-         $isSecure = true; // Standard-HTTPS-Port
-    }
-
-
-    // Cookie-Parameter setzen
-    session_set_cookie_params([
-        'lifetime' => 0,       // Session-Cookie (läuft ab, wenn Browser schließt)
-        'path'     => '/',      // Gültig für die gesamte Domain
-        'domain'   => $_SERVER['HTTP_HOST'] ?? '', // Domain explizit setzen (oder leer lassen für aktuelle)
-                                // Für Subdomain-übergreifend: '.yourdomain.com'
-        'secure'   => $isSecure, // WICHTIG: true bei HTTPS
-        'httponly' => true,      // Verhindert JS-Zugriff
-        'samesite' => 'Strict'   // Strengste Einstellung für Admin-Bereich empfohlen
-    ]);
-
-    // Session starten
-    if (!session_start()) {
-         // Kritischer Fehler, wenn Session nicht startet
-         error_log("FATAL: Session konnte nicht gestartet werden!");
-         // Evtl. eine einfache Fehlerseite anzeigen
-         http_response_code(500);
-         echo "Ein schwerwiegender Fehler ist aufgetreten (Session konnte nicht gestartet werden).";
-         exit;
-    }
-
-    // Loggen nach erfolgreichem Start
-    error_log("[admin/index.php] Session started. ID: " . session_id() . ", Secure: " . ($isSecure ? 'Yes' : 'No') . ", Params: " . json_encode(session_get_cookie_params()));
-
-} else {
-     error_log("[admin/index.php] Session already active. ID: " . session_id());
-}
-
 // HTTP Security Headers setzen
-
 // 👇 Nonce für CSP (Cryptographically Secure)
 $nonce = base64_encode(random_bytes(16));
 define('CSP_NONCE', $nonce);

@@ -103,7 +103,7 @@ class Service
      * Generiert einen neuen CSRF-Token und speichert ihn in der Session.
      */
     public function generateCsrfToken(): string {
-        if (!isset($_SESSION['csrf_token'])) {
+        if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
         return $_SESSION['csrf_token'];

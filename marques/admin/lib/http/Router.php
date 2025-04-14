@@ -163,4 +163,106 @@ class Router extends AppRouter
     
         return false;
     }
+
+    /**
+     * Adaptiert die processRequest-Methode für Admin-Anwendungen.
+     * Nutzt die Basisfunktionalität, verarbeitet aber das Ergebnis spezifisch für Admin-Controller.
+     */
+    public function processRequest(): mixed
+    {
+        try {
+            // Stelle sicher, dass Routen definiert sind
+            $this->defineRoutes();
+            
+            // Rufe die Eltern-Implementierung auf, um Route zu finden
+            $routeInfo = parent::processRequest();
+            
+            // Wenn das Ergebnis ein Array mit path/params ist, 
+            // müssen wir den Controller selbst aufrufen
+            if (is_array($routeInfo) && isset($routeInfo['path']) && isset($routeInfo['params'])) {
+                $request = $this->createRequestFromGlobals();
+                $path = $routeInfo['path'];
+                $params = $routeInfo['params'];
+                
+                // Da wir keinen direkten Zugriff auf $routes haben, 
+                // müssen wir unsere eigene Logik zur Controller-Auflösung verwenden
+                
+                // Pfad zu Controller-Klasse und Methode herleiten
+                // z.B. /admin/dashboard zu DashboardController@index
+                
+                // Admin-Pfad normalisieren
+                $adminPath = str_replace('/admin', '', '/' . trim($path, '/'));
+                if (empty($adminPath)) {
+                    $adminPath = '/dashboard'; // Standard-Controller für /admin
+                }
+                
+                // Controller-Klasse und Methode bestimmen
+                $segments = explode('/', trim($adminPath, '/'));
+                $controllerName = ucfirst($segments[0] ?? 'dashboard') . 'Controller';
+                $methodName = $segments[1] ?? 'index';
+                
+                // Vollständigen Controller-Klassennamen erstellen
+                $controllerClass = 'Admin\\Controller\\' . $controllerName;
+                
+                // Existiert die Klasse?
+                if (class_exists($controllerClass)) {
+                    try {
+                        // Controller instanziieren
+                        $controller = $this->container->get($controllerClass);
+                        
+                        // Controller-Methode aufrufen, wenn vorhanden
+                        if (method_exists($controller, $methodName)) {
+                            return $controller->$methodName($request, $params);
+                        }
+                    } catch (\Exception $e) {
+                        error_log("Fehler beim Instanziieren von $controllerClass: " . $e->getMessage());
+                    }
+                }
+                
+                // Alternative Auflösung: Wir kennen einige Controller aus defineRoutes
+                $knownControllers = [
+                    'dashboard' => DashboardController::class,
+                    'login' => AuthController::class,
+                    'logout' => AuthController::class,
+                    'pages' => PageController::class,
+                    'settings' => SettingsController::class,
+                    'blog' => BlogController::class
+                ];
+                
+                $segment = strtolower($segments[0] ?? 'dashboard');
+                if (isset($knownControllers[$segment])) {
+                    $controllerClass = $knownControllers[$segment];
+                    $methodName = $segments[1] ?? ($segment === 'login' ? 'showLoginForm' : 'index');
+                    
+                    try {
+                        $controller = $this->container->get($controllerClass);
+                        if (method_exists($controller, $methodName)) {
+                            return $controller->$methodName($request, $params);
+                        }
+                    } catch (\Exception $e) {
+                        error_log("Fehler beim Instanziieren von $controllerClass: " . $e->getMessage());
+                    }
+                }
+            }
+            
+            // Wenn es kein path/params Array ist oder kein Controller gefunden wurde,
+            // geben wir das ursprüngliche Ergebnis zurück
+            return $routeInfo;
+            
+        } catch (\Exception $e) {
+            error_log("Admin Router Fehler: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    /**
+     * Hilfsfunktion zum Erzeugen eines Request-Objekts aus globalen Variablen.
+     * 
+     * @return \Marques\Http\Request
+     */
+    private function createRequestFromGlobals(): \Marques\Http\Request
+    {
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        return new \Marques\Http\Request($_SERVER, $_GET, $_POST, $headers);
+    }
 }
