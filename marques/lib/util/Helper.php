@@ -77,8 +77,7 @@ class Helper {
      * @return string
      */
     public function getBaseUrl(bool $isAdmin = false): string {
-        $config = $this->getConfig();
-        $baseUrl = rtrim($config['base_url'] ?? '', '/');
+        $baseUrl = rtrim($this->getConfig()['base_url'] ?? '', '/');
         if ($isAdmin) {
             if (strpos($baseUrl, '/admin') === false) {
                 $baseUrl .= '/admin';
