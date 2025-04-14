@@ -28,77 +28,138 @@ class AuthController
      */
     public function showLoginForm(Request $request, array $params): void {
         // Falls bereits eingeloggt, direkt zum Dashboard weiterleiten
-        if ($this->service->isLoggedIn()) {
-            header('Location: ' . $this->adminRouter->getAdminUrl('admin.dashboard'));
-            exit;
+        if ($this->service->isLoggedIn()) { // Prüft jetzt OHNE Regeneration
+            // ... (Redirect-Logik wie vorher) ...
+            $this->performRedirect($this->adminRouter->getAdminUrl('admin.dashboard'), headers_sent());
         }
 
-        // CSRF-Token generieren
         $csrf_token = $this->service->generateCsrfToken();
-
-        // Überprüfen, ob der Standard-Admin-Zugang angezeigt werden soll
-        // Hier könnten wir eine Konfiguration überprüfen oder auf Basis anderer Bedingungen entscheiden
         $showAdminDefaultPassword = $this->checkIfShouldShowDefaultCredentials();
 
-        // Daten für das Login-Template zusammenstellen
+        // --- START KORREKTUR ---
+        // Greife sicher auf den 'redirect' GET-Parameter zu
+        $redirect = isset($_GET['redirect']) ? filter_var($_GET['redirect'], FILTER_SANITIZE_URL) : '';
+        // Optional: Zusätzliche Validierung, ob es ein relativer Pfad ist etc.
+        if (!empty($redirect) && (strpos($redirect, '/') !== 0 || strpos($redirect, '//') === 0)) {
+             $redirect = ''; // Ungültigen Redirect verwerfen
+        }
+        // --- ENDE KORREKTUR ---
+
         $viewData = [
             'page_title' => 'Admin Login',
             'csrf_token' => $csrf_token,
             'error' => '',
             'username' => '',
+            'redirect' => $redirect, // Bereinigten Wert verwenden
             'showAdminDefaultPassword' => $showAdminDefaultPassword
         ];
 
-        // Rendern des Login-Views
         $this->template->render($viewData, 'login');
     }
 
-    /**
-     * Verarbeitet die Login-Daten.
-     */
     public function handleLogin(Request $request, array $params): void {
         // CSRF-Token überprüfen
-        if (!isset($_POST['csrf_token']) || !$this->service->validateCsrfToken($_POST['csrf_token'])) {
-            $error = 'Ungültige oder abgelaufene Anfrage. Bitte laden Sie die Seite neu und versuchen Sie es erneut.';
-            $viewData = [
-                'page_title' => 'Admin Login',
-                'csrf_token' => $this->service->generateCsrfToken(),
-                'error' => $error,
-                'username' => htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'),
-                'showAdminDefaultPassword' => $this->checkIfShouldShowDefaultCredentials()
-            ];
-            $this->template->render($viewData, 'login');
+        $postData = $request->getAllPost(); // Besser Request-Objekt nutzen
+        if (!isset($postData['csrf_token']) || !$this->service->validateCsrfToken($postData['csrf_token'])) {
+            // ... (Fehlerbehandlung für CSRF) ...
+            $this->renderLoginWithError(
+                'Ungültige oder abgelaufene Anfrage. Bitte laden Sie die Seite neu.',
+                $postData['username'] ?? ''
+            );
             return;
         }
 
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
+        $username = trim($postData['username'] ?? '');
+        $password = $postData['password'] ?? '';
+        $redirect = isset($postData['redirect']) ? $postData['redirect'] : '';
 
-        // Login-Versuch
+        // Login-Versuch über den Service
         if (!empty($username) && !empty($password) && $this->service->login($username, $password)) {
-            session_regenerate_id(true);
-            // Neuer CSRF-Token nach erfolgreichem Login
-            $this->service->generateCsrfToken();
 
-            // Falls initialer Setup-Flow notwendig ist
-            if (isset($_SESSION['marques_user']['initial_login']) && $_SESSION['marques_user']['initial_login'] === true) {
-                header('Location: ' . $this->adminRouter->getAdminUrl('admin.user.edit') . '?username=admin&initial_setup=true');
-                exit;
+            // Leere alle Output-Buffer, bevor Header gesendet werden
+            while (ob_get_level() > 0) {
+                ob_end_clean();
             }
 
-            header('Location: ' . $this->adminRouter->getAdminUrl('admin.dashboard'));
-            exit;
+            $headersSent = headers_sent();
+
+            // Falls initialer Setup-Flow notwendig ist (Flag aus Service::login())
+            // Das Flag muss im Service::login korrekt gesetzt werden
+            if (isset($_SESSION['marques_user']['initial_login']) && $_SESSION['marques_user']['initial_login'] === true) {
+                // Annahme: Es gibt eine Route für die Benutzerbearbeitung
+                // $setupUrl = $this->adminRouter->getAdminUrl('admin.user.edit', ['id' => $userId]); // Besser ID verwenden
+                 $setupUrl = $this->adminRouter->getAdminUrl('admin.settings') . '?initial_setup=true'; // Beispiel: Zu Settings leiten
+                $this->performRedirect($setupUrl, $headersSent);
+            }
+
+            // Redirect URL verarbeiten
+            $targetUrl = $this->adminRouter->getAdminUrl('admin.dashboard'); // Standard: Dashboard
+            if (!empty($redirect)) {
+                // Sicherheitsprüfung und Loop-Verhinderung für Redirect
+                $loginUrlPath = rtrim(parse_url($this->adminRouter->getAdminUrl('admin.login'), PHP_URL_PATH), '/');
+                $redirectUrlPath = rtrim(parse_url($redirect, PHP_URL_PATH), '/');
+
+                // Nur relative Pfade innerhalb von /admin/ erlauben (oder anpassen) und nicht /admin/login
+                if ($redirectUrlPath !== $loginUrlPath && strpos($redirect, '/admin/') === 0 && substr($redirect, 0, 2) !== '//') {
+                    $targetUrl = $redirect;
+                }
+            }
+
+            // Finalen Redirect durchführen
+            $this->performRedirect($targetUrl, $headersSent);
+
         } else {
-            $error = 'Ungültiger Benutzername oder Passwort.';
-            $viewData = [
-                'page_title' => 'Admin Login',
-                'csrf_token' => $this->service->generateCsrfToken(),
-                'error' => $error,
-                'username' => htmlspecialchars($username, ENT_QUOTES, 'UTF-8'),
-                'showAdminDefaultPassword' => $this->checkIfShouldShowDefaultCredentials()
-            ];
-            $this->template->render($viewData, 'login');
+            // Login fehlgeschlagen
+            $this->renderLoginWithError(
+                'Ungültiger Benutzername oder Passwort.',
+                $username
+            );
         }
+    }
+
+    // Hilfsmethode zum Rendern des Login-Formulars mit Fehlern
+    private function renderLoginWithError(string $error, string $username): void {
+         $viewData = [
+            'page_title' => 'Admin Login',
+            'csrf_token' => $this->service->generateCsrfToken(), // Neuen Token für erneuten Versuch
+            'error' => $error,
+            'username' => htmlspecialchars($username, ENT_QUOTES, 'UTF-8'),
+            'redirect' => $_POST['redirect'] ?? $_GET['redirect'] ?? '', // Redirect beibehalten
+            'showAdminDefaultPassword' => $this->checkIfShouldShowDefaultCredentials()
+         ];
+         // Status Code 401 für fehlgeschlagenen Login setzen (optional aber gut für APIs/JS)
+         // http_response_code(401);
+         $this->template->render($viewData, 'login');
+    }
+
+     // Hilfsmethode für Redirects
+     private function performRedirect(string $url, bool $headersAlreadySent): void {
+         if ($headersAlreadySent) {
+             echo '<script>window.location.href = "' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '";</script>';
+             echo '<noscript>Weiterleitung zu <a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '</a>.</noscript>';
+         } else {
+             header('Location: ' . $url, true, 302); // Explizit 302 setzen
+         }
+         exit;
+     }
+
+    private function isValidRedirectUrl(string $url): bool {
+        // Akzeptiere nur relative URLs, die mit / beginnen
+        if (substr($url, 0, 1) !== '/') {
+            return false;
+        }
+        
+        // Verhindere Protocol-Relative URLs (//example.com)
+        if (substr($url, 0, 2) === '//') {
+            return false;
+        }
+        
+        // Optional: Beschränke auf bestimmte Pfade
+        if (substr($url, 0, 7) === '/admin/') {
+            return true;
+        }
+        
+        return false;
     }
 
     /**
@@ -126,8 +187,13 @@ class AuthController
      * Loggt den Benutzer aus und leitet zur Login-Seite weiter.
      */
     public function logout(Request $request, array $params): void {
+        // Leere alle Output-Buffer
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
         $this->service->logout();
-
+    
         // Session-Daten leeren und Session zerstören
         $_SESSION = [];
         if (ini_get("session.use_cookies")) {
@@ -143,7 +209,7 @@ class AuthController
             );
         }
         session_destroy();
-
+    
         header('Location: ' . $this->adminRouter->getAdminUrl('admin.login'));
         exit;
     }

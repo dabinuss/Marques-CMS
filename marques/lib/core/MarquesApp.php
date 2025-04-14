@@ -14,6 +14,7 @@ use Marques\Service\NavigationManager;
 use Marques\Service\Content;
 use Marques\Service\ThemeManager;
 use Marques\Service\User;
+use Marques\Util\ExceptionHandler;
 
 class MarquesApp
 {
@@ -30,6 +31,7 @@ class MarquesApp
     private FileManager $fileManager;
     private Helper $helper;
     private NavigationManager $navigation;
+    private ExceptionHandler $exceptionHandler;
 
     // Erhalte den Root-Container als Parameter
     public function __construct(Node $rootContainer)
@@ -50,8 +52,17 @@ class MarquesApp
             $this->router       = $this->appcontainer->get(Router::class);
             $this->helper       = $this->appcontainer->get(Helper::class);
             $this->navigation   = $this->appcontainer->get(NavigationManager::class);
+
+            $settingsRecord = $this->dbHandler->table('settings')
+                                              ->select(['debug'])
+                                              ->where('id', '=', 1)
+                                              ->first();
+            $debugSetting = isset($settingsRecord['debug']) ? 
+                filter_var($settingsRecord['debug'], FILTER_VALIDATE_BOOLEAN) : false;
+
+            $this->exceptionHandler = new ExceptionHandler($debugSetting, $this->logger);
+            $this->exceptionHandler->register();
         } catch (\Exception $e) {
-            // Kritische Fehler beim Start loggen und mit freundlicher Fehlermeldung beenden
             error_log("Kritischer Fehler beim Start von MarquesApp: " . $e->getMessage());
             $this->displayFatalError("Das System konnte nicht gestartet werden. Bitte kontaktieren Sie den Administrator.");
             exit(1);
@@ -409,83 +420,17 @@ HTML;
             
             // Rendering
             $this->template->render($pageDataProcessed);
-            
+
             // Nach-Rendering-Ereignis
             $this->eventManager->trigger('after_render');
         } catch (\Exception $e) {
-            // Fehlerbehandlung
-            $this->handleException($e);
+            throw $e;
         } finally {
             // Ausgabe-Pufferung abschließen, sofern noch aktiv
             if (ob_get_level() > 0) {
                 ob_end_flush();
             }
         }
-    }
-
-    /**
-     * Verbesserte Fehlerbehandlung mit korrekt formatierter Fehlermeldung
-     */
-    private function handleException(\Exception $e): void {
-        // Ausgabe-Puffer löschen für saubere Fehlerausgabe
-        if (ob_get_level() > 0) {
-            ob_clean();
-        }
-        
-        // Fehler protokollieren
-        $this->logger->error($e->getMessage(), [
-            'exception' => $e,
-            'trace' => $e->getTraceAsString(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine()
-        ]);
-        
-        // HTTP-Status-Code setzen
-        $statusCode = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
-        http_response_code($statusCode);
-        
-        // Fehlermeldung bestimmen
-        $errorTitle = $this->getErrorTitleForCode($statusCode);
-        
-        try {
-            // Debug-Modus überprüfen
-            $settingsRecord = $this->dbHandler->table('settings')
-                                            ->select(['debug'])
-                                            ->where('id', '=', 1)
-                                            ->first();
-            $debugSetting = (isset($settingsRecord['debug']) && filter_var($settingsRecord['debug'], FILTER_VALIDATE_BOOLEAN)) ? true : false;
-        } catch (\Exception $dbEx) {
-            $debugSetting = false;
-        }
-        
-        // HTML-Ausgabe für Fehlerseite
-        echo '<!DOCTYPE html><html lang="de"><head>';
-        echo '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
-        echo '<title>' . htmlspecialchars($errorTitle) . '</title>';
-        echo '<style>
-            body { font-family: sans-serif; background: #f8f9fa; color: #333; margin: 0; padding: 20px; }
-            .error-container { max-width: 800px; margin: 50px auto; background: white; border-radius: 8px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            h1 { color: #d9534f; margin-top: 0; }
-            p { line-height: 1.6; }
-            .details { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; }
-            .details pre { margin: 0; white-space: pre-wrap; }
-        </style></head><body>';
-        echo '<div class="error-container">';
-        echo '<h1>' . htmlspecialchars($errorTitle) . '</h1>';
-        
-        if ($debugSetting) {
-            echo '<p>' . htmlspecialchars($e->getMessage()) . '</p>';
-            echo '<div class="details">';
-            echo '<p><strong>Datei:</strong> ' . htmlspecialchars($e->getFile()) . ' (Zeile ' . $e->getLine() . ')</p>';
-            echo '<p><strong>Stack Trace:</strong></p>';
-            echo '<pre>' . htmlspecialchars($e->getTraceAsString()) . '</pre>';
-            echo '</div>';
-        } else {
-            echo '<p>Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Administrator.</p>';
-        }
-        
-        echo '</div></body></html>';
-        exit;
     }
     
     /**

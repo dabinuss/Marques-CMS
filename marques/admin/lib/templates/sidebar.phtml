@@ -2,6 +2,13 @@
 // Aktuelle Seite ermitteln
 $current_page = $_GET['page'] ?? '';
 
+// Helper für den Benutzernamen holen (Annahme: $user ist das Array aus der Session oder null)
+$loggedInUserName = null;
+if (isset($user) && is_array($user)) {
+    // Nimm display_name, falle zurück auf username, dann auf 'Unbekannt'
+    $loggedInUserName = $user['display_name'] ?? $user['username'] ?? 'Unbekannt';
+}
+
 ?>
 
 <aside>
@@ -14,10 +21,12 @@ $current_page = $_GET['page'] ?? '';
                 </a>
                 <!-- marques CMS -->
             </div>
+            <?php if ($loggedInUserName): // Nur anzeigen, wenn ein Benutzername vorhanden ist ?>
             <p>
-                <small>Angemeldet als:</small> 
-                <?= htmlspecialchars($user->getCurrentDisplayName()); ?>
+                <small>Angemeldet als:</small>
+                <?= htmlspecialchars($loggedInUserName); // Verwende die vorbereitete Variable ?>
             </p>
+            <?php endif; ?>
         </div>
         <nav class="nav-menu">
             <div class="nav-item">

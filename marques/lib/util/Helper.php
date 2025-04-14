@@ -276,4 +276,23 @@ class Helper {
         }
         return implode($glue, $array);
     }
+
+    /**
+     * Überprüft, ob eine Redirect-URL sicher ist.
+     *
+     * @param string $url Die zu prüfende URL
+     * @return bool True wenn die URL sicher ist
+     */
+    public function isValidRedirectUrl(string $url): bool {
+        // Prüfe, ob es sich um einen relativen Pfad handelt (beginnt mit /)
+        if (substr($url, 0, 1) === '/') {
+            // Wenn ja, prüfe ob er mit /admin beginnt
+            return substr($url, 0, 6) === '/admin';
+        }
+        
+        // Für vollständige URLs nutze die SafetyXSS-Funktionalität
+        $allowedDomains = [$_SERVER['HTTP_HOST'] ?? 'localhost'];
+        return SafetyXSS::validateUrl($url, ['http', 'https'], $allowedDomains);
+    }
+
 }

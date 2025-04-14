@@ -16,10 +16,10 @@
         </div>
         
         <?php if (!empty($error)): ?>
-            <div class="error-message"><?= htmlspecialchars($error); ?></div>
+            <div class="error-message"><?= $safetyXSS->escapeOutput($error, 'html'); ?></div>
         <?php endif; ?>
         
-        <?php if ($showAdminDefaultPassword): ?>
+        <?php if ($showAdminDefaultPassword ?? false): ?>
             <div class="info-message">
                 <i class="fas fa-info-circle"></i> Standardzugang:
                 <ul>
@@ -35,7 +35,7 @@
                 <label for="username">Benutzername</label>
                 <div class="input-icon-wrapper">
                     <span class="input-icon"><i class="fas fa-user"></i></span>
-                    <input type="text" id="username" name="username" value="<?= htmlspecialchars($username); ?>" required>
+                    <input type="text" id="username" name="username" value="<?= $safetyXSS->escapeOutput($username ?? '', 'attr'); ?>" required>
                 </div>
             </div>
             
@@ -51,7 +51,11 @@
                 <i class="fas fa-sign-in-alt"></i> Anmelden
             </button>
 
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+            <input type="hidden" name="csrf_token" value="<?= $safetyXSS->escapeOutput($csrf_token ?? '', 'attr') ?>">
+
+            <?php if (!empty($redirect ?? '')): ?>
+            <input type="hidden" name="redirect" value="<?= $safetyXSS->escapeOutput($redirect, 'attr') ?>">
+            <?php endif; ?>
         </form>
         
         <div class="login-footer">

@@ -13,19 +13,17 @@ use Marques\Core\Path;
 use Marques\Util\Helper;
 use Marques\Service\ThemeManager;
 use Marques\Service\User;
-use Marques\Http\Router as AppRouter;
-use Marques\Http\Request;
 use Marques\Service\PageManager;
 use Marques\Service\BlogManager; 
 use Marques\Data\MediaManager; 
 use Marques\Util\SafetyXSS;
+use Marques\Util\ExceptionHandler;
 
 // --- Admin spezifische Klassen ---
 use Admin\Http\Router as AdminRouter;
 use Admin\Core\Template as AdminTemplate;
 use Admin\Core\Statistics;
 use Admin\Auth\Service;
-use Admin\Auth\Middleware;
 
 // --- Controller ---
 use Admin\Controller\DashboardController;
@@ -35,8 +33,6 @@ use Admin\Controller\SettingsController;
 use Admin\Controller\BlogController;
 
 use RuntimeException;
-use InvalidArgumentException;
-use UnexpectedValueException;
 
 class MarquesAdmin
 {
@@ -45,20 +41,27 @@ class MarquesAdmin
     private Node $adminContainer;
     private Service $Service;
     private array $systemConfig = [];
+    private ExceptionHandler $exceptionHandler;
+    private Logger $logger;
 
     public function __construct(Node $rootContainer)
     {
         $this->initContainer($rootContainer);
 
         $this->dbHandler    = $this->adminContainer->get(DatabaseHandler::class);
-        $this->Service  = $this->adminContainer->get(Service::class);
+        $this->Service      = $this->adminContainer->get(Service::class);
         $this->template     = $this->adminContainer->get(AdminTemplate::class);
+        $this->logger       = $this->adminContainer->get(Logger::class);
 
         try {
             // Lade Basiskonfiguration für init()
             $this->systemConfig = $this->dbHandler->table('settings')->where('id', '=', 1)->first() ?: [];
+
+            $debugMode = $this->systemConfig['debug'] ?? false;
+            $this->exceptionHandler = new ExceptionHandler($debugMode, $this->logger);
+            $this->exceptionHandler->register();
         } catch (\Exception $e) {
-            $this->adminContainer->get(Logger::class)->error("Admin Init: Konnte Settings nicht laden.", ['exception' => $e]);
+            $this->logger->error("Admin Init: Konnte Settings nicht laden.", ['exception' => $e]);
         }
     }
 
@@ -81,16 +84,23 @@ class MarquesAdmin
 
         // Admin Authentifizierungsdienst
         $this->adminContainer->register(Service::class, function(Node $container) {
-             $securityConfig = [];
-             try {
-                 $settings = $container->get(DatabaseHandler::class)->table('settings')->select(['security'])->where('id', '=', 1)->first();
-                 $securityConfig = $settings['security'] ?? [];
-             } catch (\Exception $e) {
-                 $container->get(Logger::class)->warning("Service Init: Konnte Security-Settings nicht laden.", ['exception' => $e]);
-             }
+            $securityConfig = [];
+            try {
+                $settings = $container->get(DatabaseHandler::class)->table('settings')->select(['security'])->where('id', '=', 1)->first();
+                $securityConfig = $settings['security'] ?? [];
+            } catch (\Exception $e) {
+                $container->get(Logger::class)->warning("Service Init: Konnte Security-Settings nicht laden.", ['exception' => $e]);
+            }
             return new Service(
                 $container->get(User::class),
                 $securityConfig
+            );
+        });
+
+        $this->adminContainer->register(\Admin\Auth\Middleware::class, function(Node $container) {
+            return new \Admin\Auth\Middleware(
+                $container->get(Service::class),
+                $container->get(AdminRouter::class) // Router hier übergeben!
             );
         });
 
@@ -171,21 +181,25 @@ class MarquesAdmin
             );
         });
 
-         $this->adminContainer->register(SettingsController::class, function(Node $container) use ($resolve) {
-             return new SettingsController(
-                 $container->get(AdminTemplate::class),
-                 $resolve(DatabaseHandler::class),
-                 $resolve(Helper::class)
-             );
-         });
+        $this->adminContainer->register(SettingsController::class, function(Node $container) use ($resolve) {
+            return new SettingsController(
+                $container->get(AdminTemplate::class),
+                $resolve(DatabaseHandler::class),
+                $resolve(Helper::class)
+            );
+        });
 
-         $this->adminContainer->register(BlogController::class, function(Node $container) use ($resolve) {
-             return new BlogController(
-                 $container->get(AdminTemplate::class),
-                 $resolve(BlogManager::class),
-                 $resolve(Helper::class)
-             );
-         });
+        $this->adminContainer->register(BlogController::class, function(Node $container) use ($resolve) {
+            return new BlogController(
+                $container->get(AdminTemplate::class),
+                $resolve(BlogManager::class),
+                $resolve(Helper::class)
+            );
+        });
+
+        $this->adminContainer->register(SafetyXSS::class, function(Node $container) {
+        return new SafetyXSS();
+        });
 
          // Registriere hier weitere Controller (UserController, MediaController etc.)
     }
@@ -215,47 +229,33 @@ class MarquesAdmin
 
     public function init(): void
     {
-        $this->startSession();
+        // Starte ein Output-Buffer
+        ob_start();
 
-        if (!defined('MARQUES_ROOT_DIR')) exit('Direkter Zugriff ist nicht erlaubt.');
-
+        // Request-Path + volle URI holen
         $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
-        $basePath = '';
-        $requestPath = str_replace($basePath, '', $requestPath);
-
-        $isAdminPath = strpos($requestPath, MARQUES_ADMIN_DIR) === 0;
-        $loginPath = MARQUES_ADMIN_DIR . '/login';
-
-        /*
-        if ($isAdminPath && $requestPath !== $loginPath && !$this->Service->isLoggedIn()) {
-            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $loginUrl = $scheme . '://' . $host . $basePath . MARQUES_ADMIN_DIR . '/login';
+        $fullRequestUri = $_SERVER['REQUEST_URI'] ?? '';
     
-            header('Location: ' . $loginUrl, true, 302);
-            exit;
-        }
-*/
-        if ($isAdminPath && strpos($requestPath, $loginPath) !== 0 && !$this->Service->isLoggedIn()) {
-            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $loginUrl = $scheme . '://' . $host . $basePath . MARQUES_ADMIN_DIR . '/login';
+        // Normalisiere Admin-Path
+        $adminRegex = '#^' . preg_quote(MARQUES_ADMIN_DIR, '#') . '(/|$)#';
+        $isAdminPath = preg_match($adminRegex, $requestPath);
+    
+        // Login-/Assets-Erkennung (Login **ohne Query beachten**)
+        $loginPath = MARQUES_ADMIN_DIR . '/login';
+        $isLoginPath = rtrim($requestPath, '/') === $loginPath;
+        $isAssetsPath = strpos($requestPath, MARQUES_ADMIN_DIR . '/assets') === 0;
 
-            header('Location: ' . $loginUrl, true, 302);
-            exit;
-        }
-
-        // Fehler-Reporting und Zeitzone
+        // Fehler-/Debug-Einstellungen
         $debugMode = $this->systemConfig['debug'] ?? false;
         error_reporting($debugMode ? E_ALL : 0);
         ini_set('display_errors', $debugMode ? '1' : '0');
         date_default_timezone_set($this->systemConfig['timezone'] ?? 'UTC');
-
-        // CSRF Token in Session
+    
+        // CSRF Token initialisieren
         if (empty($_SESSION['csrf_token'])) {
-             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
-    }
+    }    
 
     public function run(): void
     {
@@ -264,99 +264,53 @@ class MarquesAdmin
     
             /** @var AdminRouter $adminRouter */
             $adminRouter = $this->adminContainer->get(AdminRouter::class);
-            
-            // Stelle sicher, dass die erforderlichen Routen vorhanden sind
+    
+            // Routen definieren
             if (method_exists($adminRouter, 'defineRoutes')) {
                 $adminRouter->defineRoutes();
             }
-            
-            // Prüfe auf erforderliche Routen
             if (method_exists($adminRouter, 'ensureRoutes')) {
                 $adminRouter->ensureRoutes();
             }
-            
-            // Verarbeite die Anfrage
+    
+            // Anfrage verarbeiten
             $routeResult = $adminRouter->processRequest();
-            
+    
             // Wenn ein Array zurückgegeben wurde, übergib es an das Template
             if (is_array($routeResult)) {
-                // Extrahiere templateKey wenn vorhanden
-                $templateKey = 'dashboard';
-                if (isset($routeResult['template'])) {
-                    $templateKey = $routeResult['template'];
-                    unset($routeResult['template']);
-                }
-                // Render the template with the route result data
+                $templateKey = $routeResult['template'] ?? 'dashboard';
+    
+                // Entferne den Template-Key aus den Daten
+                unset($routeResult['template']);
+    
+                // Template rendern
                 $this->template->render($routeResult, $templateKey);
             }
     
             $this->triggerEvent('after_render');
     
         } catch (\Exception $e) {
-            $this->handleException($e);
-            exit;
-        }
-    }
+            throw $e;
+        } finally {
+            // Sicherstellen, dass der Buffer am Ende geleert wird, falls noch aktiv
+            if (ob_get_level() > 0 && !headers_sent()) {
+                // Nur leeren, wenn keine Header gesendet wurden, um Warnungen zu vermeiden
+                // ob_end_flush(); // Oder ob_end_clean(), je nachdem, ob die Ausgabe gewünscht ist
+            } elseif (ob_get_level() > 0) {
+                 // Wenn Header gesendet wurden, aber Buffer noch aktiv ist -> Problem!
+                 error_log("[Run] WARNING: Output buffer still active but headers already sent!");
+                 ob_end_clean(); // Buffer verwerfen, um weitere Fehler zu vermeiden
+            }
+       }
+    }    
 
-    private function handleException(\Exception $e): void
-    {
-        $statusCode = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
-        http_response_code($statusCode); // Status Code setzen
-    
-        // Fehler loggen (wichtig!)
-        try {
-             $this->adminContainer->get(Logger::class)->error($e->getMessage(), ['exception' => $e]);
-        } catch (\Throwable $logErr) {
-             error_log("FEHLER BEIM LOGGEN in handleException: " . $logErr->getMessage());
-             error_log("Ursprünglicher Fehler: " . $e->getMessage());
-        }
-    
-    
-        echo '<h1>Fehler ' . $statusCode . '</h1>';
-        echo '<p>Ein Problem ist aufgetreten.</p>';
-        // Debug-Infos nur wenn aktiviert
-        $showDetails = ($this->systemConfig['debug'] ?? false);
-        if ($showDetails) {
-            echo '<pre>';
-            echo 'Meldung: ' . htmlspecialchars($e->getMessage()) . "\n";
-            echo 'Datei: ' . htmlspecialchars($e->getFile()) . ' (Zeile ' . $e->getLine() . ")\n";
-            echo "Trace:\n" . htmlspecialchars($e->getTraceAsString());
-            echo '</pre>';
-        }
-    
-        /* // Temporär auskommentiert:
-        try {
-             $this->template->render([
-                 'error_code' => $statusCode,
-                 'error_message' => $this->getErrorMessageForCode($statusCode), // Evtl. Helfermethode erstellen
-                 'exception_details' => $showDetails ? [
-                     'message' => htmlspecialchars($e->getMessage(), ENT_QUOTES),
-                     'trace' => array_map(
-                         fn($t) => htmlspecialchars(print_r($t, true), ENT_QUOTES),
-                         $e->getTrace()
-                     )
-                 ] : null
-             ], 'error');
-         } catch (\Exception $renderError) {
-             error_log("FEHLER BEIM RENDERN DER FEHLERSEITE: " . $renderError->getMessage());
-             // Fallback, falls das Rendern fehlschlägt
-             echo '<h1>Fehler ' . $statusCode . '</h1><p>Ein kritisches Problem ist aufgetreten, die Fehlerseite konnte nicht angezeigt werden.</p>';
-             if ($showDetails) {
-                 echo '<pre>' . htmlspecialchars($e->getMessage()) . '</pre>';
-             }
-         }
-        */
-    
-        exit; // Wichtig: Skript beenden
-    }
-    
     // Kleine Helfermethode (optional)
     private function getErrorMessageForCode(int $code): string {
         switch ($code) {
             case 404: return 'Die angeforderte Seite wurde nicht gefunden.';
             case 403: return 'Zugriff verweigert.';
             case 500: return 'Ein interner Serverfehler ist aufgetreten.';
-            default: return 'Ein unerwarteter Fehler ist aufgetreten.';
+            default: return 'Ein unerwarteter Fehler ist aufgetreten.2';
         }
     }
 
@@ -376,5 +330,30 @@ class MarquesAdmin
              }
         }
         return $data; // Ursprüngliche Daten zurückgeben im Fehlerfall
+    }
+
+    /**
+     * Prüft, ob eine Redirect-URL sicher ist.
+     * 
+     * @param string $url Die zu prüfende URL
+     * @return bool True, wenn die URL als sicher gilt
+     */
+    private function isValidRedirectUrl(string $url): bool {
+        // Akzeptiere nur relative URLs, die mit / beginnen
+        if (substr($url, 0, 1) !== '/') {
+            return false;
+        }
+        
+        // Verhindere Protocol-Relative URLs (//example.com)
+        if (substr($url, 0, 2) === '//') {
+            return false;
+        }
+        
+        // Optional: Beschränke auf bestimmte Pfade
+        if (substr($url, 0, 7) === '/admin/') {
+            return true;
+        }
+        
+        return false;
     }
 }

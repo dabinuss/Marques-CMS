@@ -122,9 +122,23 @@ class Service
      */
     public function regenerateSession(): void
     {
-        $oldData = $_SESSION;
-        session_regenerate_id(true);
-        $_SESSION = $oldData; // Daten migrieren
+        // Prüfen, ob eine Session aktiv ist, um Fehler zu vermeiden
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $oldData = $_SESSION; // Backup der Session-Daten
+            if (session_regenerate_id(true)) { // true = alte Session-Datei löschen
+                $_SESSION = $oldData; // Daten in die neue Session migrieren
+                // Optional: Loggen des Erfolgs
+                // error_log("Session ID regenerated successfully.");
+            } else {
+                // Optional: Loggen des Fehlers
+                // error_log("Failed to regenerate session ID.");
+                // Hier könnte man versuchen, die alten Daten wiederherzustellen, falls nötig
+                // $_SESSION = $oldData;
+            }
+        } else {
+             // Optional: Loggen, dass keine aktive Session zum Regenerieren vorhanden ist
+             // error_log("Attempted to regenerate session, but no session is active.");
+        }
     }
 
     /**
@@ -132,11 +146,13 @@ class Service
      */
     public function isLoggedIn(): bool
     {
-        if (isset($_SESSION['marques_user'])) {
-            $this->regenerateSession(); // Session-ID bei jedem Check neu generieren
-            return true;
+        // Prüfe zuerst, ob die Session-Variable überhaupt gesetzt ist.
+        if (!isset($_SESSION['marques_user']['username']) || empty($_SESSION['marques_user']['username'])) {
+             // Nicht explizit 'logged_in' prüfen, da 'username' ausreicht und in login() gesetzt wird
+            return false;
         }
-        return false;
+
+        return true; // Der Benutzer gilt als eingeloggt.
     }
 
     /**
@@ -160,60 +176,67 @@ class Service
         $ip = $this->getClientIp();
         if (!$this->checkRateLimit()) {
             $this->logLoginAttempt($username, false);
+            error_log("Login rate limit exceeded for IP: " . $ip); // Logging
             return false;
         }
-    
+
         $user = $this->userModel->getRawUserData($username);
         $validUser = $user !== null;
-        $validPassword = $validUser && (
-            ($username === 'admin' && password_verify($password, self::DEFAULT_ADMIN_PASSWORD)) ||
-            (!empty($user['password']) && password_verify($password, $user['password']))
-        );
+
+        // Prüfe Standardpasswort oder gehashtes Passwort
+        $validPassword = false;
+        if ($validUser) {
+            // Ist es der Admin mit Standardpasswort (oder erstem Login)?
+            if ($username === 'admin' && password_verify($password, self::DEFAULT_ADMIN_PASSWORD)) {
+                 // Prüfe, ob das DB-Passwort leer ist ODER first_login gesetzt ist
+                 if (empty($user['password']) || ($user['first_login'] ?? false)) {
+                      $validPassword = true;
+                      $_SESSION['marques_user_initial_login'] = true; // Flag für AuthController
+                 } else {
+                      // Admin hat schon ein eigenes Passwort, Standardpasswort ist falsch
+                      $validPassword = password_verify($password, $user['password']);
+                 }
+
+            } elseif (!empty($user['password']) && password_verify($password, $user['password'])) {
+                 // Normaler User oder Admin mit eigenem Passwort
+                 $validPassword = true;
+                 unset($_SESSION['marques_user_initial_login']); // Sicherstellen, dass Flag weg ist
+            }
+        }
+
+
         if (!$validPassword) {
             $this->logLoginAttempt($username, false);
+            error_log("Invalid password attempt for user '{$username}' from IP: " . $ip); // Logging
             return false;
         }
 
-        // Behandlung für Admin beim ersten Login (Standardpasswort)
-        if ($username === 'admin' && (empty($user['password']) || ($user['first_login'] ?? false))) {
-            if (password_verify($password, self::DEFAULT_ADMIN_PASSWORD)) { // Sicher
-                $_SESSION['marques_user'] = [
-                    'username'     => $username,
-                    'display_name' => $user['display_name'],
-                    'role'         => $user['role'],
-                    'last_login'   => time(),
-                    'initial_login'=> true
-                ];
-                $this->regenerateSession();
-                $this->generateCsrfToken();
-                $this->logLoginAttempt($username, true);
-                return true;
-            }
-            $this->logLoginAttempt($username, false);
-            return false;
-        }
-
-        if (!empty($user['password']) && !preg_match('/^\$2[ayb]\$.{56}$/', $user['password'])) {
-            error_log("Security: Unhashed password for user {$username}");
-            return false;
-        }
-    
-        // Normale Passwortprüfung
-        if (empty($user['password']) || !password_verify($password, $user['password'])) {
-            $this->logLoginAttempt($username, false);
-            return false;
-        }
-    
+        // --- Login erfolgreich ---
         $_SESSION['marques_user'] = [
             'username'     => $username,
-            'display_name' => $user['display_name'],
-            'role'         => $user['role'],
-            'last_login'   => time()
+            'display_name' => $user['display_name'] ?? $username,
+            'role'         => $user['role'] ?? 'user', // Standardrolle falls nicht gesetzt
+            'last_login'   => time(),
+            // 'last_activity' => time(), // Wird jetzt in MarquesAdmin::init gesetzt
+            'ip_address'   => $ip, // Optional für spätere Checks speichern
+            'user_agent'   => $_SERVER['HTTP_USER_AGENT'] ?? '' // Optional speichern
         ];
+
+        // Flag für initialen Login korrekt setzen/entfernen
+        if ($username === 'admin' && password_verify($password, self::DEFAULT_ADMIN_PASSWORD) && (empty($user['password']) || ($user['first_login'] ?? false))) {
+             $_SESSION['marques_user']['initial_login'] = true;
+        } else {
+             unset($_SESSION['marques_user']['initial_login']);
+        }
+
+
+        // WICHTIG: Session ID HIER nach erfolgreichem Login regenerieren!
         $this->regenerateSession();
+        $this->generateCsrfToken(); // Auch CSRF Token neu generieren
         $this->logLoginAttempt($username, true);
+        error_log("User '{$username}' logged in successfully from IP: " . $ip); // Logging
         return true;
-    }    
+    } 
 
     /**
      * Loggt den aktuell angemeldeten Benutzer aus.

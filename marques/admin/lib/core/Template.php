@@ -33,7 +33,7 @@ class Template extends AppTemplate {
         Cache $cache,
         Helper $helper,
         Router $adminRouter,
-        SafetyXSS $safetyXSS = null, // Sicherheitstools für XSS-Schutz
+        SafetyXSS $safetyXSS, // Sicherheitstools für XSS-Schutz
         string $templateDir = null // Optionaler Parameter
     ) {
         $this->templateDir = $templateDir ?? $appPath->getPath('admin_template');
@@ -53,104 +53,109 @@ class Template extends AppTemplate {
      */
     public function render(array $vars = [], string $templateKey = 'dashboard'): void {
         try {
+            // Stelle die Grundvariablen sicher, besonders username und safetyXSS
             $baseVars = [
                 'helper' => $this->helper,
                 'router' => $this->adminRouter, // Router im AppTemplate verfügbar machen
-                'safetyXSS' => $this->safetyXSS, // Sicherheitstools für XSS-Schutz
-                'is_admin' => true
+                'safetyXSS' => $this->safetyXSS, // Sicherheitstools für XSS-Schutz SIND JETZT ESSENTIELL!
+                'is_admin' => true,
+                'username' => $vars['username'] ?? 'Gast', // Standardwert für username
+                'user' => $vars['user'] ?? null,
+                // Füge hier weitere globale Admin-Template-Variablen hinzu, falls nötig
             ];
-    
-            $vars = array_merge($baseVars, $vars);
-            $safeVars = $this->sanitizeVariables($vars);
-    
-            // AppTemplate-Schlüssel validieren
+
+            // Füge die aktuellen Benutzerdaten hinzu, wenn wir eingeloggt sind
+            if (isset($_SESSION['marques_user'])) {
+                // Session-Daten für Benutzer verwenden
+                $userData = $_SESSION['marques_user'];
+                if (!isset($vars['username'])) {
+                    $baseVars['username'] = $userData['username'] ?? 'Admin';
+                }
+                if (!isset($vars['user'])) {
+                    $baseVars['user'] = $userData; // Das gesamte User-Array aus der Session
+                }
+            }
+
+            // Mische Basisvariablen mit den übergebenen Variablen
+            // $vars überschreibt $baseVars bei gleichen Schlüsseln
+            $templateVars = array_merge($baseVars, $vars);
+
+            // Sanity check für den Template-Key
             if (!preg_match('/^[a-z0-9_-]+$/i', $templateKey)) {
                 throw new \InvalidArgumentException("Ungültiger AppTemplate-Schlüssel: " . htmlspecialchars($templateKey));
             }
-            
+
             // View-Datei-Pfad erstellen
             $viewFile = rtrim($this->templateDir, '/') . '/' . $templateKey . '.phtml';
-    
-            // Prüfe, ob View-Datei existiert
+
+            // Prüfe, ob View-Datei existiert (mit Cache)
             if (!$this->fileExistsCached($viewFile)) {
                 throw new \RuntimeException("Admin View-Datei nicht gefunden: " . htmlspecialchars($viewFile));
             }
-            
-            // Prüfe, ob Layout-Datei existiert
+
+            // Prüfe, ob Layout-Datei existiert (mit Cache)
             $layoutExists = $this->fileExistsCached($this->layoutFile);
-    
-            // Gesamte Ausgabe in einem Buffer halten
-            ob_start();
-            
+
             // --- Rendern des spezifischen Views ---
-            ob_start();
+            $contentForLayout = '';
             try {
-                // Variablen für den View extrahieren
-                extract($safeVars, EXTR_SKIP);
-                
-                // View einbinden
-                include $viewFile;
-                
+                // Variablen für den View extrahieren (KEIN globales Escaping mehr hier!)
+                // $templateVars enthält jetzt die Originaldaten.
+                extract($templateVars, EXTR_SKIP);
+
+                // Wir fangen die Ausgabe für den View ab
+                ob_start();
+                include $viewFile; // Hier MUSS das Escaping mit $safetyXSS->escapeOutput() erfolgen!
                 $contentForLayout = ob_get_clean();
             } catch (\Throwable $e) {
-                ob_end_clean(); // View-Buffer leeren
+                if (ob_get_level() > 0) {
+                    ob_end_clean(); // View-Buffer leeren bei Fehler
+                }
+                // Werfe eine spezifischere Exception
                 throw new \RuntimeException("Fehler beim Rendern der View '{$templateKey}': " . $e->getMessage(), 0, $e);
             }
-    
+
             // --- Rendern des Layouts, falls vorhanden ---
             if ($layoutExists) {
                 try {
-                    // Content-Variable für das Layout hinzufügen
-                    $safeVars['content'] = $contentForLayout;
-                    
-                    // Variablen für das Layout extrahieren
-                    extract($safeVars, EXTR_SKIP);
-                    
-                    // Layout einbinden
-                    include $this->layoutFile;
+                    // Füge den gerenderten View-Inhalt als 'content'-Variable für das Layout hinzu
+                    // WICHTIG: $contentForLayout kann HTML enthalten und darf hier NICHT escaped werden!
+                    $templateVars['content'] = $contentForLayout;
+
+                    // Variablen für das Layout extrahieren (KEIN globales Escaping mehr hier!)
+                    extract($templateVars, EXTR_SKIP);
+
+                    // Wir fangen die Layout-Ausgabe ab
+                    ob_start();
+                    include $this->layoutFile; // Hier MUSS das Escaping mit $safetyXSS->escapeOutput() erfolgen!
+                    $finalOutput = ob_get_clean();
+
+                    // Jetzt erst geben wir die finale Ausgabe aus
+                    echo $finalOutput;
                 } catch (\Throwable $e) {
-                    // Fehler beim Layout-Rendering
-                    ob_clean(); // Gesamtbuffer leeren
-                    echo $contentForLayout; // Nur den View ohne Layout anzeigen
-                    error_log("Fehler beim Rendern des Admin-Layouts: " . $e->getMessage());
+                    // Bei Fehlern im Layout-Rendering nur den View zeigen (als Fallback)
+                    if (ob_get_level() > 0) {
+                        ob_end_clean(); // Layout-Buffer leeren
+                    }
+                    // Gib nur den bereits gerenderten View-Inhalt aus
+                    echo $contentForLayout;
+                    // Logge den Layout-Fehler
+                    error_log("Fehler beim Rendern des Admin-Layouts ({$this->layoutFile}): " . $e->getMessage());
+                    // Optional: Eine sichtbare Fehlermeldung hinzufügen, wenn im Debug-Modus
+                    // if ($this->helper->getConfig()['debug'] ?? false) {
+                    //     echo "<p style='color:red; font-weight:bold;'>Layout-Rendering-Fehler: " . htmlspecialchars($e->getMessage()) . "</p>";
+                    // }
                 }
             } else {
                 // Kein Layout vorhanden, nur den View-Inhalt ausgeben
                 echo $contentForLayout;
             }
-            
-            // Gesamtausgabe ausgeben
-            ob_end_flush();
-            
+
         } catch (\Throwable $e) {
-            // Alle noch offenen Buffer leeren
-            while (ob_get_level() > 0) {
-                ob_end_clean();
-            }
-            
-            // Fehler weiterwerfen für zentrale Fehlerbehandlung
+            // Fehler weiterwerfen für die zentrale Fehlerbehandlung (ExceptionHandler)
+            // Loggen erfolgt bereits im ExceptionHandler
             throw $e;
         }
-    }
-
-    protected function sanitizeVariables(array $vars): array {
-        $sanitized = [];
-        
-        foreach ($vars as $key => $value) {
-            // Schlüssel sichern
-            $safeKey = is_string($key) ? htmlspecialchars($key, ENT_QUOTES, 'UTF-8') : $key;
-            
-            // Wert rekursiv sichern
-            if (is_array($value)) {
-                $sanitized[$safeKey] = $this->sanitizeVariables($value);
-            } elseif (is_string($value)) {
-                $sanitized[$safeKey] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-            } else {
-                $sanitized[$safeKey] = $value;
-            }
-        }
-        
-        return $sanitized;
     }
 
     /**

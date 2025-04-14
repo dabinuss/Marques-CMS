@@ -37,11 +37,21 @@ class ExceptionHandler
      */
     public function handleException(\Throwable $exception): void
     {
+        // Alle Output-Buffer leeren, bevor wir Status-Code setzen
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
         $this->logException($exception);
         
-        // HTTP-Statuscode setzen
-        $statusCode = $this->getStatusCodeFromException($exception);
-        http_response_code($statusCode);
+        try {
+            // HTTP-Statuscode setzen
+            $statusCode = $this->getStatusCodeFromException($exception);
+            http_response_code($statusCode);
+        } catch (\Throwable $headerEx) {
+            // Ignorieren - wir zeigen trotzdem die Fehlerseite
+            error_log("Konnte HTTP-Status nicht setzen: " . $headerEx->getMessage());
+        }
         
         // Im Admin-Bereich? Dann spezielle Behandlung
         if ($this->isAdminRequest()) {
@@ -54,6 +64,16 @@ class ExceptionHandler
             $this->renderDebugExceptionPage($exception);
         } else {
             $this->renderProductionExceptionPage($exception);
+        }
+    }
+    
+    /**
+     * Leert alle aktiven Output-Buffer
+     */
+    private function cleanAllOutputBuffers(): void
+    {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
         }
     }
     
@@ -144,7 +164,8 @@ class ExceptionHandler
                         ] : null
                     ];
                     
-                    $adminTemplate->render($data, 'error');
+                    // Direkte Ausgabe hier statt Template-Render verwenden, da wir bereits Header gesetzt haben
+                    echo $this->generateErrorHtml($data, $this->debugMode);
                     return;
                 } catch (\Throwable $e) {
                     // Fallback, wenn Template-Rendering fehlschlägt
@@ -158,6 +179,119 @@ class ExceptionHandler
         } else {
             $this->renderProductionExceptionPage($exception);
         }
+    }
+    
+    /**
+     * Generiert das HTML für die Fehlerseite
+     */
+    private function generateErrorHtml(array $data, bool $debug): string
+    {
+        $statusCode = $data['error_code'];
+        $errorMessage = htmlspecialchars($data['error_message']);
+        
+        if (!$debug) {
+            return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fehler {$statusCode}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; max-width: 800px; margin: 0 auto; text-align: center; }
+        h1 { color: #e74c3c; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        p { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Fehler {$statusCode}</h1>
+    <p>{$errorMessage}</p>
+    <p>Bitte versuchen Sie es später erneut.</p>
+</body>
+</html>
+HTML;
+        }
+        
+        $details = $data['exception_details'];
+        $class = htmlspecialchars($details['class']);
+        $file = htmlspecialchars($details['file']);
+        $line = $details['line'];
+        
+        $traceHtml = '';
+        foreach ($details['trace'] as $frame) {
+            $fileInfo = isset($frame['file']) ? 
+                "<span class='trace-file'>{$frame['file']}</span>:" .
+                "<span class='trace-line'>{$frame['line']}</span>" : 
+                "(internal function)";
+                
+            $functionName = htmlspecialchars($frame['function']);
+            
+            $argsHtml = '';
+            foreach ($frame['args'] as $arg) {
+                $argsHtml .= "<span class='trace-args'>" . htmlspecialchars((string)$arg) . "</span>, ";
+            }
+            $argsHtml = rtrim($argsHtml, ', ');
+            
+            $traceHtml .= <<<HTML
+            <tr>
+                <td>{$frame['index']}</td>
+                <td>{$fileInfo}</td>
+                <td class="trace-function">{$functionName}()</td>
+                <td>{$argsHtml}</td>
+            </tr>
+HTML;
+        }
+        
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fehler {$statusCode}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        h1 { color: #e74c3c; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        h2 { margin-top: 25px; color: #3498db; }
+        .exception { background: #f8f8f8; border-left: 4px solid #e74c3c; padding: 10px 15px; margin: 20px 0; }
+        .exception-message { font-family: monospace; font-size: 16px; margin: 10px 0; color: #e74c3c; }
+        .exception-location { font-size: 14px; color: #7f8c8d; margin-bottom: 15px; }
+        .trace-table { width: 100%; border-collapse: collapse; }
+        .trace-table th, .trace-table td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+        .trace-table th { background-color: #f2f2f2; }
+        .trace-file { color: #3498db; }
+        .trace-line { color: #e67e22; }
+        .trace-function { font-family: monospace; }
+        .trace-args { color: #7f8c8d; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Fehler {$statusCode}</h1>
+    
+    <div class="exception">
+        <div class="exception-message">{$class}: {$errorMessage}</div>
+        <div class="exception-location">
+            In Datei <strong>{$file}</strong> in Zeile <strong>{$line}</strong>
+        </div>
+    </div>
+    
+    <h2>Stack Trace</h2>
+    <table class="trace-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Datei:Zeile</th>
+                <th>Funktion</th>
+                <th>Argumente</th>
+            </tr>
+        </thead>
+        <tbody>
+            {$traceHtml}
+        </tbody>
+    </table>
+</body>
+</html>
+HTML;
     }
     
     /**

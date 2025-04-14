@@ -48,7 +48,7 @@ class Router extends AppRouter
     public function defineRoutes(): self
     {
         // Admin-Middleware
-        $authMiddleware = new Middleware($this->container->get(Service::class));
+        $authMiddleware = $this->container->get(\Admin\Auth\Middleware::class);
         
         // CSRF-Middleware (nur für POST-Anfragen)
         $csrfMiddleware = function(Request $req, array $params, callable $next) {
@@ -131,8 +131,33 @@ class Router extends AppRouter
     /**
      * Generiert eine URL basierend auf dem Routen-Namen und Parametern.
      */
-    public function getAdminUrl(string $routeName, array $params = []): string
-    {
-        return $this->generateUrl($routeName, $params);
+    public function getAdminUrl(string $routeName, array $params = []): string {
+        $url = parent::generateUrl($routeName, $params);
+    
+        // Wenn Redirect auf Login zeigen würde → Loop!
+        if ($this->isRedirectLoop($params['redirect'] ?? '')) {
+            unset($params['redirect']);
+            $url = parent::generateUrl($routeName, $params);
+        }
+    
+        return $url;
+    }
+
+    /**
+     * Prüft, ob ein Redirect auf die Login-Seite eine Redirect-Schleife erzeugen würde.
+     */
+    public function isRedirectLoop(string $targetUrl): bool {
+        $parsed = parse_url($targetUrl);
+        $redirectPath = $parsed['path'] ?? '';
+    
+        // Login-URL erkennen
+        $loginPath = MARQUES_ADMIN_DIR . '/login';
+    
+        // Fall: redirect führt wieder auf Login
+        if (rtrim($redirectPath, '/') === $loginPath) {
+            return true;
+        }
+    
+        return false;
     }
 }
