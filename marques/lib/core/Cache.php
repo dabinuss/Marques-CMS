@@ -327,31 +327,9 @@ class Cache {
         }
 
         // Dateioperationen mit Locking
-        $fp = fopen($file, 'c');
-        if ($fp === false) {
-            // Bessere Fehlermeldung oder Logging
-            error_log("Cache: Cache-Datei konnte nicht zum Schreiben geöffnet werden: " . $file);
-            throw new \RuntimeException("Cache-Datei konnte nicht geöffnet werden: {$file}", 500);
-        }
-
-        if (flock($fp, LOCK_EX)) {
-            if (ftruncate($fp, 0) === false) {
-                 fclose($fp); // Sicherstellen, dass die Datei geschlossen wird
-                 error_log("Cache: Cache-Datei konnte nicht geleert werden: " . $file);
-                 throw new \RuntimeException("Cache-Datei konnte nicht geleert werden: {$file}", 500);
-            }
-            if (fwrite($fp, $jsonEncoded) === false) {
-                 fclose($fp); // Sicherstellen, dass die Datei geschlossen wird
-                 error_log("Cache: Fehler beim Schreiben in Cache-Datei: " . $file);
-                 throw new \RuntimeException("Fehler beim Schreiben in Cache-Datei: {$file}", 500);
-            }
-            fflush($fp); // Sicherstellen, dass Puffer geleert wird
-            flock($fp, LOCK_UN);
-            fclose($fp);
-        } else {
-            fclose($fp); // Datei schließen, auch wenn Sperren fehlschlägt
-            error_log("Cache: Cache-Datei konnte nicht gesperrt werden: " . $file);
-            throw new \RuntimeException("Cache-Datei konnte nicht gesperrt werden: {$file}", 500);
+        if (file_put_contents($file, $jsonEncoded, LOCK_EX) === false) {
+            error_log("Cache: Fehler beim Schreiben in Cache-Datei: " . $file);
+            throw new \RuntimeException("Fehler beim Schreiben in Cache-Datei: {$file}", 500);
         }
 
         // Memory Cache aktualisieren
