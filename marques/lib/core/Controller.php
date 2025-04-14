@@ -37,6 +37,7 @@ abstract class Controller
      */
     protected function redirect(string $url): RedirectResponse
     {
+        error_log("Redirecting to: $url");
         return new RedirectResponse($url);
     }
     

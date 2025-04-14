@@ -205,8 +205,9 @@ class MarquesAdmin
         return $this->adminContainer;
     }
 
-    private function startSession(): void {
+    public function startSession(): void {
         if (session_status() === PHP_SESSION_NONE) {
+            // Session noch nicht gestartet, also starten
             $isSecure = ($_SERVER['HTTPS'] ?? '') !== '' || 
                        ($_SERVER['SERVER_PORT'] ?? '') === '443';
             
@@ -216,11 +217,15 @@ class MarquesAdmin
                 'cookie_samesite' => 'Strict',
                 'use_strict_mode' => true
             ]);
+            error_log("Session started with ID: " . session_id());
+        } else {
+            error_log("Session already active with ID: " . session_id());
         }
         
-        // Generiere immer einen CSRF-Token (oder stelle sicher, dass einer existiert)
+        // CSRF-Token garantieren
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            error_log("Generated new CSRF token");
         }
     }
 

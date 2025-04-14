@@ -6,6 +6,8 @@ ob_start();
 
 ini_set('display_errors', '1'); // Fehler im Browser anzeigen (Unsicher für Produktion!)
 ini_set('display_startup_errors', '1'); // Auch Startfehler anzeigen
+ini_set('error_log', __DIR__ . '/error_log.txt');
+ini_set('log_errors', '1');
 error_reporting(E_ALL); // Alle Fehler melden
 
 // HTTP Security Headers setzen

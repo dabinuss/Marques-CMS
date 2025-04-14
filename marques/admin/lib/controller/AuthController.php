@@ -57,6 +57,9 @@ class AuthController extends AdminController
     {
         // CSRF-Token überprüfen
         $postData = $request->getAllPost();
+
+        error_log("Login attempt - POST data: " . print_r($postData, true));
+
         if (!isset($postData['csrf_token']) || !$this->authService->validateCsrfToken($postData['csrf_token'])) {
             return $this->view('login', [
                 'error' => 'Ungültige oder abgelaufene Anfrage. Bitte laden Sie die Seite neu.',
@@ -70,39 +73,43 @@ class AuthController extends AdminController
         $password = $postData['password'] ?? '';
         $redirect = isset($postData['redirect']) ? $postData['redirect'] : '';
 
+        error_log("Login attempt with username: '$username', redirect: '$redirect'");
+
         // Login-Versuch
-        if (!empty($username) && !empty($password) && $this->authService->login($username, $password)) {
-            // Leere alle Output-Buffer für sauberes Redirect
+        $loginResult = !empty($username) && !empty($password) && $this->authService->login($username, $password);
+        error_log("Login result: " . ($loginResult ? "SUCCESS" : "FAILED"));
+
+        // Login-Versuch
+        if ($loginResult) {
+            // Alle Output-Buffer leeren
             while (ob_get_level() > 0) {
                 ob_end_clean();
             }
-
+        
             // Für initiale Einrichtung
             if (isset($_SESSION['marques_user']['initial_login']) && $_SESSION['marques_user']['initial_login'] === true) {
                 $setupUrl = $this->adminUrl('admin.settings') . '?initial_setup=true';
                 return $this->redirect($setupUrl);
             }
-
-            // Redirect URL verarbeiten
+        
+            // Redirect-URL verarbeiten
             $targetUrl = $this->adminUrl('admin.dashboard');
-            
             if (!empty($redirect)) {
-                $loginUrlPath = rtrim(parse_url($this->adminUrl('admin.login'), PHP_URL_PATH), '/');
+                $loginUrlPath    = rtrim(parse_url($this->adminUrl('admin.login'), PHP_URL_PATH), '/');
                 $redirectUrlPath = rtrim(parse_url($redirect, PHP_URL_PATH), '/');
-
+        
                 if ($redirectUrlPath !== $loginUrlPath && strpos($redirect, '/admin/') === 0 && substr($redirect, 0, 2) !== '//') {
                     $targetUrl = $redirect;
                 }
             }
-
+            error_log("Redirecting to: " . $targetUrl);
             return $this->redirect($targetUrl);
         } else {
-            // Login fehlgeschlagen
             return $this->view('login', [
-                'error' => 'Ungültiger Benutzername oder Passwort.',
-                'username' => $username,
+                'error'      => 'Ungültiger Benutzername oder Passwort.',
+                'username'   => $username,
                 'csrf_token' => $this->authService->generateCsrfToken(),
-                'redirect' => $_POST['redirect'] ?? $_GET['redirect'] ?? ''
+                'redirect'   => $_POST['redirect'] ?? $_GET['redirect'] ?? ''
             ]);
         }
     }

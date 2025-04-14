@@ -30,19 +30,28 @@ class Template extends AppTemplate {
 
     public function __construct(
         DatabaseHandler $dbHandler,
-        ThemeManager $themeManager, // Wird evtl. für Assets im Layout gebraucht
+        ThemeManager $themeManager,
         Path $appPath,
         Cache $cache,
         Helper $helper,
         Router $adminRouter,
-        SafetyXSS $safetyXSS, // Sicherheitstools für XSS-Schutz
-        string $templateDir = null // Optionaler Parameter
+        SafetyXSS $safetyXSS,
+        string $templateDir = null
     ) {
+        // Speichere $appPath in der geerbten Eigenschaft, damit sie initialisiert ist
+        $this->appPath = $appPath;
+        
+        // Initialisiere deine eigenen Eigenschaften
         $this->templateDir = $templateDir ?? $appPath->getPath('admin_template');
         $this->layoutFile = rtrim($this->templateDir, '/') . '/' . $this->layoutFile;
         $this->helper = $helper;
         $this->adminRouter = $adminRouter;
-        $this->safetyXSS = $safetyXSS; // Sicherheitstools für XSS-Schutz
+        $this->safetyXSS = $safetyXSS;
+        
+        // Optional: Andere Eigenschaften aus der Elternklasse initialisieren, falls nötig
+        // (Du musst prüfen, welche anderen typisierten Eigenschaften in AppTemplate existieren)
+        $this->dbHandler = $dbHandler;
+        $this->cache = $cache;
     }
 
     /**

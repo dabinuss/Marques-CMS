@@ -114,7 +114,13 @@ class Service
      */
     public function validateCsrfToken(string $token): bool
     {
-        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+        // Leere Tokens niemals akzeptieren
+        if (empty($token) || empty($_SESSION['csrf_token'])) {
+            return false;
+        }
+        
+        // Sichere Vergleichsmethode für kryptografische Strings
+        return hash_equals($_SESSION['csrf_token'], $token);
     }
 
     /**
@@ -124,20 +130,18 @@ class Service
     {
         // Prüfen, ob eine Session aktiv ist, um Fehler zu vermeiden
         if (session_status() === PHP_SESSION_ACTIVE) {
+            // Explizit das CSRF-Token sichern
+            $csrfToken = $_SESSION['csrf_token'] ?? null;
             $oldData = $_SESSION; // Backup der Session-Daten
+            
             if (session_regenerate_id(true)) { // true = alte Session-Datei löschen
                 $_SESSION = $oldData; // Daten in die neue Session migrieren
-                // Optional: Loggen des Erfolgs
-                // error_log("Session ID regenerated successfully.");
-            } else {
-                // Optional: Loggen des Fehlers
-                // error_log("Failed to regenerate session ID.");
-                // Hier könnte man versuchen, die alten Daten wiederherzustellen, falls nötig
-                // $_SESSION = $oldData;
+                
+                // Explizit das CSRF-Token wiederherstellen
+                if ($csrfToken) {
+                    $_SESSION['csrf_token'] = $csrfToken;
+                }
             }
-        } else {
-             // Optional: Loggen, dass keine aktive Session zum Regenerieren vorhanden ist
-             // error_log("Attempted to regenerate session, but no session is active.");
         }
     }
 
@@ -173,6 +177,8 @@ class Service
      */
     public function login(string $username, string $password): bool
     {
+        error_log("Service::login called for user: $username");
+
         $ip = $this->getClientIp();
         if (!$this->checkRateLimit()) {
             $this->logLoginAttempt($username, false);
@@ -181,11 +187,15 @@ class Service
         }
 
         $user = $this->userModel->getRawUserData($username);
+        error_log("User data from DB: " . ($user ? "Found" : "Not found"));
+
         $validUser = $user !== null;
 
         // Prüfe Standardpasswort oder gehashtes Passwort
         $validPassword = false;
         if ($validUser) {
+            error_log("Validating password for user: $username");
+
             // Ist es der Admin mit Standardpasswort (oder erstem Login)?
             if ($username === 'admin' && password_verify($password, self::DEFAULT_ADMIN_PASSWORD)) {
                  // Prüfe, ob das DB-Passwort leer ist ODER first_login gesetzt ist
@@ -229,10 +239,16 @@ class Service
              unset($_SESSION['marques_user']['initial_login']);
         }
 
-
-        // WICHTIG: Session ID HIER nach erfolgreichem Login regenerieren!
+        $csrfToken = $_SESSION['csrf_token'] ?? null;
         $this->regenerateSession();
-        $this->generateCsrfToken(); // Auch CSRF Token neu generieren
+
+        if ($csrfToken) {
+            $_SESSION['csrf_token'] = $csrfToken;
+        } else {
+            // Wenn keins existiert, erzeuge ein neues
+            $this->generateCsrfToken();
+        }
+
         $this->logLoginAttempt($username, true);
         error_log("User '{$username}' logged in successfully from IP: " . $ip); // Logging
         return true;

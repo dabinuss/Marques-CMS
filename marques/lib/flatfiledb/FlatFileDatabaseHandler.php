@@ -66,7 +66,7 @@ class FlatFileDatabaseHandler
         try {
             $this->db->table($tableName); // Check if table exists/get engine
             $this->tableName = $tableName; // Set table name
-            error_log("Handler table name set to: " . $this->tableName . " (Object Hash: " . spl_object_hash($this) . ")");
+            // error_log("Handler table name set to: " . $this->tableName . " (Object Hash: " . spl_object_hash($this) . ")");
         } catch (Throwable $e) {
             error_log("ERROR in Handler table() getting engine for " . $tableName . ": " . $e->getMessage() . " (Object Hash: " . spl_object_hash($this) . ")");
             // Re-throw the exception to maintain original behavior
@@ -523,7 +523,7 @@ class FlatFileDatabaseHandler
             throw new RuntimeException("Es muss zuerst eine Tabelle mit table() ausgewählt werden. (tableName ist null)");
         } else {
             $message = "Handler ensureTableSelected() OK. tableName is: " . $this->tableName . " (Object Hash: " . spl_object_hash($this) . ")";
-            error_log($message);
+            // error_log($message);
         }
     }
     

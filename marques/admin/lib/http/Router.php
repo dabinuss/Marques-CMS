@@ -66,9 +66,7 @@ class Router extends AppRouter
         
         // Login/Logout-Routen (ohne Auth-Middleware)
         $this->get('/admin/login', AuthController::class . '@showLoginForm')->name('admin.login');
-        $this->post('/admin/login', AuthController::class . '@handleLogin', [
-            'middleware' => [$csrfMiddleware]
-        ])->name('admin.login.post');
+        $this->post('/admin/login', AuthController::class . '@handleLogin')->name('admin.login.post');
         $this->get('/admin/logout', AuthController::class . '@logout')->name('admin.logout');
         
         // Root-Admin-Routen mit Auth-Middleware

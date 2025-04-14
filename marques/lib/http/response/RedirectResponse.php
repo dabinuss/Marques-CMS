@@ -26,6 +26,8 @@ class RedirectResponse extends Response
      */
     public function execute(): void
     {
+        error_log("RedirectResponse::execute() called with URL: " . $this->url);
+
         if (headers_sent()) {
             echo '<script>window.location.href = "' . 
                  htmlspecialchars($this->url, ENT_QUOTES, 'UTF-8') . 

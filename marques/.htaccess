@@ -89,3 +89,21 @@ ErrorDocument 500 /index.php
   php_value post_max_size 50M
   php_value upload_max_filesize 50M
 </IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_URI} ^/wordpress/wp-admin [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/wp-admin [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/wp-login [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/xmlrpc.php [NC]
+  RewriteRule .* - [F,L]
+</IfModule>
+
+<IfModule mod_evasive20.c>
+  DOSHashTableSize 3097
+  DOSPageCount 5
+  DOSSiteCount 50
+  DOSPageInterval 1
+  DOSSiteInterval 1
+  DOSBlockingPeriod 60
+</IfModule>
