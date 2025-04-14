@@ -170,12 +170,9 @@ class Router {
         $url = $route['pattern'];
 
         // Parameter ersetzen
-        foreach ($params as $key => $value) {
-            $placeholder = '{' . $key . '}';
-            if (strpos($url, $placeholder) !== false) {
-                $url = str_replace($placeholder, rawurlencode((string)$value), $url);
-            }
-        }
+        $url = preg_replace_callback('/\{(\w+)\}/', function($matches) use ($params) {
+            return isset($params[$matches[1]]) ? rawurlencode((string)$params[$matches[1]]) : $matches[0];
+        }, $url);
 
         // Prüfe auf fehlende Parameter
         if (preg_match('/{(\w+)(?::[^}]+)?}/', $url, $matches)) {
