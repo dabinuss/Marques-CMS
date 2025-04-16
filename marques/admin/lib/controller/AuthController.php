@@ -29,27 +29,40 @@ class AuthController extends AdminController
         if ($this->authService->isLoggedIn()) {
             return $this->redirectToRoute('admin.dashboard');
         }
-
+    
         $csrf_token = $this->authService->generateCsrfToken();
         
         $showAdminDefaultPassword = $this->checkIfShouldShowDefaultCredentials();
-
+    
         // Greife sicher auf den 'redirect' GET-Parameter zu
         $redirect = isset($_GET['redirect']) ? filter_var($_GET['redirect'], FILTER_SANITIZE_URL) : '';
         if (!empty($redirect) && (strpos($redirect, '/') !== 0 || strpos($redirect, '//') === 0)) {
              $redirect = ''; // Ungültigen Redirect verwerfen
         }
-
+    
         // View-Daten zusammenstellen
         $viewData = [
             'page_title' => 'Admin Login',
             'csrf_token' => $csrf_token,
-            'error' => '',
             'username' => '',
             'redirect' => $redirect,
-            'showAdminDefaultPassword' => $showAdminDefaultPassword
+            'showAdminDefaultPassword' => $showAdminDefaultPassword,
+            'error_message' => !empty($_GET['error']) 
+                ? '<div class="error-message">Fehler bei der Anmeldung. Bitte versuchen Sie es erneut.</div>' 
+                : '',
+            'default_password_message' => $showAdminDefaultPassword 
+                ? '<div class="info-message">
+                    <i class="fas fa-info-circle"></i> Standardzugang:
+                    <ul>
+                        <li>Benutzername: admin</li>
+                        <li>Passwort: admin</li>
+                    </ul>
+                    <p>Bitte ändern Sie das Passwort nach dem ersten Login!</p>
+                </div>' 
+                : '',
         ];
-
+        
+        // Erstelle die View mit den Daten
         return $this->view('login', $viewData);
     }
 
@@ -57,29 +70,29 @@ class AuthController extends AdminController
     {
         // CSRF-Token überprüfen
         $postData = $request->getAllPost();
-
+    
         error_log("Login attempt - POST data: " . print_r($postData, true));
-
+    
         if (!isset($postData['csrf_token']) || !$this->authService->validateCsrfToken($postData['csrf_token'])) {
+            // CSRF-Validierung fehlgeschlagen - zeige Fehlermeldung
             return $this->view('login', [
-                'error' => 'Ungültige oder abgelaufene Anfrage. Bitte laden Sie die Seite neu.',
                 'username' => $postData['username'] ?? '',
                 'csrf_token' => $this->authService->generateCsrfToken(),
-                'redirect' => $_POST['redirect'] ?? ''
+                'redirect' => $_POST['redirect'] ?? '',
+                'error_message' => '<div class="error-message">Ungültige oder abgelaufene Anfrage. Bitte laden Sie die Seite neu.</div>'
             ]);
         }
-
+    
         $username = trim($postData['username'] ?? '');
         $password = $postData['password'] ?? '';
         $redirect = isset($postData['redirect']) ? $postData['redirect'] : '';
-
+    
         error_log("Login attempt with username: '$username', redirect: '$redirect'");
-
+    
         // Login-Versuch
         $loginResult = !empty($username) && !empty($password) && $this->authService->login($username, $password);
         error_log("Login result: " . ($loginResult ? "SUCCESS" : "FAILED"));
-
-        // Login-Versuch
+    
         if ($loginResult) {
             // Alle Output-Buffer leeren
             while (ob_get_level() > 0) {
@@ -105,11 +118,12 @@ class AuthController extends AdminController
             error_log("Redirecting to: " . $targetUrl);
             return $this->redirect($targetUrl);
         } else {
+            // Login fehlgeschlagen - zeige Fehlermeldung
             return $this->view('login', [
-                'error'      => 'Ungültiger Benutzername oder Passwort.',
                 'username'   => $username,
                 'csrf_token' => $this->authService->generateCsrfToken(),
-                'redirect'   => $_POST['redirect'] ?? $_GET['redirect'] ?? ''
+                'redirect'   => $_POST['redirect'] ?? $_GET['redirect'] ?? '',
+                'error_message' => '<div class="error-message">Ungültiger Benutzername oder Passwort.</div>'
             ]);
         }
     }

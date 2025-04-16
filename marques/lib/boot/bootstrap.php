@@ -179,13 +179,29 @@ $rootContainer->register(\Marques\Http\Router::class, function(Node $container) 
     return new \Marques\Http\Router($container, $container->get(DatabaseHandler::class));
 });
 
+$rootContainer->register(\Marques\Core\AssetManager::class, function(Node $container) {
+    $helper = $container->get(\Marques\Util\Helper::class);
+    $baseUrl = $helper->getSiteUrl();
+    $version = MARQUES_VERSION;
+    $devMode = true; // TODO: Standardmäßig auf true setzen, kann später angepasst werden
+    
+    return new \Marques\Core\AssetManager($baseUrl, $version, $devMode);
+});
+
+$rootContainer->register(\Marques\Core\TokenParser::class, function(Node $container) {
+    return new \Marques\Core\TokenParser(
+        $container->get(\Marques\Core\AssetManager::class)
+    );
+});
+
 $rootContainer->register(\Marques\Core\Template::class, function(Node $container) {
     return new \Marques\Core\Template(
         $container->get(DatabaseHandler::class),
         $container->get(\Marques\Service\ThemeManager::class),
         $container->get(\Marques\Core\Path::class),
         $container->get(\Marques\Core\Cache::class),
-        $container->get(\Marques\Util\Helper::class)
+        $container->get(\Marques\Util\Helper::class),
+        $container->get(\Marques\Core\TokenParser::class)
     );
 });
 

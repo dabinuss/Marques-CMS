@@ -38,6 +38,22 @@ class Controller extends AppController
     }
     
     /**
+     * Erstellt eine ViewResponse mit dem Admin-Template
+     *
+     * @param string $viewName Name der View
+     * @param array $viewData View-Daten
+     * @return ViewResponse
+     */
+    protected function view(string $viewName, array $viewData = []): ViewResponse
+    {
+        // Hole das Admin-Template vom Container
+        $template = $this->container->get(Template::class);
+        
+        // Erstelle die ViewResponse
+        return new ViewResponse($template, $viewName, $viewData);
+    }
+    
+    /**
      * Leitet zu einer Admin-Route weiter
      * 
      * @param string $routeName Name der Admin-Route

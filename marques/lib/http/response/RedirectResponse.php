@@ -26,6 +26,8 @@ class RedirectResponse extends Response
      */
     public function execute(): void
     {
+        while (ob_get_level() > 0) { ob_end_clean(); }
+        
         error_log("RedirectResponse::execute() called with URL: " . $this->url);
 
         if (headers_sent()) {

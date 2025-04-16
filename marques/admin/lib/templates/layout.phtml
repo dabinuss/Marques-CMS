@@ -1,68 +1,40 @@
 <!DOCTYPE html>
-<html lang="<?= $safetyXSS->escapeOutput($system_config['admin_language'] ?? 'de', 'attr') ?>">
+<html lang="{var:admin_language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $safetyXSS->escapeOutput($page_title ?? 'Admin Panel') ?> - <?= $safetyXSS->escapeOutput($system_config['site_name'] ?? 'marques CMS') ?></title>
-    <link rel="stylesheet" href="<?= $safetyXSS->escapeOutput($helper->getSiteUrl('admin/assets/css/marques-panel-style.css'), 'url') ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <title>{var:page_title} - {var:site_name}</title>
+    {src:css}{src:end}
+    {block:head}
 </head>
 <body>
     <div class="container">
+        <!-- Sidebar -->
+        {block:sidebar}
         
-        <?php
-        // Sidebar einbinden
-        $sidebarPath = __DIR__ . '/sidebar.phtml';
-        if (file_exists($sidebarPath)) {
-            include $sidebarPath;
-        } else {
-            echo "<!-- Sidebar not found at: " . $safetyXSS->escapeOutput($sidebarPath) . " -->";
-        }
-        ?>
-
+        <!-- Hauptinhalt -->
         <main class="main-content">
             <div class="header">
-                <h1><?= $safetyXSS->escapeOutput($page_title ?? '') ?></h1>
+                <h1>{var:page_title}</h1>
                 <div class="header-actions">
-                    <!-- Router direkt für URL-Generierung verwenden -->
-                    <a href="<?= $safetyXSS->escapeOutput($router->getAdminUrl('admin.pages.add'), 'url') ?>" title="Neue Seite erstellen">
-                        <button class="btn btn-icon">
-                            <i class="fas fa-file-alt"></i>
-                        </button>
-                    </a>
-                    <a href="#" title="Neuen Beitrag erstellen">
-                        <button class="btn btn-icon">
-                             <i class="fas fa-pencil-alt"></i>
-                        </button>
-                    </a>
-                    <a href="#" title="Datei hochladen">
-                        <button class="btn btn-icon">
-                            <i class="fas fa-upload"></i>
-                        </button>
-                    </a>
-                    <a href="<?= $safetyXSS->escapeOutput($helper->getBaseUrl(false), 'url') ?>" title="Website ansehen" target="_blank">
-                        <button class="btn">
-                            <i class="fas fa-external-link-alt"></i>
-                            Website ansehen
-                        </button>
-                    </a>
+                    {block:header}
                 </div>
             </div>
 
-            <?= $content ?? '<p class="error">Inhalt konnte nicht geladen werden.</p>'; ?>
+            <!-- Content-Bereich -->
+            {block:content}
         </main>
     </div>
 
-    <!-- Admin JavaScript laden -->
-    <script src="<?= $safetyXSS->escapeOutput($helper->getSiteUrl('admin/assets/js/admin-script.js'), 'url') ?>" defer></script>
-    
-    <!-- CSRF-Token und Basis-URLs für JavaScript -->
+    <!-- JavaScript -->
     <script>
         // Globale JS-Variablen
-        window.csrfToken = '<?= $safetyXSS->escapeOutput($csrf_token ?? '', 'js') ?>';
-        window.baseUrl = '<?= $safetyXSS->escapeOutput($helper->getBaseUrl(false), 'js') ?>';
-        window.adminBaseUrl = '<?= $safetyXSS->escapeOutput($router->getAdminUrl('admin.home'), 'js') ?>';
+        window.csrfToken = '{var:csrf_token}';
+        window.baseUrl = '{var:base_url}';
+        window.adminBaseUrl = '{var:admin_url}';
     </script>
+    
+    {src:js}{src:end}
+    {block:scripts}
 </body>
 </html>

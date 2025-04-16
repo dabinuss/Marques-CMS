@@ -16,6 +16,11 @@ use Marques\Service\ThemeManager;
 use Marques\Service\User;
 use Marques\Util\ExceptionHandler;
 
+/**
+ * Main application class for Marques CMS.
+ * Handles initialization, dependency injection, session management, 
+ * error handling, request processing, and main run loop.
+ */
 class MarquesApp
 {
     private Router $router;
@@ -33,13 +38,16 @@ class MarquesApp
     private NavigationManager $navigation;
     private ExceptionHandler $exceptionHandler;
 
-    // Erhalte den Root-Container als Parameter
+    /**
+     * Constructor: initializes the dependency container and required services.
+     *
+     * @param Node $rootContainer Root dependency injection container.
+     */
     public function __construct(Node $rootContainer)
     {
         $this->initContainer($rootContainer);
 
         try {
-            // Dienste beziehen mit Fehlerbehandlung
             $this->dbHandler    = $this->appcontainer->get(DatabaseHandler::class);
             $this->appPath      = $this->appcontainer->get(Path::class);
             $this->logger       = $this->appcontainer->get(Logger::class);
@@ -57,73 +65,72 @@ class MarquesApp
                                               ->select(['debug'])
                                               ->where('id', '=', 1)
                                               ->first();
-            $debugSetting = isset($settingsRecord['debug']) ? 
+            $debugSetting = isset($settingsRecord['debug']) ?
                 filter_var($settingsRecord['debug'], FILTER_VALIDATE_BOOLEAN) : false;
 
             $this->exceptionHandler = new ExceptionHandler($debugSetting, $this->logger);
             $this->exceptionHandler->register();
         } catch (\Exception $e) {
-            error_log("Kritischer Fehler beim Start von MarquesApp: " . $e->getMessage());
-            $this->displayFatalError("Das System konnte nicht gestartet werden. Bitte kontaktieren Sie den Administrator.");
+            error_log("Critical error during MarquesApp startup: " . $e->getMessage());
+            $this->displayFatalError("The system could not be started. Please contact the administrator.");
             exit(1);
         }
     }
 
     /**
-     * Zeigt eine freundliche Fehlermeldung an
+     * Displays a user-friendly fatal error page.
+     *
+     * @param string $message Error message to display.
      */
     private function displayFatalError(string $message): void {
         header('HTTP/1.1 500 Internal Server Error', true, 500);
-        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Systemfehler</title>';
+        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>System Error</title>';
         echo '<style>body{font-family:sans-serif;background:#f8f9fa;color:#333;margin:0;padding:50px 20px;text-align:center;}';
         echo '.error-container{max-width:650px;margin:0 auto;background:white;border-radius:5px;padding:30px;box-shadow:0 2px 10px rgba(0,0,0,0.1);}';
         echo 'h1{color:#e74c3c;}p{font-size:16px;line-height:1.5;}</style></head>';
-        echo '<body><div class="error-container"><h1>Systemfehler</h1>';
+        echo '<body><div class="error-container"><h1>System Error</h1>';
         echo '<p>' . htmlspecialchars($message) . '</p></div></body></html>';
     }
 
     /**
-     * Erzeugt einen Child-Container basierend auf dem übergebenen Root-Container.
+     * Initializes the dependency injection child container.
+     *
+     * @param Node $rootContainer Root DI container.
      */
     private function initContainer(Node $rootContainer): void {
         $this->appcontainer = new Node($rootContainer);
-        // Hier kannst du spezifische Überschreibungen für die Hauptanwendung vornehmen, falls nötig.
+        // Application-specific overrides can be registered here if needed.
     }
 
     /**
-     * Verbesserte Session-Initialisierung mit Fehlerbehandlung
+     * Starts a secure session with error handling.
      */
     private function startSession(): void {
-        // Prüfen, ob Session bereits gestartet
         if (session_status() === PHP_SESSION_NONE) {
-            // Sichere Session-Einstellungen
             $sessionConfig = [
                 'cookie_lifetime' => 86400,
                 'cookie_secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
                 'cookie_httponly' => true,
-                'cookie_samesite' => 'Lax', // 'Strict' kann Probleme mit externen Redirects verursachen
+                'cookie_samesite' => 'Lax',
                 'use_strict_mode' => true
             ];
-            
-            // Session-Einstellungen anwenden
+
             foreach ($sessionConfig as $option => $value) {
-                if (ini_set('session.' . $option, (string)$value) === false) {
-                    error_log("Konnte Session-Option {$option} nicht setzen");
-                }
+                ini_set('session.' . $option, (string)$value);
             }
-            
-            // Zufälliger Session-Name für bessere Sicherheit
+
             session_name('marques_' . substr(md5(MARQUES_ROOT_DIR), 0, 6));
-            
-            // Session-Start mit Fehlerbehandlung
+
             if (!session_start()) {
-                error_log("Fehler beim Starten der Session");
-                // Fallback: Cookies deaktivieren, damit die Anwendung noch funktioniert
+                error_log("Failed to start session");
                 ini_set('session.use_cookies', '0');
             }
         }
     }
 
+    /**
+     * Main application initialization: session, security headers, error reporting, timezone, maintenance, access log.
+     */
     public function init(): void
     {
         try {
@@ -136,25 +143,28 @@ class MarquesApp
             $this->checkMaintenanceMode($this->dbHandler);
             $this->logUserAccess();
         } catch (\Exception $e) {
-            // Fehler während der Initialisierung sollten nicht die Anwendung zum Absturz bringen
-            error_log("Fehler in MarquesApp::init(): " . $e->getMessage());
-            // Je nach Fehlertyp entsprechend reagieren
-            if ($e->getCode() === 503) { // Wartungsmodus
-                $this->displayMaintenancePage($e->getMessage() ?: "Die Website wird aktuell gewartet.");
+            error_log("Error in MarquesApp::init(): " . $e->getMessage());
+            if ($e->getCode() === 503) {
+                $this->displayMaintenancePage($e->getMessage() ?: "The website is currently under maintenance.");
                 exit;
             }
         }
     }
 
+    /**
+     * Prevents direct script access if MARQUES_ROOT_DIR is not defined.
+     */
     private function checkDirectAccess(): void {
         if (!defined('MARQUES_ROOT_DIR')) {
             header('HTTP/1.1 403 Forbidden');
-            exit('Direkter Zugriff ist nicht erlaubt.');
+            exit('Direct access is not allowed.');
         }
     }
 
     /**
-     * Verbesserte Fehlerberichtskonfiguration mit Fallbacks
+     * Sets error reporting and logging based on the debug setting from database.
+     *
+     * @param DatabaseHandler $dbHandler
      */
     private function configureErrorReporting(DatabaseHandler $dbHandler): void {
         $debugSetting = false;
@@ -167,21 +177,19 @@ class MarquesApp
                 $debugSetting = filter_var($settingsRecord['debug'], FILTER_VALIDATE_BOOLEAN);
             }
         } catch (\Exception $e) {
-            // Bei Datenbankproblemen Standard-Fehlerbehandlung verwenden
-            error_log("Fehler beim Lesen der Debug-Einstellung: " . $e->getMessage());
+            error_log("Error reading debug setting: " . $e->getMessage());
         }
-        
-        // Fehlerberichterstattung entsprechend konfigurieren
+
         error_reporting($debugSetting ? E_ALL : E_ERROR | E_WARNING | E_PARSE);
         ini_set('display_errors', $debugSetting ? '1' : '0');
-        
-        // Immer Fehlerprotokollierung aktivieren, unabhängig vom Debug-Modus
         ini_set('log_errors', '1');
         ini_set('error_log', MARQUES_ROOT_DIR . '/logs/php_error.log');
     }
 
     /**
-     * Verbesserte Zeitzonen-Einstellung mit Validierung und Fallback
+     * Sets the default timezone from the database setting, with fallback to UTC.
+     *
+     * @param DatabaseHandler $dbHandler
      */
     private function setTimezone(DatabaseHandler $dbHandler): void {
         $defaultTimezone = 'UTC';
@@ -193,24 +201,22 @@ class MarquesApp
             $timezone = (isset($settingsRecord['timezone']) && is_string($settingsRecord['timezone']) && !empty($settingsRecord['timezone']))
                         ? $settingsRecord['timezone']
                         : $defaultTimezone;
-            
-            // Überprüfen, ob die Zeitzone gültig ist
+
             if (!in_array($timezone, \DateTimeZone::listIdentifiers())) {
-                error_log("Ungültige Zeitzone in Einstellungen: {$timezone}, verwende {$defaultTimezone}");
+                error_log("Invalid timezone in settings: {$timezone}, using {$defaultTimezone}");
                 $timezone = $defaultTimezone;
             }
-            
-            // Zeitzone setzen
             date_default_timezone_set($timezone);
         } catch (\Exception $e) {
-            error_log("Fehler beim Setzen der Zeitzone: " . $e->getMessage());
-            // Fallback auf UTC
+            error_log("Error setting timezone: " . $e->getMessage());
             date_default_timezone_set($defaultTimezone);
         }
     }
 
     /**
-     * Verbesserte Wartungsmodus-Überprüfung mit angepasster Anzeige
+     * Checks if the system is in maintenance mode, and displays a maintenance page if necessary.
+     *
+     * @param DatabaseHandler $dbHandler
      */
     private function checkMaintenanceMode(DatabaseHandler $dbHandler): void {
         try {
@@ -219,27 +225,28 @@ class MarquesApp
                                         ->where('id', '=', 1)
                                         ->first();
             $maintenanceMode = filter_var($settingsRecord['maintenance_mode'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            
+
             if (!defined('IS_ADMIN') && $maintenanceMode && !$this->user->isAdmin()) {
                 $maintenanceMessage = (isset($settingsRecord['maintenance_message']) && is_string($settingsRecord['maintenance_message']) && !empty($settingsRecord['maintenance_message']))
                                      ? $settingsRecord['maintenance_message']
-                                     : 'Die Website wird aktuell gewartet.';
+                                     : 'The website is currently under maintenance.';
                 $this->displayMaintenancePage($maintenanceMessage);
                 exit;
             }
         } catch (\Exception $e) {
-            error_log("Fehler bei der Überprüfung des Wartungsmodus: " . $e->getMessage());
-            // Bei Fehlern keinen Wartungsmodus annehmen
+            error_log("Error checking maintenance mode: " . $e->getMessage());
         }
     }
 
     /**
-     * Zeigt eine ansprechende Wartungsmodus-Seite an
+     * Displays a visually appealing maintenance page.
+     *
+     * @param string $maintenanceMessage The maintenance message to show.
      */
     private function displayMaintenancePage(string $maintenanceMessage): void {
         header('HTTP/1.1 503 Service Temporarily Unavailable', true, 503);
         header('Retry-After: 3600');
-        
+
         try {
             $settingsRecord = $this->dbHandler->table('settings')
                                             ->select(['site_name'])
@@ -251,17 +258,17 @@ class MarquesApp
         } catch (\Exception $e) {
             $siteNameValue = 'marques CMS';
         }
-        
+
         $siteName = SafetyXSS::escapeOutput($siteNameValue, 'html');
         $message = SafetyXSS::escapeOutput($maintenanceMessage, 'html');
-        
+
         echo <<<HTML
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Wartungsmodus - {$siteName}</title>
+    <title>Maintenance - {$siteName}</title>
     <style>
         body { font-family: sans-serif; background-color: #f8f9fa; color: #212529; margin: 0; padding: 0; display: flex; height: 100vh; align-items: center; justify-content: center; }
         .maintenance-container { text-align: center; max-width: 600px; padding: 2rem; background-color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -273,7 +280,7 @@ class MarquesApp
 <body>
     <div class="maintenance-container">
         <div class="icon">⚙️</div>
-        <h1>Website wird gewartet</h1>
+        <h1>Website Under Maintenance</h1>
         <p>{$message}</p>
     </div>
 </body>
@@ -282,7 +289,7 @@ HTML;
     }
 
     /**
-     * Verbesserte Benutzerprotokollierung mit Fallbacks
+     * Logs user access (except for admin and bots).
      */
     private function logUserAccess(): void {
         if (!defined('IS_ADMIN') && !$this->isBot()) {
@@ -296,14 +303,15 @@ HTML;
                 ];
                 $this->logger->info('User Access', $logData);
             } catch (\Exception $e) {
-                error_log("Fehler bei der Benutzerprotokollierung: " . $e->getMessage());
-                // Stille Fehlerbehandlung, Protokollierung sollte die Anwendung nicht beeinträchtigen
+                error_log("Error logging user access: " . $e->getMessage());
             }
         }
     }
-    
+
     /**
-     * Überprüft, ob der Benutzer ein Bot ist
+     * Detects if the request comes from a bot (simple user-agent check).
+     *
+     * @return bool
      */
     private function isBot(): bool {
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
@@ -311,34 +319,35 @@ HTML;
     }
 
     /**
-     * Verbesserte IP-Anonymisierung mit korrekter IPv6-Handhabung
+     * Anonymizes an IP address (IPv4 last octet, IPv6 last four blocks).
+     *
+     * @param string $ip
+     * @return string
      */
     private function anonymizeIp(string $ip): string {
         if (empty($ip)) return '0.0.0.0';
-        
+
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            // IPv6: Letzte 64 Bits (letzten 4 Blöcke) auf Null setzen
             $blocks = explode(':', $ip);
             if (count($blocks) === 8) {
-                // Normale IPv6-Adresse
                 return implode(':', array_slice($blocks, 0, 4)) . ':0:0:0:0';
             } elseif (count($blocks) < 8 && strpos($ip, '::') !== false) {
-                // Verkürzte IPv6-Adresse mit ::
                 $expanded = str_replace('::', ':' . str_repeat('0:', 8 - count($blocks) + 1), $ip);
                 $blocks = explode(':', $expanded);
                 return implode(':', array_slice($blocks, 0, 4)) . ':0:0:0:0';
             }
-            return $ip; // Fallback bei ungewöhnlichem Format
+            return $ip;
         } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            // IPv4: Letztes Oktett auf Null setzen
             $parts = explode('.', $ip);
             return (count($parts) === 4) ? "{$parts[0]}.{$parts[1]}.{$parts[2]}.0" : $ip;
         }
-        return $ip; // Unbekanntes Format beibehalten
+        return $ip;
     }
 
     /**
-     * Verbesserte URL-Ermittlung mit Fehlerbehandlung
+     * Returns the current request URL with protocol and host.
+     *
+     * @return string
      */
     private function getCurrentUrl(): string {
         $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
@@ -348,34 +357,28 @@ HTML;
     }
 
     /**
-     * Verbesserte Hauptausführungsmethode mit detaillierter Fehlerbehandlung
+     * Main execution method: handles session, initialization, request routing, and rendering.
      */
     public function run(): void {
-        // Ausgabe-Pufferung starten für sauberere Fehlerbehandlung
         ob_start();
-        
+
         try {
-            // Session und Initialisierung
             $this->startSession();
             $this->init();
-            
-            // Event-Trigger vor Request-Verarbeitung
+
             $this->eventManager->trigger('before_request');
-            
-            // Aktuelle Anfrage auswerten
+
             $requestPath = isset($_SERVER['REQUEST_URI']) ? parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) : '/';
             $normalizedPath = trim($requestPath, '/');
             $isRootRequest = $requestPath === '/' || empty($normalizedPath);
-            
-            // Pfad für Content-Verarbeitung vorbereiten
+
             $contentPath = $isRootRequest ? 'home' : $normalizedPath;
-            error_log("Verarbeite Anfrage für Pfad: " . $contentPath);
-            
-            // Content-First Strategie: Versuche zuerst, die Seite direkt zu laden
+            error_log("Processing request for path: " . $contentPath);
+
             $directContentLoad = false;
-            
+
             if ($isRootRequest || file_exists(MARQUES_CONTENT_DIR . '/pages/' . $contentPath . '.md')) {
-                error_log("Versuche direktes Laden über Content für: " . $contentPath);
+                error_log("Trying direct content load for: " . $contentPath);
                 try {
                     $pageData = $this->content->getPage($contentPath);
                     $directContentLoad = true;
@@ -383,68 +386,61 @@ HTML;
                         'path' => $contentPath,
                         'params' => []
                     ];
-                    error_log("Seite direkt geladen: " . $contentPath);
+                    error_log("Page loaded directly: " . $contentPath);
                 } catch (\Exception $contentEx) {
-                    error_log("Fehler beim direkten Laden der Seite, fallback auf Routing: " . $contentEx->getMessage());
-                    // Fehlgeschlagen, wir fallen zurück auf Routing
+                    error_log("Direct content load failed, falling back to routing: " . $contentEx->getMessage());
                 }
             }
-            
-            // Nur Routing versuchen, wenn Content nicht direkt geladen wurde
+
             if (!$directContentLoad) {
                 try {
                     $routeInfo = $this->router->processRequest();
                     $contentPath = $routeInfo['path'] ?? $contentPath;
                     $params = $routeInfo['params'] ?? [];
-                    
-                    error_log("Route gefunden, lade Seite: " . $contentPath);
+                    error_log("Route found, loading page: " . $contentPath);
                     $pageData = $this->content->getPage($contentPath, $params);
                 } catch (\Exception $routeException) {
-                    // Wenn sowohl Content-First als auch Routing fehlschlagen
-                    error_log("Routing-Fehler: " . $routeException->getMessage());
+                    error_log("Routing error: " . $routeException->getMessage());
                     throw $routeException;
                 }
             }
-            
-            // Nach-Routing-Ereignis
+
             $routeInfo = $routeInfo ?? ['path' => $contentPath, 'params' => []];
             $this->eventManager->trigger('after_routing', $routeInfo);
-            
-            // Vor-Rendering-Ereignis
+
             $pageDataProcessed = $this->eventManager->trigger('before_render', $pageData);
-            
-            // Bei null oder undefinierten Rückgabewerten auf ursprüngliche Daten zurückfallen
+
             if ($pageDataProcessed === null || !is_array($pageDataProcessed)) {
                 $pageDataProcessed = $pageData;
             }
-            
-            // Rendering
+
             $this->template->render($pageDataProcessed);
 
-            // Nach-Rendering-Ereignis
             $this->eventManager->trigger('after_render');
         } catch (\Exception $e) {
             throw $e;
         } finally {
-            // Ausgabe-Pufferung abschließen, sofern noch aktiv
             if (ob_get_level() > 0) {
                 ob_end_flush();
             }
         }
     }
-    
+
     /**
-     * Bestimmt Fehlertitel basierend auf HTTP-Status-Code
+     * Returns a human-readable error title for a given HTTP status code.
+     *
+     * @param int $code
+     * @return string
      */
     private function getErrorTitleForCode(int $code): string {
         switch ($code) {
-            case 400: return 'Fehlerhafte Anfrage';
-            case 401: return 'Nicht autorisiert';
-            case 403: return 'Zugriff verweigert';
-            case 404: return 'Seite nicht gefunden';
-            case 500: return 'Interner Serverfehler';
-            case 503: return 'Service nicht verfügbar';
-            default: return 'Fehler ' . $code;
+            case 400: return 'Bad Request';
+            case 401: return 'Unauthorized';
+            case 403: return 'Access Denied';
+            case 404: return 'Page Not Found';
+            case 500: return 'Internal Server Error';
+            case 503: return 'Service Unavailable';
+            default: return 'Error ' . $code;
         }
     }
 }

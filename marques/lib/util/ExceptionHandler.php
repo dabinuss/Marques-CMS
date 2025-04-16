@@ -299,29 +299,20 @@ HTML;
      */
     private function getAdminTemplate()
     {
-        global $adminContainer;
-        
-        if ($adminContainer && method_exists($adminContainer, 'get')) {
-            try {
-                // Versuche verschiedene Wege, die Klasse zu bekommen
-                try {
-                    return $adminContainer->get(\Admin\Core\Template::class);
-                } catch (\Throwable $e1) {
-                    try {
-                        return $adminContainer->get('Admin\AdminTemplate');
-                    } catch (\Throwable $e2) {
-                        try {
-                            return $adminContainer->get('AdminTemplate');
-                        } catch (\Throwable $e3) {
-                            return null;
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {
-                return null;
-            }
+        /*
+        try {
+            $rootContainer = null;
+            $adminApp = new \Admin\Core\MarquesAdmin($rootContainer);
+            global $adminContainer;
+            $adminContainer = $adminApp->getContainer();
+            $adminApp->init();
+            $adminApp->run();
+        } catch (\Throwable $e) {
+            // Fehler beim Erstellen des Admin-Containers
+            error_log("Konnte AdminContainer nicht erstellen: " . $e->getMessage());
+            return null;
         }
-        
+        */
         return null;
     }
     

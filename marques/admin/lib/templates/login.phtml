@@ -3,39 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - marques CMS</title>
+    <title>Admin Login - {var:site_name}</title>
     <link rel="stylesheet" href="/admin/assets/css/login-style.css">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    {block:head}
 </head>
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1>marques CMS</h1>
+            <h1>{var:site_name}</h1>
             <p>Admin-Login</p>
         </div>
         
-        <?php if (!empty($error)): ?>
-            <div class="error-message"><?= $safetyXSS->escapeOutput($error, 'html'); ?></div>
-        <?php endif; ?>
+        {var:error_message}
         
-        <?php if ($showAdminDefaultPassword ?? false): ?>
-            <div class="info-message">
-                <i class="fas fa-info-circle"></i> Standardzugang:
-                <ul>
-                    <li>Benutzername: admin</li>
-                    <li>Passwort: admin</li>
-                </ul>
-                <p>Bitte ändern Sie das Passwort nach dem ersten Login!</p>
-            </div>
-        <?php endif; ?>
-        
+        {var:default_password_message}
+
         <form class="login-form" method="post" action="">
             <div class="form-group">
                 <label for="username">Benutzername</label>
                 <div class="input-icon-wrapper">
                     <span class="input-icon"><i class="fas fa-user"></i></span>
-                    <input type="text" id="username" name="username" value="<?= $safetyXSS->escapeOutput($username ?? '', 'attr'); ?>" required>
+                    <input type="text" id="username" name="username" value="{var:username}" required>
                 </div>
             </div>
             
@@ -51,12 +40,16 @@
                 <i class="fas fa-sign-in-alt"></i> Anmelden
             </button>
 
-            <input type="hidden" name="csrf_token" value="<?= $safetyXSS->escapeOutput($csrf_token ?? '', 'attr') ?>">
+            <input type="hidden" name="csrf_token" value="{var:csrf_token}">
+            <input type="hidden" name="redirect" value="{var:redirect}">
         </form>
         
         <div class="login-footer">
-            <p>marques CMS v<?= MARQUES_VERSION; ?></p>
+            <p>marques CMS v{var:version}</p>
         </div>
     </div>
+    
+    {src:js}{src:end}
+    {block:scripts}
 </body>
 </html>
