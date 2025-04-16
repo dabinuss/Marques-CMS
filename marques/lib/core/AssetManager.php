@@ -218,6 +218,11 @@ class AssetManager
                     $attributes .= ' integrity="' . $options['integrity'] . '" crossorigin="' . $options['crossorigin'] . '"';
                 }
                 
+                // CSP Nonce hinzufügen, wenn definiert
+                if (defined('CSP_NONCE')) {
+                    $attributes .= ' nonce="' . CSP_NONCE . '"';
+                }
+                
                 $output .= sprintf(
                     '<script src="%s"%s></script>' . PHP_EOL,
                     $path,
@@ -323,7 +328,7 @@ class AssetManager
         
         // HTML für die kombinierte Datei erzeugen
         $output = '';
-        
+    
         if ($type === 'css') {
             $media = isset($commonOptions['media']) ? ' media="' . $commonOptions['media'] . '"' : '';
             $output = sprintf(
@@ -338,6 +343,11 @@ class AssetManager
             }
             if (!empty($commonOptions['async']) && $commonOptions['async']) {
                 $attributes .= ' async';
+            }
+            
+            // CSP Nonce hinzufügen, wenn definiert
+            if (defined('CSP_NONCE')) {
+                $attributes .= ' nonce="' . CSP_NONCE . '"';
             }
             
             $output = sprintf(

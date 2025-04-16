@@ -189,6 +189,63 @@ class TokenParser
         $options['defer'] = $defer;
         $this->assetManager->addJs($path, $isExternal, $defer, $options);
     }
+
+    /**
+     * Sammelt alle Asset-Definitionen aus einem Template-String
+     * ohne sie zu rendern
+     *
+     * @param string $content Template-Inhalt mit Tokens
+     * @return string Inhalt ohne Asset-Definitionen
+     */
+    public function collectAssets(string $content): void
+    {
+        error_log("🔍 collectAssets wird aufgerufen. Content-Länge: " . strlen($content));
+        
+        $matches = [];
+        $result = preg_match_all(
+            '/\{asset:([a-z]+)(?:\s+([^\}]*))?\}(.*?)\{\/asset\}/s',
+            $content,
+            $matches,
+            PREG_SET_ORDER
+        );
+        
+        error_log("🔍 Gefundene Assets: " . count($matches));
+        
+        foreach ($matches as $i => $match) {
+            $type = $match[1];
+            $options = isset($match[2]) ? $this->parseAttributeString($match[2]) : [];
+            $assetContent = trim($match[3]);
+            
+            error_log("🔍 Asset #$i - Typ: $type, Inhalt: " . substr($assetContent, 0, 30) . "...");
+            
+            // Inline-Assets speziell behandeln
+            if (isset($options['inline']) && $options['inline'] === 'true') {
+                if ($type === 'js') {
+                    $this->blocks['inline_js'] = ($this->blocks['inline_js'] ?? '') . "\n" . $assetContent;
+                    error_log("🔍 Inline-JS hinzugefügt");
+                } elseif ($type === 'css') {
+                    $this->blocks['inline_css'] = ($this->blocks['inline_css'] ?? '') . "\n" . $assetContent;
+                    error_log("🔍 Inline-CSS hinzugefügt");
+                }
+            } else {
+                // Normale Asset-Verarbeitung
+                if ($type === 'css') {
+                    $this->assetManager->addCss($assetContent, isset($options['external']) && $options['external'] === 'true', $options);
+                    error_log("🔍 CSS hinzugefügt: $assetContent");
+                } elseif ($type === 'js') {
+                    $this->assetManager->addJs(
+                        $assetContent, 
+                        isset($options['external']) && $options['external'] === 'true', 
+                        isset($options['defer']) ? $options['defer'] === 'true' : true, 
+                        $options
+                    );
+                    error_log("🔍 JS hinzugefügt: $assetContent");
+                }
+            }
+        }
+        
+        error_log("🔍 collectAssets abgeschlossen");
+    }
     
     /**
      * Ersetzt alle Token-Varianten in einem Template-String
@@ -196,22 +253,423 @@ class TokenParser
      * @param string $content Template-Inhalt mit Tokens
      * @return string Verarbeiteter Inhalt mit ersetzten Tokens
      */
-    public function parseTokens(string $content): string
+public function parseTokens(string $content): string
+{
+    $content = $this->parseAssetDefinitions($content);
+    $content = $this->parseBlockDefinitions($content);
+    $content = $this->parseRenderTokens($content);
+    $content = $this->parseVariableTokens($content);
+    $content = $this->parseMetaTokens($content);
+    $content = $this->parseResourceTokensWithoutRendering($content);
+    $content = $this->renderInline($content);
+    
+    return $content;
+}
+
+    /**
+     * Verarbeitet nur Block-Render-Tokens: {render:block:name}
+     */
+    private function parseBlockRenderTokens(string $content): string
     {
-        // 1. Block-Tokens ersetzen: {block:name}
-        $content = $this->parseBlockTokens($content);
+        // Blöcke rendern: {render:block:name}
+        $content = preg_replace_callback(
+            '/\{render:block:([a-zA-Z0-9_-]+)\}/',
+            function($matches) {
+                $blockName = $matches[1];
+                
+                if (isset($this->blocks[$blockName])) {
+                    return $this->blocks[$blockName];
+                }
+                
+                // Versuche, ein Block-Template zu laden
+                if ($this->templateDir !== null) {
+                    try {
+                        $blockPath = rtrim($this->templateDir, '/') . '/block/' . $blockName . '.phtml';
+                        
+                        // Sicherheitsprüfungen...
+                        $realBlockPath = realpath($blockPath);
+                        $realBlocksDir = realpath(rtrim($this->templateDir, '/') . '/block');
+                        
+                        if ($realBlockPath && $realBlocksDir && strpos($realBlockPath, $realBlocksDir) === 0 && file_exists($realBlockPath)) {
+                            ob_start();
+                            
+                            // Variable-Extraktion...
+                            if ($this->templateContext && method_exists($this->templateContext, 'getTemplateVars')) {
+                                $vars = $this->templateContext->getTemplateVars();
+                                extract($vars, EXTR_SKIP);
+                            }
+                            
+                            // Block-Template einbinden
+                            include $realBlockPath;
+                            
+                            // Inhalt speichern
+                            $blockContent = ob_get_clean();
+                            $this->blocks[$blockName] = $blockContent;
+                            
+                            // Sammle Assets aus dem Block-Inhalt
+                            $this->collectAssets($blockContent);
+                            
+                            return $blockContent;
+                        }
+                    } catch (\Exception $e) {
+                        if (ob_get_level() > 0) {
+                            ob_end_clean();
+                        }
+                    }
+                }
+                
+                // Debug-Info im Entwicklungsmodus
+                if (defined('MARQUES_DEBUG') && MARQUES_DEBUG) {
+                    return "<!-- Block '$blockName' nicht gefunden -->";
+                }
+                
+                return '';
+            },
+            $content
+        );
         
-        // 2. Variablen-Tokens ersetzen: {var:name}
-        $content = $this->parseVariableTokens($content);
+        // Abwärtskompatibilität: {block:name}
+        $content = preg_replace_callback(
+            '/\{block:([a-zA-Z0-9_-]+)\}/',
+            function($matches) {
+                $blockName = $matches[1];
+                
+                if (isset($this->blocks[$blockName])) {
+                    return $this->blocks[$blockName];
+                }
+                
+                // Rest wie oben...
+                return '';
+            },
+            $content
+        );
         
-        // 3. Asset-Tokens ersetzen: {asset:type}...{/asset}
-        $content = $this->parseAssetTokens($content);
+        return $content;
+    }
+
+    /**
+     * Verarbeitet alte Ressourcen-Tokens für Abwärtskompatibilität,
+     * ohne das tatsächliche Rendering durchzuführen
+     */
+    private function parseResourceTokensWithoutRendering(string $content): string
+    {
+        // Alte {src:css}...{src:end} Format entfernen
+        $content = preg_replace('/\{src:css\}(.*?)\{src:end\}/s', '', $content);
         
-        // 4. Meta-Tokens ersetzen: {meta}...{/meta}
-        $content = $this->parseMetaTokens($content);
+        // Alte {src:js}...{src:end} Format entfernen
+        $content = preg_replace('/\{src:js\}(.*?)\{src:end\}/s', '', $content);
         
-        // 5. Alte Ressourcen-Tokens für Abwärtskompatibilität: {src:type}...{src:end}
-        $content = $this->parseResourceTokens($content);
+        // Alte {src:meta}...{src:end} Format durch Meta-Tags ersetzen
+        $content = preg_replace_callback('/\{src:meta\}(.*?)\{src:end\}/s', function() {
+            $output = '';
+            foreach ($this->meta as $meta) {
+                $output .= '<meta';
+                foreach ($meta as $attr => $value) {
+                    $output .= ' ' . $attr . '="' . $value . '"';
+                }
+                $output .= '>' . PHP_EOL;
+            }
+            return $output;
+        }, $content);
+        
+        return $content;
+    }
+
+    /**
+     * Rendert nur Asset-Rendering-Tokens
+     */
+    public function renderAssets(string $content): string
+    {
+        // 1. Assets rendern: {render:assets:type}
+        $content = preg_replace_callback(
+            '/\{render:assets:([a-z]+)\}/',
+            function($matches) {
+                $type = $matches[1];
+                return $this->assetManager->render($type);
+            },
+            $content
+        );
+        
+        // 2. Alle Assets rendern: {render:assets}
+        $content = preg_replace_callback(
+            '/\{render:assets\}/',
+            function() {
+                return $this->assetManager->render('css') . $this->assetManager->render('js');
+            },
+            $content
+        );
+        
+        // 3. Inline-Assets rendern
+        $content = $this->renderInlineAssets($content);
+        
+        // 4. Abwärtskompatibilität: {assets:type}
+        $content = preg_replace_callback(
+            '/\{assets:([a-z]+)\}/',
+            function($matches) {
+                $type = $matches[1];
+                return $this->assetManager->render($type);
+            },
+            $content
+        );
+        
+        return $content;
+    }
+
+    /**
+     * Rendert Inline-Assets in einem Template-String
+     *
+     * @param string $content Template-Inhalt mit Inline-Tokens
+     * @return string Verarbeiteter Inhalt
+     */
+    public function renderInline(string $content): string
+    {
+        // Inline-JS rendern
+        $content = preg_replace_callback(
+            '/\{render:inline:js\}/',
+            function() {
+                if (isset($this->blocks['inline_js'])) {
+                    $attributes = '';
+                    // CSP Nonce hinzufügen, wenn vorhanden
+                    if (defined('CSP_NONCE')) {
+                        $attributes .= ' nonce="' . CSP_NONCE . '"';
+                    }
+                    return '<script' . $attributes . '>' . $this->blocks['inline_js'] . '</script>';
+                }
+                return '';
+            },
+            $content
+        );
+        
+        // Inline-CSS rendern
+        $content = preg_replace_callback(
+            '/\{render:inline:css\}/',
+            function() {
+                if (isset($this->blocks['inline_css'])) {
+                    $attributes = '';
+                    // CSP Nonce hinzufügen, wenn vorhanden
+                    if (defined('CSP_NONCE')) {
+                        $attributes .= ' nonce="' . CSP_NONCE . '"';
+                    }
+                    return '<style' . $attributes . '>' . $this->blocks['inline_css'] . '</style>';
+                }
+                return '';
+            },
+            $content
+        );
+        
+        return $content;
+    }
+
+    /**
+     * Verarbeitet Asset-Definitionen: {asset:type}...{/asset}
+     */
+    private function parseAssetDefinitions(string $content): string
+    {
+        return preg_replace_callback(
+            '/\{asset:([a-z]+)(?:\s+([^\}]*))?\}(.*?)\{\/asset\}/s',
+            function($matches) {
+                $type = $matches[1];
+                $options = isset($matches[2]) ? $this->parseAttributeString($matches[2]) : [];
+                $content = trim($matches[3]);
+                
+                // Inline-Assets speziell behandeln
+                if (isset($options['inline']) && $options['inline'] === 'true') {
+                    if ($type === 'js') {
+                        // Speichere in einem speziellen Block für Inline-JS
+                        $this->blocks['inline_js'] = ($this->blocks['inline_js'] ?? '') . "\n" . $content;
+                        return '';
+                    } elseif ($type === 'css') {
+                        // Speichere in einem speziellen Block für Inline-CSS
+                        $this->blocks['inline_css'] = ($this->blocks['inline_css'] ?? '') . "\n" . $content;
+                        return '';
+                    }
+                }
+                
+                // Normale Asset-Verarbeitung (keine Änderung)
+                if ($type === 'css') {
+                    $this->assetManager->addCss($content, isset($options['external']) && $options['external'] === 'true', $options);
+                } elseif ($type === 'js') {
+                    $this->assetManager->addJs(
+                        $content, 
+                        isset($options['external']) && $options['external'] === 'true', 
+                        isset($options['defer']) && $options['defer'] === 'true', 
+                        $options
+                    );
+                }
+                
+                return '';
+            },
+            $content
+        );
+    }
+
+    private function renderInlineAssets(string $content): string
+    {
+        // Render für Inline-JS
+        $content = preg_replace_callback(
+            '/\{render:inline:js\}/',
+            function() {
+                if (isset($this->blocks['inline_js'])) {
+                    $attributes = '';
+                    // CSP Nonce hinzufügen, wenn vorhanden
+                    if (defined('CSP_NONCE')) {
+                        $attributes .= ' nonce="' . CSP_NONCE . '"';
+                    }
+                    return '<script' . $attributes . '>' . $this->blocks['inline_js'] . '</script>';
+                }
+                return '';
+            },
+            $content
+        );
+        
+        // Render für Inline-CSS
+        $content = preg_replace_callback(
+            '/\{render:inline:css\}/',
+            function() {
+                if (isset($this->blocks['inline_css'])) {
+                    $attributes = '';
+                    // CSP Nonce hinzufügen, wenn vorhanden
+                    if (defined('CSP_NONCE')) {
+                        $attributes .= ' nonce="' . CSP_NONCE . '"';
+                    }
+                    return '<style' . $attributes . '>' . $this->blocks['inline_css'] . '</style>';
+                }
+                return '';
+            },
+            $content
+        );
+        
+        return $content;
+    }
+
+    /**
+     * Verarbeitet Block-Definitionen: {block:name}...{/block}
+     */
+    private function parseBlockDefinitions(string $content): string
+    {
+        return preg_replace_callback(
+            '/\{block:([a-zA-Z0-9_-]+)\}(.*?)\{\/block\}/s',
+            function($matches) {
+                $blockName = $matches[1];
+                $blockContent = $matches[2];
+                
+                // Block speichern
+                $this->blocks[$blockName] = $blockContent;
+                
+                // Optional: Bei manchen Blöcken willst du vielleicht den Inhalt behalten
+                if (in_array($blockName, ['content', 'main'])) {
+                    return $blockContent;
+                }
+                
+                return '';
+            },
+            $content
+        );
+    }
+
+    /**
+     * Verarbeitet Render-Tokens: {render:type:name}
+     */
+    private function parseRenderTokens(string $content): string
+    {
+        // 1. Assets rendern: {render:assets:type}
+        $content = preg_replace_callback(
+            '/\{render:assets:([a-z]+)\}/',
+            function($matches) {
+                $type = $matches[1];
+                return $this->assetManager->render($type);
+            },
+            $content
+        );
+        
+        // 2. Alle Assets rendern: {render:assets}
+        $content = preg_replace_callback(
+            '/\{render:assets\}/',
+            function() {
+                return $this->assetManager->render('css') . $this->assetManager->render('js');
+            },
+            $content
+        );
+        
+        // 3. Blöcke rendern: {render:block:name}
+        $content = preg_replace_callback(
+            '/\{render:block:([a-zA-Z0-9_-]+)\}/',
+            function($matches) {
+                $blockName = $matches[1];
+                
+                if (isset($this->blocks[$blockName])) {
+                    return $this->blocks[$blockName];
+                }
+                
+                // Versuche, ein Block-Template zu laden
+                if ($this->templateDir !== null) {
+                    try {
+                        $blockPath = rtrim($this->templateDir, '/') . '/block/' . $blockName . '.phtml';
+                        
+                        // Sicherheitsprüfungen...
+                        $realBlockPath = realpath($blockPath);
+                        $realBlocksDir = realpath(rtrim($this->templateDir, '/') . '/block');
+                        
+                        if ($realBlockPath && $realBlocksDir && strpos($realBlockPath, $realBlocksDir) === 0 && file_exists($realBlockPath)) {
+                            ob_start();
+                            
+                            // Variable-Extraktion...
+                            if ($this->templateContext && method_exists($this->templateContext, 'getTemplateVars')) {
+                                $vars = $this->templateContext->getTemplateVars();
+                                extract($vars, EXTR_SKIP);
+                            }
+                            
+                            // Block-Template einbinden
+                            include $realBlockPath;
+                            
+                            // Inhalt speichern
+                            $blockContent = ob_get_clean();
+                            $this->blocks[$blockName] = $blockContent;
+                            
+                            return $blockContent;
+                        }
+                    } catch (\Exception $e) {
+                        if (ob_get_level() > 0) {
+                            ob_end_clean();
+                        }
+                    }
+                }
+                
+                // Debug-Info im Entwicklungsmodus
+                if (defined('MARQUES_DEBUG') && MARQUES_DEBUG) {
+                    return "<!-- Block '$blockName' nicht gefunden -->";
+                }
+                
+                return '';
+            },
+            $content
+        );
+        
+        // 4. Abwärtskompatibilität: {assets:type}
+        $content = preg_replace_callback(
+            '/\{assets:([a-z]+)\}/',
+            function($matches) {
+                $type = $matches[1];
+                return $this->assetManager->render($type);
+            },
+            $content
+        );
+        
+        // 5. Abwärtskompatibilität: {block:name}
+        $content = preg_replace_callback(
+            '/\{block:([a-zA-Z0-9_-]+)\}/',
+            function($matches) {
+                $blockName = $matches[1];
+                
+                if (isset($this->blocks[$blockName])) {
+                    return $this->blocks[$blockName];
+                }
+                
+                // Rest wie oben...
+                return '';
+            },
+            $content
+        );
         
         return $content;
     }
@@ -337,21 +795,74 @@ class TokenParser
      */
     private function parseAssetTokens(string $content): string
     {
-        // Format: {asset:type [options]}...{/asset}
-        $pattern = '/\{asset:([a-z]+)(?:\s+([^\}]*))?\}(.*?)\{\/asset\}/s';
+        // 1. Asset-Definitionen verarbeiten: {asset:type [options]}...{/asset}
+        $content = preg_replace_callback(
+            '/\{asset:([a-z]+)(?:\s+([^\}]*))?\}(.*?)\{\/asset\}/s',
+            function($matches) {
+                $type = $matches[1];
+                $options = isset($matches[2]) ? $this->parseAttributeString($matches[2]) : [];
+                $path = trim($matches[3]);
+                
+                // Asset zum Manager hinzufügen
+                $isExternal = isset($options['external']) && $options['external'] === 'true';
+                if ($type === 'css') {
+                    $this->assetManager->addCss($path, $isExternal, $options);
+                } elseif ($type === 'js') {
+                    $defer = isset($options['defer']) ? $options['defer'] === 'true' : true;
+                    $this->assetManager->addJs($path, $isExternal, $defer, $options);
+                }
+                
+                return '';
+            },
+            $content
+        );
         
-        return preg_replace_callback($pattern, function($matches) {
-            $type = $matches[1];
-            $options = isset($matches[2]) ? $this->parseAttributeString($matches[2]) : [];
-            
-            // Gruppierungsoptionen verarbeiten
-            if (isset($options['group'])) {
-                return $this->assetManager->renderGroup($options['group'], $type);
-            }
-            
-            // Einzelnes Asset rendern
-            return $this->assetManager->render($type);
-        }, $content);
+        // 2. Explizites Asset-Rendering: {render:assets:type}
+        $content = preg_replace_callback(
+            '/\{render:assets:([a-z]+)\}/',
+            function($matches) {
+                $type = $matches[1];
+                return $this->assetManager->render($type);
+            },
+            $content
+        );
+        
+        // 3. Generelles Asset-Rendering: {render:assets}
+        $content = preg_replace_callback(
+            '/\{render:assets\}/',
+            function() {
+                return $this->assetManager->render('css') . $this->assetManager->render('js');
+            },
+            $content
+        );
+        
+        // 4. Abwärtskompatibilität: {assets:type}
+        $content = preg_replace_callback(
+            '/\{assets:([a-z]+)\}/',
+            function($matches) {
+                $type = $matches[1];
+                return $this->assetManager->render($type);
+            },
+            $content
+        );
+        
+        return $content;
+    }
+
+    /**
+     * Fügt inline JavaScript hinzu
+     */
+    private function addInlineJs(string $code): void
+    {
+        $this->blocks['inline_js'] = ($this->blocks['inline_js'] ?? '') . "\n" . $code;
+    }
+
+    /**
+     * Fügt inline CSS hinzu
+     */
+    private function addInlineCss(string $code): void
+    {
+        $this->blocks['inline_css'] = ($this->blocks['inline_css'] ?? '') . "\n" . $code;
     }
     
     /**

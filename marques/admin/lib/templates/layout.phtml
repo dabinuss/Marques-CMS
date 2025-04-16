@@ -4,37 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{var:page_title} - {var:site_name}</title>
-    {src:css}{src:end}
-    {block:head}
+    
+    <!-- CSS mittels Asset-Tags einbinden -->
+    {asset:css}/admin/assets/css/admin-style.css{/asset}
+    {asset:css}/admin/assets/css/fa-640.all.min.css{/asset}
+
+    {render:assets:css}
 </head>
 <body>
-    <div class="container">
-        <!-- Sidebar -->
-        {block:sidebar}
-        
-        <!-- Hauptinhalt -->
-        <main class="main-content">
-            <div class="header">
-                <h1>{var:page_title}</h1>
-                <div class="header-actions">
-                    {block:header}
-                </div>
-            </div>
 
-            <!-- Content-Bereich -->
-            {block:content}
-        </main>
-    </div>
+    {render:block:content}
 
-    <!-- JavaScript -->
-    <script>
+    <!-- JavaScript mittels Asset-Tags einbinden -->
+    {asset:js inline="true"}
         // Globale JS-Variablen
         window.csrfToken = '{var:csrf_token}';
         window.baseUrl = '{var:base_url}';
         window.adminBaseUrl = '{var:admin_url}';
-    </script>
+    {/asset}
+
+    {render:inline:js}
+
+    {render:assets:js}
     
-    {src:js}{src:end}
-    {block:scripts}
+    {render:block:scripts}
+
 </body>
 </html>

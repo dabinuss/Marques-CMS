@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Admin\Core;
 
-// Kernklassen für Abhängigkeiten
 use Marques\Core\Template as AppTemplate;
 use Marques\Core\TokenParser;
 use Marques\Core\Path;
@@ -11,21 +10,22 @@ use Marques\Core\Cache;
 use Marques\Util\Helper;
 use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Service\ThemeManager;
-use Marques\Util\SafetyXSS; // Für sichere Ausgabe
+use Marques\Util\SafetyXSS;
 use Admin\Http\Router;
 
+/**
+ * Admin Template class for admin view rendering and layout management.
+ */
 class Template extends AppTemplate {
 
-    protected string $templateDir; // Verzeichnis für .phtml Views
-    protected string $layoutFile = 'layout.phtml'; // Standard-Layout-Datei
+    protected string $templateDir;
+    protected string $layoutFile = 'layout.phtml';
     protected Router $adminRouter;
-    protected SafetyXSS $safetyXSS; // Sicherheitstools für XSS-Schutz
+    protected SafetyXSS $safetyXSS;
 
-    // Cache für Dateiexistenz (kann bleiben)
     protected static array $fileExistenceCache = [];
     protected static array $fileExistenceCacheTTL = [];
     const FILE_CACHE_TTL = 60;
-
     protected static array $fileContentCache = [];
 
     public function __construct(
@@ -37,32 +37,26 @@ class Template extends AppTemplate {
         Router $adminRouter,
         SafetyXSS $safetyXSS,
         TokenParser $tokenParser,
-        string $templateDir = null
+        ?string $templateDir = null
     ) {
-        // Speichere $appPath in der geerbten Eigenschaft, damit sie initialisiert ist
         parent::__construct($dbHandler, $themeManager, $appPath, $cache, $helper, $tokenParser);
-        
-        // Initialisiere deine eigenen Eigenschaften
         $this->templateDir = $templateDir ?? $appPath->getPath('admin_template');
-        $this->layoutFile = rtrim($this->templateDir, '/') . '/' . $this->layoutFile;
+        $this->layoutFile = rtrim($this->templateDir, '/') . '/' . basename($this->layoutFile);
         $this->adminRouter = $adminRouter;
         $this->safetyXSS = $safetyXSS;
         $this->tokenParser = $tokenParser;
-
         $this->tokenParser->setTemplateDir($this->templateDir);
         $this->tokenParser->setTemplateContext($this);
-
         $this->tokenParser->getAssetManager()->setBaseUrl($this->helper->getSiteUrl('admin'));
-        
-        // Admin-spezifische Standard-Variablen setzen
         $this->setAdminVariables();
     }
     
     /**
-     * Setzt admin-spezifische Standardvariablen
+     * Sets admin-specific default variables.
      */
     protected function setAdminVariables(): void
     {
+        parent::setStandardVariables();
         $this->tokenParser->setVariables([
             'admin_url' => $this->helper->getSiteUrl('admin'),
             'assets_url' => $this->helper->getSiteUrl('admin/assets'),
@@ -70,164 +64,99 @@ class Template extends AppTemplate {
             'site_name' => $this->_config['site_name'] ?? 'Marques CMS Admin',
             'admin_version' => defined('MARQUES_VERSION') ? MARQUES_VERSION : '1.0',
         ]);
-        
-        // Standard CSS und JS hinzufügen
-        $this->tokenParser->addCss($this->helper->getSiteUrl('admin/assets/css/marques-panel-style.css'));
-        $this->tokenParser->addCss('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', true);
-        $this->tokenParser->addJs('https://cdn.jsdelivr.net/npm/chart.js', true);
-        $this->tokenParser->addJs($this->helper->getSiteUrl('admin/assets/js/admin-script.js'));
     }
 
     /**
-     * Rendert ein Admin-View-Template innerhalb eines Layouts.
-     *
-     * @param array  $vars        Variablen, die an das Template übergeben werden.
-     * @param string $templateKey Schlüssel/Dateiname des zu rendernden Views (ohne Endung, z.B. 'dashboard').
-     *
-     * @throws \Exception Falls die View- oder Layout-Datei nicht gefunden wird.
+     * Renders an admin view template with layout.
      */
     public function render(array $vars = [], string $templateKey = 'dashboard'): void {
+        $baseVars = [
+            'helper' => $this->helper,
+            'router' => $this->adminRouter,
+            'safetyXSS' => $this->safetyXSS,
+            'is_admin' => true,
+            'username' => $vars['username'] ?? 'Gast',
+            'user' => $vars['user'] ?? null,
+            'template' => $this,
+            'tokenParser' => $this->tokenParser
+        ];
+
+        $baseVars['marques_user'] = $_SESSION['marques_user'] ?? ['username' => 'Admin'];
+        $baseVars['username'] = $baseVars['marques_user']['username'] ?? 'Admin';
+        $baseVars['user'] = $baseVars['marques_user'];
+
+        $templateVars = array_merge($baseVars, $vars);
+
+        $this->registerTemplateVars($templateVars);
+
+        if (!preg_match('/^[a-z0-9_-]+$/i', $templateKey)) {
+            throw new \InvalidArgumentException("Invalid template key: " . htmlspecialchars($templateKey));
+        }
+
+        $viewFile = rtrim($this->templateDir, '/') . '/' . $templateKey . '.phtml';
+
+        if (!$this->fileExistsCached($viewFile)) {
+            throw new \RuntimeException("Admin view file not found: " . htmlspecialchars($viewFile));
+        }
+
+        $layoutExists = $this->fileExistsCached($this->layoutFile);
+        $layoutContent = $layoutExists ? $this->getCachedFileContent($this->layoutFile) : '';
+
+        $this->collectAssetsForTemplates($layoutExists ? $this->layoutFile : '', $viewFile);
+
+        $contentForLayout = '';
         try {
-            // Stelle die Grundvariablen sicher, besonders username und safetyXSS
-            $baseVars = [
-                'helper' => $this->helper,
-                'router' => $this->adminRouter, // Router im Template verfügbar machen
-                'safetyXSS' => $this->safetyXSS, // Sicherheitstools für XSS-Schutz SIND JETZT ESSENTIELL!
-                'is_admin' => true,
-                'username' => $vars['username'] ?? 'Gast', // Standardwert für username
-                'user' => $vars['user'] ?? null,
-                // Referenz auf das Template
-                'template' => $this,
-                // Referenz auf TokenParser
-                'tokenParser' => $this->tokenParser
-            ];
-
-            // Füge die aktuellen Benutzerdaten hinzu, wenn wir eingeloggt sind
-            $baseVars['marques_user'] = isset($_SESSION['marques_user']) ? $_SESSION['marques_user'] : ['username' => 'Admin'];
-
-            // Falls kein separater 'username'-Eintrag vorhanden, wähle den Wert aus "marques_user"
-            if (!isset($vars['username'])) {
-                $baseVars['username'] = $baseVars['marques_user']['username'] ?? 'Admin';
-            }
-            
-            // Falls kein separater "user"-Eintrag vorhanden, übernimm den kompletten Inhalt
-            if (!isset($vars['user'])) {
-                $baseVars['user'] = $baseVars['marques_user'];
-            }
-
-            // Mische Basisvariablen mit den übergebenen Variablen
-            // $vars überschreibt $baseVars bei gleichen Schlüsseln
-            $templateVars = array_merge($baseVars, $vars);
-            
-            // Variablen auch als Tokens verfügbar machen
             foreach ($templateVars as $key => $value) {
-                if (is_string($value) || is_numeric($value)) {
-                    $this->tokenParser->setVariable($key, (string)$value);
+                if (preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $key)) {
+                    ${$key} = $value;
                 }
             }
-
-            // Sanity check für den Template-Key
-            if (!preg_match('/^[a-z0-9_-]+$/i', $templateKey)) {
-                throw new \InvalidArgumentException("Ungültiger Template-Schlüssel: " . htmlspecialchars($templateKey));
-            }
-
-            // View-Datei-Pfad erstellen
-            $viewFile = rtrim($this->templateDir, '/') . '/' . $templateKey . '.phtml';
-
-            // Prüfe, ob View-Datei existiert (mit Cache)
-            if (!$this->fileExistsCached($viewFile)) {
-                throw new \RuntimeException("Admin View-Datei nicht gefunden: " . htmlspecialchars($viewFile));
-            }
-
-            // Prüfe, ob Layout-Datei existiert (mit Cache)
-            $layoutExists = $this->fileExistsCached($this->layoutFile);
-
-            // --- Rendern des spezifischen Views ---
-            $contentForLayout = '';
-            try {
-                // Variablen für den View extrahieren (KEIN globales Escaping mehr hier!)
-                // $templateVars enthält jetzt die Originaldaten.
-                foreach ($templateVars as $key => $value) {
-                    // Überprüfe, ob der Schlüssel ein valider Variablenname ist
-                    if (preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $key)) {
-                        ${$key} = $value;
-                    }
-                }
-
-                // Starte Content-Block für den Hauptinhalt
-                $this->tokenParser->startBlock('content');
-                
-                // View-Datei einbinden - hier kann weiterer Output erzeugt werden
-                include $viewFile;
-                
-                // Content-Block beenden
-                $this->tokenParser->endBlock();
-                
-                // Content für Fallback speichern (falls kein Layout existiert)
-                $contentForLayout = $this->tokenParser->getBlock('content');
-                
-            } catch (\Throwable $e) {
-                if (ob_get_level() > 0) {
-                    ob_end_clean(); // View-Buffer leeren bei Fehler
-                }
-                // Werfe eine spezifischere Exception
-                throw new \RuntimeException("Fehler beim Rendern der View '{$templateKey}': " . $e->getMessage(), 0, $e);
-            }
-
-            // --- Rendern des Layouts, falls vorhanden ---
-            if ($layoutExists) {
-                try {
-                    // Lade den Layout-Inhalt
-                    $layoutContent = $this->getCachedFileContent($this->layoutFile);
-                    
-                    // Verarbeite alle Tokens im Layout
-                    $finalOutput = $this->tokenParser->parseTokens($layoutContent);
-                    
-                    // Ausgabe
-                    echo $finalOutput;
-                    
-                } catch (\Throwable $e) {
-                    // Bei Fehlern im Layout-Rendering nur den View zeigen (als Fallback)
-                    echo $contentForLayout;
-                    // Logge den Layout-Fehler
-                    error_log("Fehler beim Rendern des Admin-Layouts ({$this->layoutFile}): " . $e->getMessage());
-                }
-            } else {
-                // Kein Layout vorhanden, nur den View-Inhalt ausgeben
-                echo $contentForLayout;
-            }
-
+            ob_start();
+            include $viewFile;
+            $viewContent = ob_get_clean();
+            $processedViewContent = $this->tokenParser->parseTokens($viewContent);
+            $this->tokenParser->setBlock('content', $processedViewContent);
+            $contentForLayout = $processedViewContent;
         } catch (\Throwable $e) {
-            // Fehler weiterwerfen für die zentrale Fehlerbehandlung (ExceptionHandler)
-            // Loggen erfolgt bereits im ExceptionHandler
-            throw $e;
+            if (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            throw new \RuntimeException("Error rendering view '{$templateKey}': " . $e->getMessage(), 0, $e);
+        }
+
+        if ($layoutExists) {
+            try {
+                $finalOutput = $this->tokenParser->parseTokens($layoutContent);
+                $finalOutput = $this->tokenParser->renderInline($finalOutput);
+                echo $finalOutput;
+            } catch (\Throwable $e) {
+                echo $contentForLayout;
+                error_log("Admin layout rendering error ({$this->layoutFile}): " . $e->getMessage());
+            }
+        } else {
+            echo $contentForLayout;
         }
     }
 
     /**
-     * Prüft mittels internem Cache, ob eine Datei existiert.
+     * Checks file existence with static cache.
      */
     protected function fileExistsCached(string $filePath): bool {
         $now = time();
-        
-        if (isset(self::$fileExistenceCache[$filePath]) &&
-            isset(self::$fileExistenceCacheTTL[$filePath]) &&
+        if (isset(self::$fileExistenceCache[$filePath], self::$fileExistenceCacheTTL[$filePath]) &&
             $now < self::$fileExistenceCacheTTL[$filePath]) {
             return self::$fileExistenceCache[$filePath];
         }
-        
         self::$fileExistenceCache[$filePath] = file_exists($filePath);
         self::$fileExistenceCacheTTL[$filePath] = $now + self::FILE_CACHE_TTL;
-        
         return self::$fileExistenceCache[$filePath];
     }
 
     /**
-     * Liest den Inhalt einer Datei mit Cache
+     * Returns file content with static cache.
      */
     private function getCachedFileContent(string $filePath): string {
         $currentMTime = filemtime($filePath);
-        // Cache-Key basiert auf dem Dateipfad
         if (isset(self::$fileContentCache[$filePath])) {
             [$cachedContent, $cachedMTime] = self::$fileContentCache[$filePath];
             if ($cachedMTime === $currentMTime) {
@@ -240,9 +169,7 @@ class Template extends AppTemplate {
     }
 
     /**
-     * Gibt das Template-Verzeichnis zurück
-     * 
-     * @return string
+     * Returns the template directory.
      */
     public function getTemplateDir(): string
     {
@@ -250,18 +177,14 @@ class Template extends AppTemplate {
     }
 
     /**
-     * Gibt alle aktuellen Template-Variablen zurück
-     * 
-     * @return array
+     * Returns all current template variables.
      */
     public function getTemplateVars(): array
     {
-        // Hier müsstest du alle Variablen zurückgeben, die im Template verfügbar sein sollen
         return [
             'helper' => $this->helper,
             'safetyXSS' => $this->safetyXSS ?? null,
             'router' => $this->adminRouter ?? null,
-            // Weitere Variablen, die in Blocks verfügbar sein sollen
         ];
     }
 }

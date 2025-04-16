@@ -1,18 +1,12 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - {var:site_name}</title>
-    <link rel="stylesheet" href="/admin/assets/css/login-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    {block:head}
-</head>
-<body>
-    <div class="login-container">
+{asset:css}/admin/assets/css/login-style.css{/asset}
+
+<div class="login-container">
+
+    <main class="main-content">
+
         <div class="login-header">
             <h1>{var:site_name}</h1>
-            <p>Admin-Login</p>
+            <p>{var:page_title}</p>
         </div>
         
         {var:error_message}
@@ -47,9 +41,6 @@
         <div class="login-footer">
             <p>marques CMS v{var:version}</p>
         </div>
-    </div>
-    
-    {src:js}{src:end}
-    {block:scripts}
-</body>
-</html>
+
+    </main>
+</div>
