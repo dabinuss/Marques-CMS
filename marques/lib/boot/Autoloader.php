@@ -143,22 +143,22 @@ class Autoloader
      */
     protected function getFilePath(string $baseDir, string $relativeClass)
     {
-        $parts = explode('\\', $relativeClass);
+        $parts     = explode('\\', $relativeClass);
         $className = array_pop($parts);
     
-        // Alle Teile (Ordner) in Kleinbuchstaben umwandeln, weil das deiner Konvention entspricht:
-        $dirPath = '';
-        if (!empty($parts)) {
-            $dirPath = strtolower(implode(DIRECTORY_SEPARATOR, $parts)) . DIRECTORY_SEPARATOR;
-        }
+        // Unterordner laut Konvention kleingeschrieben
+        $dirPath = $parts
+            ? strtolower(implode(DIRECTORY_SEPARATOR, $parts)) . DIRECTORY_SEPARATOR
+            : '';
     
-        $filePath = $baseDir . $dirPath . $className . '.php';
-        $normalizedPath = $this->normalizePath($filePath);
-        $normalizedBaseDir = $this->normalizePath($baseDir);
+        $candidate          = $baseDir . $dirPath . $className . '.php';
+        $normalizedPath     = $this->normalizePath($candidate);
+        $normalizedBaseDir  = $this->normalizePath($baseDir);
     
+        // Path‑Traversal‑Check
         if (strpos($normalizedPath, $normalizedBaseDir) !== 0) {
             if ($this->enableLogging) {
-                $this->log("Path-Traversal-Versuch erkannt: $filePath");
+                $this->log("Path‑Traversal‑Versuch erkannt: $candidate");
             }
             return false;
         }

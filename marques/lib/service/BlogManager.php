@@ -7,6 +7,7 @@ use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Util\Helper;
 use Marques\Core\Config;
 use Marques\Data\FileManager;
+use Marques\Filesystem\{PathRegistry, PathResolver};
 
 /**
  * marques CMS - Blog Manager Klasse
@@ -21,16 +22,19 @@ class BlogManager {
     protected FileManager $fileManager;
     private Helper $helper;
     private array $_config;
+    private PathRegistry $paths;
 
     public function __construct
     (
         DatabaseHandler $dbHandler, 
         FileManager $fileManager, 
         Helper $helper,
+        PathRegistry    $paths
     ) {
         $this->dbHandler = $dbHandler;
         $this->fileManager = $fileManager;
         $this->helper = $helper;
+        $this->paths = $paths;
 
         // Konfiguration über den neuen DatabaseHandler laden
         $this->_config = $dbHandler->table('settings')->where('id', '=', 1)->first() ?: [];
@@ -47,13 +51,11 @@ class BlogManager {
     public function getAllPosts(int $limit = 0, int $offset = 0, string $category = ''): array {
 
         $posts = [];
-        $blogDir = MARQUES_CONTENT_DIR . '/blog';
-        if (!is_dir($blogDir)) {
-            return $posts;
-        }
 
-        $files = [];
-        $yearDirs = glob($blogDir . '/*', GLOB_ONLYDIR); // Finde *alle* Ordner direkt unterhalb von content/blog/
+        $blogDir = 'blog';
+        if (!$this->fileManager->exists($blogDir)) { return $posts; }
+        $files = $this->fileManager->glob('blog/*/*/*.md');
+        $yearDirs = [];
 
         if ($yearDirs) {
             foreach ($yearDirs as $yearDir) {
@@ -71,9 +73,8 @@ class BlogManager {
             }
         }
 
-        usort($files, function ($a, $b) {
-            return filemtime($b) - filemtime($a);
-        });
+        usort($files, fn($a,$b) => filemtime($this->fileManager->getFullPath($b))
+                                 - filemtime($this->fileManager->getFullPath($a))); 
 
         if ($offset > 0) {
             $files = array_slice($files, $offset);
@@ -268,7 +269,7 @@ class BlogManager {
         $yearMonth = $parts[1];
         $year = substr($yearMonth, 0, 2);
         $month = substr($yearMonth, 2, 1);
-        return 'blog/' . $year . '/' . $month . '/' . $id . '.md';
+        return $this->paths->combine('content', "blog/$year/$month/$id.md");
     }
 
     /**

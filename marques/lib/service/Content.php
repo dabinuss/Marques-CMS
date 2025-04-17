@@ -8,17 +8,26 @@ use Marques\Util\SafetyXSS;
 use Marques\Util\Helper;
 use Marques\Data\FileManager;
 use Marques\Service\BlogManager;
+use Marques\Filesystem\PathRegistry;
+use Marques\Filesystem\PathResolver;
 
 class Content {
     private array $_cache = [];
     private DatabaseHandler $dbHandler;
     private FileManager $fileManager;
     private Helper $helper;
+    private PathRegistry $paths;
 
-    public function __construct(DatabaseHandler $dbHandler, FileManager $fileManager, Helper $helper) {
+    public function __construct(
+        DatabaseHandler $dbHandler, 
+        FileManager $fileManager, 
+        Helper $helper,
+        PathRegistry $paths,
+    ) {
         $this->dbHandler = $dbHandler;
         $this->fileManager = $fileManager;
         $this->helper = $helper;
+        $this->paths = new PathRegistry();
     }
     
     /**
@@ -54,19 +63,19 @@ class Content {
         }
         
         // Stelle sicher, dass das pages-Verzeichnis existiert
-        $pagesDir = MARQUES_CONTENT_DIR . '/pages';
-        if (!is_dir($pagesDir)) {
-            if (!mkdir($pagesDir, 0755, true)) {
+        $pagesDir = $this->paths->combine('content', 'pages');
+        if (!$this->fileManager->exists($pagesDir)) {
+            if (!$this->fileManager->createDirectory('pages')) {
                 error_log("Fehler: Verzeichnis konnte nicht erstellt werden: " . $pagesDir);
                 throw new \RuntimeException("Verzeichnis für Seiten konnte nicht erstellt werden.", 500);
             }
         }
         
         // Dateipfad bestimmen mit verbesserter Fehlererkennung
-        $filePath = $pagesDir . '/' . $path . '.md';
+        $filePath = $this->fileManager->getFullPath("pages/$path.md");
         error_log("Suche Datei: " . $filePath);
         
-        if (!file_exists($filePath)) {
+        if (!$this->fileManager->exists("pages/$path.md")) {
             error_log("Datei nicht gefunden: " . $filePath);
             
             // Für die Startseite: Erstelle eine Standardseite
@@ -85,13 +94,13 @@ class Content {
             }
         }
         
-        if (!is_readable($filePath)) {
+        if ($this->fileManager->readFile("pages/$path.md") === null) {
             error_log("Keine Leserechte für: " . $filePath);
             throw new \RuntimeException("Keine Leserechte für: " . SafetyXSS::escapeOutput($path, 'html'), 403);
         }
         
         try {
-            $content = file_get_contents($filePath);
+            $content = $this->fileManager->readFile("pages/$path.md");
             if ($content === false) {
                 error_log("Fehler beim Lesen der Datei: " . $filePath);
                 throw new \RuntimeException("Fehler beim Lesen der Datei: " . $path);
@@ -122,7 +131,7 @@ class Content {
      */
     private function createDefaultHomePage(): void {
         // Stellen Sie sicher, dass das Verzeichnis existiert
-        $dir = MARQUES_CONTENT_DIR . '/pages';
+        $dir = $this->paths->combine('content', 'pages');
         if (!is_dir($dir)) {
             if (!mkdir($dir, 0755, true)) {
                 error_log("Fehler: Konnte Verzeichnis nicht erstellen: " . $dir);
@@ -155,8 +164,8 @@ Viel Erfolg mit Ihrem neuen CMS!
 MARKDOWN;
         
         // Datei schreiben
-        $file = $dir . '/home.md';
-        if (file_put_contents($file, $content) === false) {
+        $file = $this->fileManager->createDirectory('pages');
+        if (!$this->fileManager->writeFile('pages/home.md', $content)) {
             error_log("Fehler: Konnte Standard-Home-Seite nicht erstellen: " . $file);
         } else {
             error_log("Info: Standard-Home-Seite wurde erstellt: " . $file);
@@ -173,7 +182,7 @@ MARKDOWN;
      */
     private function getBlogPost(string $path, array $params = []): array {
         // Hier wird nun die injizierte FileManager-Instanz verwendet, statt new FileManager() aufzurufen.
-        $blogManager = new BlogManager($this->dbHandler, $this->fileManager, $this->helper);
+        $blogManager = new BlogManager($this->dbHandler, $this->fileManager, $this->helper, $this->paths);
         
         // Debug-Ausgabe für Fehlersuche
         error_log("getBlogPost() aufgerufen mit path: " . $path);

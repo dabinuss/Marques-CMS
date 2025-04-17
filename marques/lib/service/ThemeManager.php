@@ -4,19 +4,29 @@ declare(strict_types=1);
 namespace Marques\Service;
 
 use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Data\FileManager;
+use Marques\Filesystem\PathRegistry;
+use Marques\Filesystem\PathResolver;
+use Marques\Filesystem\Filesystem;
 
 class ThemeManager {
     private array $themes = [];
     private string $currentTheme = 'default';
     private string $themesPath;
     private DatabaseHandler $dbHandler;
+    private PathRegistry $paths;
+    private FileManager $fileManager;
 
-    public function __construct(DatabaseHandler $dbHandler) {
-        $this->themesPath = MARQUES_ROOT_DIR . '/themes';
+    public function __construct(DatabaseHandler $dbHandler, PathRegistry $paths, FileManager $fileManager) {
+
         $this->dbHandler = $dbHandler;
-        $this->loadThemes();
         $settings = $this->dbHandler->table('settings')->where('id', '=', 1)->first();
         $this->currentTheme = $settings['active_theme'] ?? 'default';
+        $this->paths      = $paths;
+        $this->themesPath = $paths->getPath('themes');
+        $this->fileManager = new FileManager(new \Marques\Core\Cache(), $this->themesPath);
+
+        $this->loadThemes();
     }
     
     private function loadThemes() {
@@ -63,8 +73,8 @@ class ThemeManager {
     }
     
     public function getThemePath(string $file = ''): string {
-        $basePath = $this->themesPath . '/' . $this->currentTheme;
-        return $file ? $basePath . '/' . $file : $basePath;
+        $basePath = $this->paths->combine('themes', $this->currentTheme);
+        return $file ? PathResolver::resolve($basePath, $file) : $basePath;
     }
     
     public function getThemeAssetsUrl(string $file = ''): string {

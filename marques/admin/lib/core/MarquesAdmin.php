@@ -138,7 +138,7 @@ class MarquesAdmin
 
         $this->adminContainer->register(\Marques\Core\AssetManager::class, function(Node $container) use ($rootContainer) {
             $assetManager = $rootContainer->get(\Marques\Core\AssetManager::class);
-            $helper = $container->get(\Marques\Util\Helper::class);
+            $helper = $container->get(Helper::class);
             $assetManager->setBaseUrl($helper->getSiteUrl('admin'));
             return $assetManager;
         });
@@ -196,6 +196,7 @@ class MarquesAdmin
                 $resolve(Helper::class)
             );
         });
+        
 
         $this->adminContainer->register(BlogController::class, function(Node $container) use ($resolve) {
             return new BlogController(
@@ -209,12 +210,20 @@ class MarquesAdmin
             return new SafetyXSS();
         });
 
-        $this->adminContainer->register(\Marques\Data\FileManager::class, function(Node $container) use ($rootContainer) {
+        $this->adminContainer->register(FileManager::class, function(Node $container) use ($rootContainer) {
             // Den FileManager vom Root-Container wiederverwenden statt einen neuen zu erstellen
-            $fileManager = $rootContainer->get(\Marques\Data\FileManager::class);
+            $fileManager = $rootContainer->get(FileManager::class);
             // Für die Admin-Templates konfigurieren
             $fileManager->useDirectory('backend_templates');
             return $fileManager;
+        });
+
+        $this->adminContainer->register(PageManager::class, function(Node $container) use ($resolve) {
+            return new PageManager(
+                $container->get(DatabaseHandler::class),
+                $resolve(PathRegistry::class),
+                $resolve(FileManager::class)
+            );
         });
 
         // More controller registrations can go here
@@ -350,7 +359,7 @@ class MarquesAdmin
             } elseif ($routeResult === null) {
                 // no action required
             } else {
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     'Controller returned invalid result. Expected: Response object, array with template-key or null.'
                 );
             }

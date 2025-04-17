@@ -191,7 +191,11 @@ $rootContainer->register(\Marques\Data\FileManager::class, function(Node $contai
 });
 
 $rootContainer->register(\Marques\Service\ThemeManager::class, function(Node $container) {
-    return new \Marques\Service\ThemeManager($container->get(DatabaseHandler::class));
+    return new \Marques\Service\ThemeManager(
+        $container->get(DatabaseHandler::class),
+        $container->get(PathRegistry::class),
+        $container->get(FileManager::class),
+    );
 });
 
 $rootContainer->register(\Marques\Service\NavigationManager::class, function(Node $container) {
@@ -199,14 +203,18 @@ $rootContainer->register(\Marques\Service\NavigationManager::class, function(Nod
 });
 
 $rootContainer->register(\Marques\Service\User::class, function(Node $container) {
-    return new \Marques\Service\User($container->get(DatabaseHandler::class));
+    return new \Marques\Service\User(
+        $container->get(DatabaseHandler::class),
+        $container->get(PathRegistry::class),
+    );
 });
 
 $rootContainer->register(\Marques\Service\Content::class, function(Node $container) {
     return new \Marques\Service\Content(
         $container->get(DatabaseHandler::class),
         $container->get(\Marques\Data\FileManager::class),
-        $container->get(\Marques\Util\Helper::class)
+        $container->get(\Marques\Util\Helper::class),
+        $container->get(\Marques\Filesystem\PathRegistry::class),
     );
 });
 
@@ -245,7 +253,8 @@ $rootContainer->register(\Marques\Service\BlogManager::class, function(Node $con
     return new \Marques\Service\BlogManager(
         $container->get(DatabaseHandler::class),
         $container->get(\Marques\Data\FileManager::class),
-        $container->get(\Marques\Util\Helper::class)
+        $container->get(\Marques\Util\Helper::class),
+        $container->get(\Marques\Filesystem\PathRegistry::class),
     );
 });
 

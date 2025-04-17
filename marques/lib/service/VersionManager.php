@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Marques\Service;
 
+use Marques\Filesystem\{PathRegistry, PathResolver};
+
 /**
  * marques CMS - Version Manager Klasse
  * 
@@ -12,35 +14,28 @@ namespace Marques\Service;
  * @subpackage core
  */
 class VersionManager {
-    /**
-     * @var string Verzeichnis für Versionen
-     */
-    private $_versionsDir;
-    
-    /**
-     * @var int Maximale Anzahl von Versionen pro Inhalt
-     */
-    private $_maxVersions;
 
-    /**
-     * @var array Inhaltstypen
-     */
+    private $_versionsDir;
+    private $_maxVersions;
     private $_contentTypes;
+    private PathRegistry $paths;
     
     /**
      * Konstruktor
      * 
      * @param int $maxVersions Maximale Anzahl von Versionen (Standard: 10)
      */
-    public function __construct($maxVersions = 10) {
-        /* Konfiguration der Inhaltstypen */
+    public function __construct($maxVersions = 10, PathRegistry $paths = null) {
+
+        $this->paths        = $paths ?? new PathRegistry();
+
         $contentTypes = [
             'pages', 
             'blog', 
             'media'
         ];
 
-        $this->_versionsDir = MARQUES_ROOT_DIR . '/content/versions';
+        $this->_versionsDir = $this->paths->combine('content', 'versions');
         $this->_maxVersions = $maxVersions;
         $this->_contentTypes = $contentTypes; // Initialisierung der Inhaltstypen
         
@@ -262,12 +257,9 @@ class VersionManager {
     private function getContentPath($contentType, $id) {
         switch ($contentType) {
             case 'pages':
-                return MARQUES_CONTENT_DIR . '/pages/' . $id . '.md';
+                return $this->paths->combine('content', "pages/$id.md");
             case 'blog':
-                // Hier müsstest du die korrekte Pfadlogik für Blog-Beiträge implementieren
-                // z.B. Suche nach Dateien, die mit dem ID/Slug enden
-                $files = glob(MARQUES_CONTENT_DIR . '/blog/*-' . $id . '.md');
-                return !empty($files) ? $files[0] : false;
+                return $this->paths->combine('content', "blog/*-$id.md");
             case 'media':
                 // Für Medien müsstest du einen angemessenen Pfad zurückgeben
                 return MARQUES_ROOT_DIR . '/assets/media/' . $id;

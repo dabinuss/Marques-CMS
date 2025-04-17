@@ -13,13 +13,24 @@ declare(strict_types=1);
 namespace Marques\Service;
 
 use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Filesystem\{PathRegistry, PathResolver};
+use Marques\Filesystem\FileManager;
 
 class PageManager {
     private array $_config;
     private DatabaseHandler $dbHandler;
+    private PathRegistry $paths;
+    private FileManager $fileManager;
 
-    public function __construct(DatabaseHandler $dbHandler) {
+    public function __construct(   
+        DatabaseHandler $dbHandler,
+        PathRegistry   $paths,
+        FileManager $fileManager
+    ) {
         $this->dbHandler = $dbHandler;
+        $this->paths     = $paths;
+        $this->fileManager = $fileManager;
+
         try {
             $this->_config = $this->dbHandler->table('settings')->where('id', '=', 1)->first() ?: [];
         } catch (\Exception $e) {
@@ -35,16 +46,14 @@ class PageManager {
      */
     public function getAllPages(): array {
         $pages = [];
-        $pagesDir = MARQUES_CONTENT_DIR . '/pages';
+        $pagesDir = $this->paths->combine('content', 'pages');
         
-        if (!is_dir($pagesDir)) {
-            // Verzeichnis erstellen, wenn es nicht existiert
-            if (!mkdir($pagesDir, 0755, true) && !is_dir($pagesDir)) {
-                return $pages; // Rückgabe leeres Array, wenn Verzeichnis nicht erstellt werden kann
-            }
+        $pagesDir = 'pages';
+        if (!$this->fileManager->exists($pagesDir)) {
+            $this->fileManager->createDirectory($pagesDir);
         }
         
-        $files = glob($pagesDir . '/*.md');
+        $files = $this->fileManager->listFiles($pagesDir, 'md');
         
         if (!is_array($files)) {
             return $pages; // Schutz vor glob() Fehler
@@ -54,7 +63,7 @@ class PageManager {
             if (!is_readable($file)) continue; // Überspringe nicht lesbare Dateien
             
             $filename = basename($file, '.md');
-            $content = file_get_contents($file);
+            $content = $this->fileManager->readFile("pages/$filename.md");
             
             if ($content === false) continue; // Überspringe bei Lesefehlern
             
@@ -89,7 +98,7 @@ class PageManager {
             return null;
         }
         
-        $file = MARQUES_CONTENT_DIR . '/pages/' . $id . '.md';
+        $file = $this->paths->combine('content', 'pages/' . $id . '.md');
         
         if (!file_exists($file)) {
             return null;

@@ -4,16 +4,20 @@ declare(strict_types=1);
 namespace Marques\Service;
 
 use Marques\Data\Database\Handler as DatabaseHandler;
+use Marques\Filesystem\PathRegistry;
+use Marques\Filesystem\FileManager;
 
 class User {
     private array $_config;
     private string $_loginAttemptsFile;
     private DatabaseHandler $dbHandler;
+    private PathRegistry $paths;
 
-    public function __construct(DatabaseHandler $dbHandler) {
+    public function __construct(DatabaseHandler $dbHandler, PathRegistry $paths) {
         $this->dbHandler = $dbHandler;
+        $this->paths     = $paths;
         $this->_config = $this->dbHandler->table('settings')->where('id', '=', 1)->first();
-        $this->_loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
+        $this->_loginAttemptsFile = $this->paths->combine('logs', 'login_attempts.json');
     }
 
     /**
