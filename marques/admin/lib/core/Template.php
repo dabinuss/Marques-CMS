@@ -7,7 +7,7 @@ use Marques\Core\Template as AppTemplate;
 use Marques\Core\TokenParser;
 use Marques\Filesystem\PathRegistry;
 use Marques\Core\Cache;
-use Marques\Data\FileManager;
+use Marques\Filesystem\FileManager;
 use Marques\Util\Helper;
 use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Service\ThemeManager;

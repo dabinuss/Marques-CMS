@@ -62,6 +62,7 @@ use Marques\Core\Logger;
 use Marques\Filesystem\PathRegistry;
 use Marques\Core\Statistics;
 use Marques\Core\Cache;
+use Marques\Filesystem\FileManager;
 
 // Erstelle den Root-Container und registriere gemeinsame Services
 $rootContainer = new Node();
@@ -162,39 +163,24 @@ $rootContainer->register(Cache::class, function (Node $c) {
     return new Cache($c->get(PathRegistry::class));
 });
 
-$rootContainer->register(\Marques\Data\FileManager::class, function(Node $container) {
-    $cache = $container->get(\Marques\Core\Cache::class);
-    
-    // Basis-Verzeichnisse, die immer bekannt sind
-    $knownDirectories = [
-        'content' => MARQUES_CONTENT_DIR,
-        'themes' => MARQUES_THEMES_DIR,
-        'admin' => MARQUES_ADMIN_DIR,
-        'backend_templates' => MARQUES_ADMIN_DIR . '/templates'
+$rootContainer->register(\Marques\Filesystem\FileManager::class, function (Node $c) {
+    $cache  = $c->get(\Marques\Core\Cache::class);
+
+    $knownDirectories  = [
+        'content'            => MARQUES_CONTENT_DIR,
+        'themes'             => MARQUES_THEMES_DIR,
+        'admin'              => MARQUES_ADMIN_DIR,
+        'backend_templates'  => MARQUES_ADMIN_DIR . '/templates',
     ];
-    
-    // FileManager mit Basis-Verzeichnissen erstellen
-    $fileManager = new \Marques\Data\FileManager($cache, $knownDirectories);
-    
-    // Versuche, den ThemeManager zu nutzen, um das aktuelle Theme zu ermitteln
-    try {
-        $themeManager = $container->get(\Marques\Service\ThemeManager::class);
-        $themePath = $themeManager->getThemePath('templates');
-        $fileManager->addDirectory('frontend_templates', $themePath);
-    } catch (\Exception $e) {
-        // Fallback: Benutze das Default-Theme, wenn ThemeManager nicht verfügbar ist
-        $fileManager->addDirectory('frontend_templates', MARQUES_THEMES_DIR . '/default/templates');
-        error_log("Konnte ThemeManager nicht laden: " . $e->getMessage());
-    }
-    
-    return $fileManager;
+
+    return new \Marques\Filesystem\FileManager($cache, $knownDirectories);
 });
 
-$rootContainer->register(\Marques\Service\ThemeManager::class, function(Node $container) {
+$rootContainer->register(\Marques\Service\ThemeManager::class, function (Node $c) {
     return new \Marques\Service\ThemeManager(
-        $container->get(DatabaseHandler::class),
-        $container->get(PathRegistry::class),
-        $container->get(FileManager::class),
+        $c->get(DatabaseHandler::class),
+        $c->get(PathRegistry::class),
+        $c->get(\Marques\Filesystem\FileManager::class)
     );
 });
 
@@ -212,7 +198,7 @@ $rootContainer->register(\Marques\Service\User::class, function(Node $container)
 $rootContainer->register(\Marques\Service\Content::class, function(Node $container) {
     return new \Marques\Service\Content(
         $container->get(DatabaseHandler::class),
-        $container->get(\Marques\Data\FileManager::class),
+        $container->get(\Marques\Filesystem\FileManager::class),
         $container->get(\Marques\Util\Helper::class),
         $container->get(\Marques\Filesystem\PathRegistry::class),
     );
@@ -245,14 +231,14 @@ $rootContainer->register(\Marques\Core\Template::class, function(Node $container
         $container->get(\Marques\Core\Cache::class),
         $container->get(\Marques\Util\Helper::class),
         $container->get(\Marques\Core\TokenParser::class),
-        $container->get(\Marques\Data\FileManager::class),
+        $container->get(\Marques\Filesystem\FileManager::class),
     );
 });
 
 $rootContainer->register(\Marques\Service\BlogManager::class, function(Node $container) {
     return new \Marques\Service\BlogManager(
         $container->get(DatabaseHandler::class),
-        $container->get(\Marques\Data\FileManager::class),
+        $container->get(\Marques\Filesystem\FileManager::class),
         $container->get(\Marques\Util\Helper::class),
         $container->get(\Marques\Filesystem\PathRegistry::class),
     );

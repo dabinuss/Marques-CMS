@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Marques\Core;
 
 use Marques\Data\Database\Handler as DatabaseHandler;
-use Marques\Data\FileManager;
+use Marques\Filesystem\FileManager;
 use Marques\Util\SafetyXSS;
 use Marques\Util\Helper;
 use Marques\Util\TemplateVars;

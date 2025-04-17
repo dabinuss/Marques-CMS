@@ -9,7 +9,7 @@ use FlatFileDB\FlatFileDatabase;
 use FlatFileDB\FlatFileDatabaseHandler;
 use Marques\Util\Helper;
 use Marques\Http\Router;
-use Marques\Data\FileManager;
+use Marques\Filesystem\FileManager;
 use Marques\Service\NavigationManager;
 use Marques\Service\Content;
 use Marques\Service\ThemeManager;

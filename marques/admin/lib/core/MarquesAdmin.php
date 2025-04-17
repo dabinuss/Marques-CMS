@@ -10,7 +10,7 @@ use Marques\Core\Logger;
 use Marques\Core\Events;
 use Marques\Core\Cache;
 use Marques\Filesystem\PathRegistry;
-use Marques\Data\FileManager;
+use Marques\Filesystem\FileManager;
 use Marques\Util\Helper;
 use Marques\Service\ThemeManager;
 use Marques\Service\User;

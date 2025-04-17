@@ -6,7 +6,7 @@ namespace Marques\Service;
 use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Util\Helper;
 use Marques\Core\Config;
-use Marques\Data\FileManager;
+use Marques\Filesystem\FileManager;
 use Marques\Filesystem\{PathRegistry, PathResolver};
 
 /**

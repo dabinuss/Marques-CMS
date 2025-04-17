@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Marques\Data;
+namespace Marques\Filesystem;
 
 use Marques\Core\Cache;
 use Marques\Filesystem\PathResolver;

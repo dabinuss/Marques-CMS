@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Marques\Service;
 
 use Marques\Data\Database\Handler as DatabaseHandler;
-use Marques\Data\FileManager;
+use Marques\Filesystem\FileManager;
 use Marques\Filesystem\PathRegistry;
 use Marques\Filesystem\PathResolver;
 use Marques\Filesystem\Filesystem;
@@ -17,14 +17,24 @@ class ThemeManager {
     private PathRegistry $paths;
     private FileManager $fileManager;
 
-    public function __construct(DatabaseHandler $dbHandler, PathRegistry $paths, FileManager $fileManager) {
+    public function __construct(
+        DatabaseHandler $dbHandler,
+        PathRegistry    $paths,
+        FileManager     $fileManager        // ← injiziert, nicht neu gebaut
+    ) {
+        $this->dbHandler   = $dbHandler;
+        $this->paths       = $paths;
+        $this->fileManager = $fileManager;
 
-        $this->dbHandler = $dbHandler;
-        $settings = $this->dbHandler->table('settings')->where('id', '=', 1)->first();
+        $settings          = $dbHandler->table('settings')->where('id','=',1)->first();
         $this->currentTheme = $settings['active_theme'] ?? 'default';
-        $this->paths      = $paths;
-        $this->themesPath = $paths->getPath('themes');
-        $this->fileManager = new FileManager(new \Marques\Core\Cache(), $this->themesPath);
+        $this->themesPath   = $paths->getPath('themes');
+
+        // Theme‑Pfad direkt im FileManager registrieren
+        $this->fileManager->addDirectory(
+            'frontend_templates',
+            $this->getThemePath('templates')
+        );
 
         $this->loadThemes();
     }
