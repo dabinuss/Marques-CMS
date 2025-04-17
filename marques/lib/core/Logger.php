@@ -3,11 +3,18 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Filesystem\PathRegistry;
+use Marques\Filesystem\PathResolver;
+
 class Logger {
     private string $logDir;
 
-    public function __construct() {
-        $this->logDir = MARQUES_ROOT_DIR . '/logs';
+    public function __construct(?PathRegistry $paths = null)
+    {
+        $base     = $paths ? $paths->getPath('logs')
+                           : MARQUES_ROOT_DIR . '/logs';
+        $this->logDir = PathResolver::resolve($base, '');
+
         if (!is_dir($this->logDir)) {
             mkdir($this->logDir, 0755, true);
         }

@@ -3,19 +3,21 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Filesystem\PathRegistry;
+use Marques\Filesystem\PathResolver;
+
 class Statistics {
-    /**
-     * Enthält die gesammelten Statistik-Daten.
-     *
-     * @var array
-     */
+
     protected array $stats = [];
+    private ?PathRegistry $paths = null;
 
     /**
      * Konstruktor.
      * Initialisiert die Statistik-Daten.
      */
-    public function __construct() {
+    public function __construct(?PathRegistry $paths = null)
+    {
+        $this->paths = $paths;
         $this->stats = $this->collectBaseStatistics();
     }
 
@@ -24,16 +26,18 @@ class Statistics {
      *
      * @return array
      */
-    protected function collectBaseStatistics(): array {
-        $stats = [];
+    protected function collectBaseStatistics(): array
+    {
+        $content = $this->paths
+            ? $this->paths->getPath('content')
+            : MARQUES_CONTENT_DIR;
 
-        // Beispielhafte Statistiken:
-        $stats['pages'] = $this->countFiles(MARQUES_CONTENT_DIR . '/pages');
-        $stats['blog_posts'] = $this->countBlogPosts();
-        $stats['media_files'] = $this->countMediaFiles();
-        $stats['disk_usage'] = $this->getDiskUsage();
-
-        return $stats;
+        return [
+            'pages'       => $this->countFiles($content . '/pages'),
+            'blog_posts'  => $this->countBlogPosts(),
+            'media_files' => $this->countMediaFiles(),
+            'disk_usage'  => $this->getDiskUsage()
+        ];
     }
 
     /**
@@ -85,31 +89,39 @@ class Statistics {
      *
      * @return string Formatierte Größe.
      */
-    protected function getDiskUsage(): string {
+    protected function getDiskUsage(): string
+    {
+        // Basisverzeichnis über PathRegistry (Fallback auf Konstante)
+        $baseDir = $this->paths
+            ? $this->paths->getPath('content')
+            : (defined('MARQUES_CONTENT_DIR') ? MARQUES_CONTENT_DIR : __DIR__);
+    
         $totalSize = 0;
-        $getSize = function($dir) use (&$getSize, &$totalSize) {
-            if (!is_dir($dir)) {
-                return;
-            }
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
-            );
-            foreach ($iterator as $file) {
+    
+        // Traversal‑sicher normalisieren
+        $root = \Marques\Filesystem\PathResolver::resolve($baseDir, '');
+    
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+    
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
                 $totalSize += $file->getSize();
             }
-        };
-
-        $getSize(MARQUES_CONTENT_DIR);
-
-        if ($totalSize < 1024) {
-            return $totalSize . " Bytes";
-        } elseif ($totalSize < 1024 * 1024) {
-            return round($totalSize / 1024, 2) . " KB";
-        } elseif ($totalSize < 1024 * 1024 * 1024) {
-            return round($totalSize / (1024 * 1024), 2) . " MB";
-        } else {
-            return round($totalSize / (1024 * 1024 * 1024), 2) . " GB";
         }
+    
+        // Menschliche Formatierung
+        if ($totalSize < 1024) {
+            return $totalSize . ' Bytes';
+        }
+        if ($totalSize < 1_048_576) { // 1024 * 1024
+            return round($totalSize / 1024, 2) . ' KB';
+        }
+        if ($totalSize < 1_073_741_824) { // 1024 * 1024 * 1024
+            return round($totalSize / 1_048_576, 2) . ' MB';
+        }
+        return round($totalSize / 1_073_741_824, 2) . ' GB';
     }
 
     /**

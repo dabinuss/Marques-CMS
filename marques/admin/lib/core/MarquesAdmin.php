@@ -9,7 +9,8 @@ use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Core\Logger;
 use Marques\Core\Events;
 use Marques\Core\Cache;
-use Marques\Core\Path;
+use Marques\Filesystem\PathRegistry;
+use Marques\Data\FileManager;
 use Marques\Util\Helper;
 use Marques\Service\ThemeManager;
 use Marques\Service\User;
@@ -81,12 +82,13 @@ class MarquesAdmin
             return new AdminTemplate(
                 $container->get(DatabaseHandler::class),
                 $container->get(ThemeManager::class),
-                $container->get(Path::class),
+                $container->get(PathRegistry::class),
                 $container->get(Cache::class),
                 $container->get(Helper::class),
                 $container->get(AdminRouter::class),
                 $container->get(SafetyXSS::class),
                 $container->get(TokenParser::class),
+                $container->get(FileManager::class),
             );
         });
 
@@ -207,6 +209,14 @@ class MarquesAdmin
             return new SafetyXSS();
         });
 
+        $this->adminContainer->register(\Marques\Data\FileManager::class, function(Node $container) use ($rootContainer) {
+            // Den FileManager vom Root-Container wiederverwenden statt einen neuen zu erstellen
+            $fileManager = $rootContainer->get(\Marques\Data\FileManager::class);
+            // Für die Admin-Templates konfigurieren
+            $fileManager->useDirectory('backend_templates');
+            return $fileManager;
+        });
+
         // More controller registrations can go here
     }
 
@@ -270,7 +280,7 @@ class MarquesAdmin
         ini_set('display_errors', $debugMode ? '1' : '0');
         date_default_timezone_set($this->systemConfig['timezone'] ?? 'UTC');
 
-        $this->Service->generateCsrfToken();
+        // CSRF‑Token wird jetzt schon in startSession() erzeugt, doppelten Aufruf entfernt
     }
 
     /**
@@ -284,38 +294,51 @@ class MarquesAdmin
             $this->triggerEvent('before_request');
             /** @var AdminRouter $adminRouter */
             $adminRouter = $this->adminContainer->get(AdminRouter::class);
-
+    
             if (method_exists($adminRouter, 'defineRoutes')) {
                 $adminRouter->defineRoutes();
             }
             if (method_exists($adminRouter, 'ensureRoutes')) {
                 $adminRouter->ensureRoutes();
             }
-
+    
             $routeResult = $adminRouter->processRequest();
-
+    
             if ($routeResult instanceof \Marques\Http\Response\ViewResponse) {
+                // ViewResponse-Objekt direkt ausführen lassen, anstatt manuell zu rendern
+                // Dies erlaubt dem ViewResponse-Objekt, das richtige Template zu verwenden
                 try {
-                    $this->template->render([
-                        'username' => $_SESSION['marques_user']['username'] ?? 'Guest',
-                        'title' => 'Administration',
-                        'content' => 'Welcome to the administration area. Please log in.',
-                    ], 'dashboard');
-                } catch (\Exception $templateEx) {
-                    try {
-                        $this->template->render([
-                            'username' => $_SESSION['marques_user']['username'] ?? '',
-                            'title' => 'Admin Login',
-                        ], 'login');
-                    } catch (\Exception $loginEx) {
-                        echo '<!DOCTYPE html><html><head><title>Admin</title></head><body>';
-                        echo '<h1>Administration</h1>';
-                        echo '<p>There was a problem loading the admin page.</p>';
-                        echo '<p>Please contact your system administrator.</p>';
-                        echo '</body></html>';
-
-                        error_log("Error loading admin templates: " . $templateEx->getMessage());
-                        error_log("Login template error: " . $loginEx->getMessage());
+                    $routeResult->execute();
+                } catch (\Exception $viewResponseEx) {
+                    // Fallback bei Fehlern in ViewResponse
+                    error_log("ViewResponse execution failed: " . $viewResponseEx->getMessage());
+                    
+                    // Prüfen, ob es sich um einen angemeldeten Benutzer handelt
+                    $isLoggedIn = isset($_SESSION['marques_user']) && !empty($_SESSION['marques_user']['username']);
+                    
+                    if ($isLoggedIn) {
+                        // Bei angemeldetem Benutzer Dashboard versuchen
+                        try {
+                            $this->template->render([
+                                'username' => $_SESSION['marques_user']['username'],
+                                'title' => 'Administration',
+                                'content' => 'Welcome to the administration area.',
+                            ], 'dashboard');
+                        } catch (\Exception $dashboardEx) {
+                            error_log("Dashboard fallback failed: " . $dashboardEx->getMessage());
+                            $this->renderEmergencyPage("Administration", "Error loading dashboard.");
+                        }
+                    } else {
+                        // Bei nicht angemeldetem Benutzer Login versuchen
+                        try {
+                            $this->template->render([
+                                'username' => '',
+                                'title' => 'Admin Login',
+                            ], 'login');
+                        } catch (\Exception $loginEx) {
+                            error_log("Login fallback failed: " . $loginEx->getMessage());
+                            $this->renderEmergencyPage("Admin Login", "Error loading login page.");
+                        }
                     }
                 }
             } elseif ($routeResult instanceof \Marques\Http\Response) {
@@ -331,18 +354,10 @@ class MarquesAdmin
                     'Controller returned invalid result. Expected: Response object, array with template-key or null.'
                 );
             }
-
+    
             $this->triggerEvent('after_render');
         } catch (\Exception $e) {
-            try {
-                echo '<!DOCTYPE html><html><head><title>Error</title></head><body>';
-                echo '<h1>An error occurred</h1>';
-                echo '<p>' . htmlspecialchars($e->getMessage()) . '</p>';
-                echo '</body></html>';
-            } catch (\Exception $displayEx) {
-                echo "ERROR: " . $e->getMessage();
-            }
-
+            $this->renderEmergencyPage("Error", $e->getMessage());
             error_log("FATAL ERROR in run(): " . $e->getMessage());
             error_log("Trace: " . $e->getTraceAsString());
         } finally {
@@ -354,6 +369,24 @@ class MarquesAdmin
                     ob_end_clean();
                 }
             }
+        }
+    }
+    
+    /**
+     * Rendert eine einfache Notfallseite bei Fehlern.
+     * 
+     * @param string $title Seitentitel
+     * @param string $message Nachricht für den Benutzer
+     */
+    private function renderEmergencyPage(string $title, string $message): void {
+        try {
+            echo '<!DOCTYPE html><html><head><title>' . htmlspecialchars($title) . '</title></head><body>';
+            echo '<h1>' . htmlspecialchars($title) . '</h1>';
+            echo '<p>' . htmlspecialchars($message) . '</p>';
+            echo '<p>Please contact your system administrator if this problem persists.</p>';
+            echo '</body></html>';
+        } catch (\Exception $displayEx) {
+            echo "ERROR: Unable to display error page: " . $displayEx->getMessage();
         }
     }
 

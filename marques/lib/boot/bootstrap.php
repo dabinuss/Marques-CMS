@@ -59,18 +59,29 @@ use Marques\Data\Database\Config as DatabaseConfig;
 use Marques\Data\Database\Handler as DatabaseHandler;
 use Marques\Util\ExceptionHandler;
 use Marques\Core\Logger;
+use Marques\Filesystem\PathRegistry;
+use Marques\Core\Statistics;
+use Marques\Core\Cache;
 
 // Erstelle den Root-Container und registriere gemeinsame Services
 $rootContainer = new Node();
 
+$rootContainer->register(PathRegistry::class, function () {
+    return new PathRegistry();          // keine Abhängigkeiten
+});
+
 // Logger registrieren (für Exception-Handler benötigt)
-$rootContainer->register(Logger::class, function(Node $container) {
-    return new Logger();
+$rootContainer->register(Logger::class, function (Node $c) {
+    return new Logger($c->get(PathRegistry::class));
 });
 
 // FlatFileDatabase-Instanz registrieren
 $rootContainer->register(\FlatFileDB\FlatFileDatabase::class, function(Node $container) {
     return new \FlatFileDB\FlatFileDatabase(MARQUES_ROOT_DIR . '/data');
+});
+
+$rootContainer->register(Statistics::class, function (Node $c) {
+    return new Statistics($c->get(PathRegistry::class));
 });
 
 // FlatFileDatabaseHandler-Instanz registrieren
@@ -135,8 +146,8 @@ try {
 }
 
 // Rest der Container-Registrierungen
-$rootContainer->register(\Marques\Core\Path::class, function(Node $container) {
-    return new \Marques\Core\Path();
+$rootContainer->register(\Marques\Filesystem\PathRegistry::class, function(Node $c) {
+    return new \Marques\Filesystem\PathRegistry();
 });
 
 $rootContainer->register(\Marques\Util\Helper::class, function(Node $container) {
@@ -147,12 +158,36 @@ $rootContainer->register(\Marques\Core\Events::class, function(Node $container) 
     return new \Marques\Core\Events();
 });
 
-$rootContainer->register(\Marques\Core\Cache::class, function(Node $container) {
-    return new \Marques\Core\Cache();
+$rootContainer->register(Cache::class, function (Node $c) {
+    return new Cache($c->get(PathRegistry::class));
 });
 
 $rootContainer->register(\Marques\Data\FileManager::class, function(Node $container) {
-    return new \Marques\Data\FileManager($container->get(\Marques\Core\Cache::class), MARQUES_CONTENT_DIR);
+    $cache = $container->get(\Marques\Core\Cache::class);
+    
+    // Basis-Verzeichnisse, die immer bekannt sind
+    $knownDirectories = [
+        'content' => MARQUES_CONTENT_DIR,
+        'themes' => MARQUES_THEMES_DIR,
+        'admin' => MARQUES_ADMIN_DIR,
+        'backend_templates' => MARQUES_ADMIN_DIR . '/templates'
+    ];
+    
+    // FileManager mit Basis-Verzeichnissen erstellen
+    $fileManager = new \Marques\Data\FileManager($cache, $knownDirectories);
+    
+    // Versuche, den ThemeManager zu nutzen, um das aktuelle Theme zu ermitteln
+    try {
+        $themeManager = $container->get(\Marques\Service\ThemeManager::class);
+        $themePath = $themeManager->getThemePath('templates');
+        $fileManager->addDirectory('frontend_templates', $themePath);
+    } catch (\Exception $e) {
+        // Fallback: Benutze das Default-Theme, wenn ThemeManager nicht verfügbar ist
+        $fileManager->addDirectory('frontend_templates', MARQUES_THEMES_DIR . '/default/templates');
+        error_log("Konnte ThemeManager nicht laden: " . $e->getMessage());
+    }
+    
+    return $fileManager;
 });
 
 $rootContainer->register(\Marques\Service\ThemeManager::class, function(Node $container) {
@@ -198,10 +233,11 @@ $rootContainer->register(\Marques\Core\Template::class, function(Node $container
     return new \Marques\Core\Template(
         $container->get(DatabaseHandler::class),
         $container->get(\Marques\Service\ThemeManager::class),
-        $container->get(\Marques\Core\Path::class),
+        $container->get(\Marques\Filesystem\PathRegistry::class),
         $container->get(\Marques\Core\Cache::class),
         $container->get(\Marques\Util\Helper::class),
-        $container->get(\Marques\Core\TokenParser::class)
+        $container->get(\Marques\Core\TokenParser::class),
+        $container->get(\Marques\Data\FileManager::class),
     );
 });
 

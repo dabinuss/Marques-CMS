@@ -15,6 +15,7 @@ use Marques\Service\Content;
 use Marques\Service\ThemeManager;
 use Marques\Service\User;
 use Marques\Util\ExceptionHandler;
+use Marques\Filesystem\PathRegistry;
 
 /**
  * Main application class for Marques CMS.
@@ -30,7 +31,7 @@ class MarquesApp
     private Logger $logger;
     private Events $eventManager;
     private User $user;
-    private Path $appPath;
+    private PathRegistry $appPath;
     private Content $content;
     private ThemeManager $themeManager;
     private FileManager $fileManager;
@@ -49,7 +50,7 @@ class MarquesApp
 
         try {
             $this->dbHandler    = $this->appcontainer->get(DatabaseHandler::class);
-            $this->appPath      = $this->appcontainer->get(Path::class);
+            $this->appPath      = $this->appcontainer->get(PathRegistry::class);
             $this->logger       = $this->appcontainer->get(Logger::class);
             $this->eventManager = $this->appcontainer->get(Events::class);
             $this->fileManager  = $this->appcontainer->get(FileManager::class);

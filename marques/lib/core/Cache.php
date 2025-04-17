@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Filesystem\PathRegistry;
+use Marques\Filesystem\PathResolver;
+
 if (!function_exists('opcache_invalidate')) {
     function opcache_invalidate($file, $force = false) {
         // Dummy-Funktion: Nichts tun, da OPcache nicht verfügbar ist.
@@ -41,18 +44,30 @@ class Cache {
      * @param bool $enabled Ob Caching aktiviert ist
      * @param bool $useIndex Ob der Index verwendet werden soll
      */
-    public function __construct(?string $cacheDir = null, bool $enabled = true, bool $useIndex = true) {
-        if ($cacheDir === null) {
-            $cacheDir = defined('MARQUES_CACHE_DIR') ? MARQUES_CACHE_DIR : __DIR__ . '/cache';
+    public function __construct(
+        PathRegistry|string|null $cacheDir = null,
+        bool $enabled = true,
+        bool $useIndex = true
+    ) {
+        // Pfadquelle bestimmen (DI > Konstante > Default)
+        if ($cacheDir instanceof PathRegistry) {
+            $dir = $cacheDir->getPath('cache');
+        } elseif ($cacheDir === null) {
+            $dir = defined('MARQUES_CACHE_DIR')
+                 ? MARQUES_CACHE_DIR
+                 : __DIR__ . '/cache';
+        } else {
+            $dir = $cacheDir;
         }
-        $this->cacheDir = rtrim($cacheDir, DIRECTORY_SEPARATOR);
-        if (!is_dir($this->cacheDir) && !mkdir($this->cacheDir, 0755, true) && !is_dir($this->cacheDir)) {
-            throw new \RuntimeException("Cache-Verzeichnis konnte nicht erstellt werden.", 500);
-        }
+
+        // traversal‑sicher normalisieren
+        $this->cacheDir = PathResolver::resolve($dir, '');
+
+        /* Rest des Konstruktors unverändert */
         $this->useOpcache = function_exists('opcache_get_status');
-        $this->enabled = $enabled;
-        $this->useIndex = $useIndex;
-        $this->indexFile = $this->cacheDir . '/cache_index.json';
+        $this->enabled    = $enabled;
+        $this->useIndex   = $useIndex;
+        $this->indexFile  = $this->cacheDir . '/cache_index.json';
         if ($this->useIndex) {
             $this->loadIndex();
         }

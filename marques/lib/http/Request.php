@@ -62,7 +62,7 @@ class Request {
      *
      * @return array Alle GET-Parameter
      */
-    public function getAllQuery(): array {
+    public function getQueryParams(): array {
         return $this->get;
     }
     

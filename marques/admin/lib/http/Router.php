@@ -14,17 +14,21 @@ use Admin\Controller\PageController;
 use Admin\Controller\SettingsController;
 use Admin\Controller\BlogController;
 
+/**
+ * Router for the admin backend.
+ *
+ * Registers and dispatches all admin‑specific routes while maintaining full
+ * compatibility with the base application router.
+ */
 class Router extends AppRouter
 {
-    // Füge eine Eigenschaft hinzu, um den DI-Container zu speichern
+    /** Dependency‑injection container instance */
     protected Node $container;
 
     /**
-     * Konstruktor
-     *
-     * @param Node $container
-     * @param mixed $dbHandler
-     * @param bool $persistRoutes
+     * @param Node  $container     DI container
+     * @param mixed $dbHandler     Database handler implementation
+     * @param bool  $persistRoutes Whether admin routes should be persisted
      */
     public function __construct(Node $container, $dbHandler, bool $persistRoutes)
     {
@@ -33,9 +37,7 @@ class Router extends AppRouter
     }
 
     /**
-     * Liefert den DI-Container.
-     *
-     * @return Node
+     * Returns the DI container instance.
      */
     public function getContainer(): Node
     {
@@ -43,50 +45,40 @@ class Router extends AppRouter
     }
 
     /**
-     * Definiert alle Routen für den Admin-Bereich.
+     * Defines every admin route and applies the required middleware.
      */
     public function defineRoutes(): self
     {
-        // Admin-Middleware
-        $authMiddleware = $this->container->get(\Admin\Auth\Middleware::class);
-        
-        // CSRF-Middleware (nur für POST-Anfragen)
-        $csrfMiddleware = function(Request $req, array $params, callable $next) {
+        $authMiddleware  = $this->container->get(Middleware::class);
+        $csrfMiddleware  = function (Request $req, array $params, callable $next) {
             if ($req->getMethod() === 'POST') {
                 $postData = $req->getAllPost();
-                $token = $postData['csrf_token'] ?? '';
+                $token    = $postData['csrf_token'] ?? '';
                 if (!$this->container->get(Service::class)->validateCsrfToken($token)) {
-                    throw new \RuntimeException("CSRF-Token validation failed", 403);
+                    throw new \RuntimeException('CSRF‑Token validation failed', 403);
                 }
             }
             return $next($req, $params);
         };
-        
-        // WICHTIG: Alle URLs mit absolutem Pfad beginnend mit "/admin"
-        
-        // Login/Logout-Routen (ohne Auth-Middleware)
+
         $this->get('/admin/login', AuthController::class . '@showLoginForm')->name('admin.login');
         $this->post('/admin/login', AuthController::class . '@handleLogin')->name('admin.login.post');
         $this->get('/admin/logout', AuthController::class . '@logout')->name('admin.logout');
-        
-        // Root-Admin-Routen mit Auth-Middleware
+
         $this->get('/admin', DashboardController::class . '@index', [
-            'middleware' => [$authMiddleware]
+            'middleware' => [$authMiddleware],
         ])->name('admin.home');
-        
+
         $this->get('/admin/', DashboardController::class . '@index', [
-            'middleware' => [$authMiddleware]
+            'middleware' => [$authMiddleware],
         ])->name('admin.home.slash');
-        
-        // Gruppe für alle weiteren Admin-Routen
+
         $this->group([
-            'prefix' => '/admin', 
-            'middleware' => [$authMiddleware, $csrfMiddleware]
-        ], function(Router $router) {
-            // Dashboard
+            'prefix'     => '/admin',
+            'middleware' => [$authMiddleware, $csrfMiddleware],
+        ], function (Router $router) {
             $router->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard');
-            
-            // Seiten
+
             $router->get('/pages', PageController::class . '@list')->name('admin.pages.list');
             $router->get('/pages/add', PageController::class . '@showAddForm')->name('admin.pages.add');
             $router->post('/pages/add', PageController::class . '@handleAddForm')->name('admin.pages.add.post');
@@ -94,34 +86,32 @@ class Router extends AppRouter
             $router->post('/pages/edit/{id}', PageController::class . '@handleEditForm')->name('admin.pages.edit.post');
             $router->post('/pages/delete/{id}', PageController::class . '@handleDelete')->name('admin.pages.delete.post');
 
-            // Einstellungen
             $router->get('/settings', SettingsController::class . '@showForm')->name('admin.settings');
             $router->post('/settings', SettingsController::class . '@handleForm')->name('admin.settings.post');
 
-            // Blog
             $router->get('/blog', BlogController::class . '@listPosts')->name('admin.blog.list');
             $router->get('/blog/edit/{id}', BlogController::class . '@showEditForm')->name('admin.blog.edit');
             $router->post('/blog/edit/{id}', BlogController::class . '@handleEditForm')->name('admin.blog.edit.post');
         });
 
-        $this->get('/admin/assets/{path:.*}', function(Request $req, array $params) {
-            $filePath = MARQUES_ADMIN_DIR . '/assets/' . $params['path'];
-            // Absicherung: Stelle sicher, dass der reale Pfad innerhalb des erlaubten Assets-Verzeichnisses liegt.
-            $realBase = realpath(MARQUES_ADMIN_DIR . '/assets');
-            $realFile = realpath($filePath);
+        $this->get('/admin/assets/{path:.*}', function (Request $req, array $params) {
+            $filePath  = MARQUES_ADMIN_DIR . '/assets/' . $params['path'];
+            $realBase  = realpath(MARQUES_ADMIN_DIR . '/assets');
+            $realFile  = realpath($filePath);
+
             if ($realFile === false || strpos($realFile, $realBase) !== 0) {
                 http_response_code(404);
-                echo "File not found";
+                echo 'File not found';
                 exit;
             }
-            
-            $extension = pathinfo($realFile, PATHINFO_EXTENSION);
-            $contentTypes = [
+
+            $extension     = pathinfo($realFile, PATHINFO_EXTENSION);
+            $contentTypes  = [
                 'css' => 'text/css',
-                'js' => 'application/javascript',
+                'js'  => 'application/javascript',
             ];
-            $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
-            header('Content-Type: ' . $contentType);
+            $contentType   = $contentTypes[$extension] ?? 'application/octet‑stream';
+            header('Content‑Type: ' . $contentType);
             readfile($realFile);
             exit;
         })->name('admin.assets');
@@ -130,137 +120,96 @@ class Router extends AppRouter
     }
 
     /**
-     * Generiert eine URL basierend auf dem Routen-Namen und Parametern.
+     * Generates an admin URL by name while avoiding redirect loops.
      */
-    public function getAdminUrl(string $routeName, array $params = []): string {
+    public function getAdminUrl(string $routeName, array $params = []): string
+    {
         $url = parent::generateUrl($routeName, $params);
-    
-        // Wenn Redirect auf Login zeigen würde → Loop!
+
         if ($this->isRedirectLoop($params['redirect'] ?? '')) {
             unset($params['redirect']);
             $url = parent::generateUrl($routeName, $params);
         }
-    
+
         return $url;
     }
 
     /**
-     * Prüft, ob ein Redirect auf die Login-Seite eine Redirect-Schleife erzeugen würde.
+     * Checks whether a given target URL would cause a login redirect loop.
      */
-    public function isRedirectLoop(string $targetUrl): bool {
-        $parsed = parse_url($targetUrl);
+    public function isRedirectLoop(string $targetUrl): bool
+    {
+        $parsed       = parse_url($targetUrl);
         $redirectPath = $parsed['path'] ?? '';
-    
-        // Login-URL erkennen
-        $loginPath = MARQUES_ADMIN_DIR . '/login';
-    
-        // Fall: redirect führt wieder auf Login
-        if (rtrim($redirectPath, '/') === $loginPath) {
-            return true;
-        }
-    
-        return false;
+        $loginPath    = MARQUES_ADMIN_DIR . '/login';
+
+        return rtrim($redirectPath, '/') === $loginPath;
     }
 
     /**
-     * Adaptiert die processRequest-Methode für Admin-Anwendungen.
-     * Nutzt die Basisfunktionalität, verarbeitet aber das Ergebnis spezifisch für Admin-Controller.
+     * Handles admin requests and resolves controller actions on‑the‑fly.
      */
     public function processRequest(): mixed
     {
         try {
-            // Stelle sicher, dass Routen definiert sind
             $this->defineRoutes();
-            
-            // Rufe die Eltern-Implementierung auf, um Route zu finden
             $routeInfo = parent::processRequest();
-            
-            // Wenn das Ergebnis ein Array mit path/params ist, 
-            // müssen wir den Controller selbst aufrufen
-            if (is_array($routeInfo) && isset($routeInfo['path']) && isset($routeInfo['params'])) {
+
+            if (is_array($routeInfo) && isset($routeInfo['path'], $routeInfo['params'])) {
                 $request = $this->createRequestFromGlobals();
-                $path = $routeInfo['path'];
-                $params = $routeInfo['params'];
-                
-                // Da wir keinen direkten Zugriff auf $routes haben, 
-                // müssen wir unsere eigene Logik zur Controller-Auflösung verwenden
-                
-                // Pfad zu Controller-Klasse und Methode herleiten
-                // z.B. /admin/dashboard zu DashboardController@index
-                
-                // Admin-Pfad normalisieren
+                $path    = $routeInfo['path'];
+                $params  = $routeInfo['params'];
+
                 $adminPath = str_replace('/admin', '', '/' . trim($path, '/'));
-                if (empty($adminPath)) {
-                    $adminPath = '/dashboard'; // Standard-Controller für /admin
+                if ($adminPath === '') {
+                    $adminPath = '/dashboard';
                 }
-                
-                // Controller-Klasse und Methode bestimmen
-                $segments = explode('/', trim($adminPath, '/'));
-                $controllerName = ucfirst($segments[0] ?? 'dashboard') . 'Controller';
-                $methodName = $segments[1] ?? 'index';
-                
-                // Vollständigen Controller-Klassennamen erstellen
+
+                $segments        = explode('/', trim($adminPath, '/'));
+                $controllerName  = ucfirst($segments[0] ?? 'dashboard') . 'Controller';
+                $methodName      = $segments[1] ?? 'index';
                 $controllerClass = 'Admin\\Controller\\' . $controllerName;
-                
-                // Existiert die Klasse?
+
                 if (class_exists($controllerClass)) {
-                    try {
-                        // Controller instanziieren
-                        $controller = $this->container->get($controllerClass);
-                        
-                        // Controller-Methode aufrufen, wenn vorhanden
-                        if (method_exists($controller, $methodName)) {
-                            return $controller->$methodName($request, $params);
-                        }
-                    } catch (\Exception $e) {
-                        error_log("Fehler beim Instanziieren von $controllerClass: " . $e->getMessage());
+                    $controller = $this->container->get($controllerClass);
+                    if (method_exists($controller, $methodName)) {
+                        return $controller->$methodName($request, $params);
                     }
                 }
-                
-                // Alternative Auflösung: Wir kennen einige Controller aus defineRoutes
+
                 $knownControllers = [
                     'dashboard' => DashboardController::class,
-                    'login' => AuthController::class,
-                    'logout' => AuthController::class,
-                    'pages' => PageController::class,
-                    'settings' => SettingsController::class,
-                    'blog' => BlogController::class
+                    'login'     => AuthController::class,
+                    'logout'    => AuthController::class,
+                    'pages'     => PageController::class,
+                    'settings'  => SettingsController::class,
+                    'blog'      => BlogController::class,
                 ];
-                
+
                 $segment = strtolower($segments[0] ?? 'dashboard');
                 if (isset($knownControllers[$segment])) {
                     $controllerClass = $knownControllers[$segment];
-                    $methodName = $segments[1] ?? ($segment === 'login' ? 'showLoginForm' : 'index');
-                    
-                    try {
-                        $controller = $this->container->get($controllerClass);
-                        if (method_exists($controller, $methodName)) {
-                            return $controller->$methodName($request, $params);
-                        }
-                    } catch (\Exception $e) {
-                        error_log("Fehler beim Instanziieren von $controllerClass: " . $e->getMessage());
+                    $methodName      = $segments[1] ?? ($segment === 'login' ? 'showLoginForm' : 'index');
+                    $controller      = $this->container->get($controllerClass);
+                    if (method_exists($controller, $methodName)) {
+                        return $controller->$methodName($request, $params);
                     }
                 }
             }
-            
-            // Wenn es kein path/params Array ist oder kein Controller gefunden wurde,
-            // geben wir das ursprüngliche Ergebnis zurück
+
             return $routeInfo;
-            
         } catch (\Exception $e) {
-            error_log("Admin Router Fehler: " . $e->getMessage());
+            error_log('Admin Router Error: ' . $e->getMessage());
             throw $e;
         }
     }
-    
+
     /**
-     * Hilfsfunktion zum Erzeugen eines Request-Objekts aus globalen Variablen.
-     * 
-     * @return \Marques\Http\Request
+     * Creates a Request instance from PHP superglobals.
      */
-    private function createRequestFromGlobals(): \Marques\Http\Request
+    private function createRequestFromGlobals(): Request
     {
         $headers = function_exists('getallheaders') ? getallheaders() : [];
-        return new \Marques\Http\Request($_SERVER, $_GET, $_POST, $headers);
+        return new Request($_SERVER, $_GET, $_POST, $headers);
     }
 }

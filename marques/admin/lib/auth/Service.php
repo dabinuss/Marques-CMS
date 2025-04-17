@@ -96,7 +96,12 @@ class Service
         $ip = $this->getClientIp();
         $attempts = $this->getLoginAttempts($ip);
         $failedAttempts = array_filter($attempts, fn($a) => !$a['success']);
-        return count($failedAttempts) < $this->systemConfig['max_login_attempts'] ?? 5;
+    
+        // Default‑Limit sauber holen (5, falls nicht gesetzt)
+        $maxAttempts = $this->systemConfig['max_login_attempts'] ?? 5;
+    
+        // Jetzt richtig vergleichen
+        return count($failedAttempts) < $maxAttempts;
     }
 
     /**

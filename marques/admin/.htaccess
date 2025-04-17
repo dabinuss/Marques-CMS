@@ -1,0 +1,14 @@
+# /marques/admin/.htaccess
+RewriteEngine On
+RewriteBase /admin/
+
+# 1) Statische Dateien (Assets) und echte Dateien/Verzeichnisse direkt ausliefern
+RewriteCond %{REQUEST_URI} ^/admin/assets/.*\.(css|js|jpe?g|png|gif|ico|svg|woff2?|ttf|eot|map)$ [NC]
+RewriteRule ^ - [L]
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 2) Alle anderen Anfragen an admin/index.php weiterleiten
+RewriteRule ^ index.php [L,QSA]
