@@ -125,7 +125,7 @@ class MarquesAdmin
                 $container->get(User::class),
                 $container->get(PageManager::class),
                 $container->get(BlogManager::class),
-                $container->get(MediaManager::class)
+                $container->get(MediaManager::class),
             );
         });
 
@@ -143,6 +143,8 @@ class MarquesAdmin
             $assetManager->setBaseUrl($helper->getSiteUrl('admin'));
             return $assetManager;
         });
+
+        
 
         // Dependency resolver for avoiding code duplication
         $resolve = function(string $class) use ($rootContainer) {
@@ -162,6 +164,12 @@ class MarquesAdmin
             }
             throw new RuntimeException("Dependency '$class' not found");
         };
+
+        $this->adminContainer->register(MediaManager::class, function(Node $container) use ($resolve) {
+            return new MediaManager(
+                $resolve(DatabaseHandler::class)
+            );
+        });
 
         $this->adminContainer->register(DashboardController::class, function(Node $container) use ($resolve) {
             return new DashboardController(
@@ -290,7 +298,7 @@ class MarquesAdmin
         ini_set('display_errors', $debugMode ? '1' : '0');
         date_default_timezone_set($this->systemConfig['timezone'] ?? 'UTC');
     }
-    
+
     /**
      * Main entry point: handles admin request routing and error handling.
      *
