@@ -89,28 +89,26 @@ class AuthController extends AdminController
             while (ob_get_level() > 0) {
                 ob_end_clean();
             }
-    
-            if (isset($_SESSION['marques_user']['initial_login'])
-                && $_SESSION['marques_user']['initial_login'] === true
-            ) {
+        
+            // Prüfe, ob es ein initialer Login ist
+            if (isset($_SESSION['marques_user']['initial_login']) 
+                && $_SESSION['marques_user']['initial_login'] === true) {
                 $setupUrl = $this->adminUrl('admin.settings') . '?initial_setup=true';
                 return $this->redirect($setupUrl);
             }
-    
+        
+            // Bestimme Ziel-URL für Weiterleitung
             $targetUrl = $this->adminUrl('admin.dashboard');
-            if (! empty($redirect)) {
-                $loginUrlPath    = rtrim(parse_url($this->adminUrl('admin.login'), PHP_URL_PATH), '/');
-                $redirectUrlPath = rtrim(parse_url($redirect, PHP_URL_PATH), '/');
-    
-                if ($redirectUrlPath !== $loginUrlPath
-                    && strpos($redirect, '/admin/') === 0
-                    && substr($redirect, 0, 2) !== '//'
-                ) {
+            if (!empty($redirect)) {
+                // Verwende sichere Redirect-Validierung
+                if ($this->authService->isValidRedirectUrl($redirect)) {
                     $targetUrl = $redirect;
+                } else {
+                    error_log("Potenziell unsichere Redirect-URL verworfen: " . $redirect);
                 }
             }
-    
-            error_log("Redirecting to: " . $targetUrl);
+        
+            error_log("Weiterleitung nach erfolgreichem Login zu: " . $targetUrl);
             return $this->redirect($targetUrl);
         }
     

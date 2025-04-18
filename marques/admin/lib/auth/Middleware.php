@@ -65,16 +65,22 @@ class Middleware {
             // Bereite die ursprünglich angeforderte URI als 'redirect'-Parameter vor
             $returnPathAndQuery = $fullRequestUri;
 
+            // Prüfe, ob die Redirect-URL sicher ist
+            if (!$this->Service->isValidRedirectUrl($returnPathAndQuery)) {
+                error_log("[Middleware] Unsichere Redirect-URL erkannt: " . $returnPathAndQuery);
+                $returnPathAndQuery = $this->router->getAdminUrl('admin.dashboard');
+            }
+
             // Verhindere eine Endlosschleife: Füge den 'redirect'-Parameter NICHT hinzu,
             // wenn die aktuelle Seite bereits die Login-Seite ist.
             $loginPathOnly = parse_url($loginUrl, PHP_URL_PATH);
             // Vergleiche nur die Pfade (ohne abschließenden Slash)
             if (rtrim($currentPath,'/') !== rtrim($loginPathOnly,'/')) {
-                 // Hänge den 'redirect'-Parameter an, Wert muss URL-kodiert sein
-                 $loginUrl .= '?redirect=' . urlencode($returnPathAndQuery);
-                 error_log("[Middleware] Added redirect parameter: " . urlencode($returnPathAndQuery));
+                // Hänge den 'redirect'-Parameter an, Wert muss URL-kodiert sein
+                $loginUrl .= '?redirect=' . urlencode($returnPathAndQuery);
+                error_log("[Middleware] Added redirect parameter: " . urlencode($returnPathAndQuery));
             } else {
-                 error_log("[Middleware] Current path is login path, not adding redirect parameter.");
+                error_log("[Middleware] Current path is login path, not adding redirect parameter.");
             }
 
             // Logge die finale URL, zu der umgeleitet wird

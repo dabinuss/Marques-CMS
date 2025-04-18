@@ -11,7 +11,9 @@ class Service
     private User $userModel;
     private array $systemConfig;
     private string $loginAttemptsFile;
-    private const DEFAULT_ADMIN_PASSWORD = '$2y$10$W6J5z7b8c9d0e1f2g3h4i.5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z'; // Gehashtes "admin"
+    private const DEFAULT_ADMIN_PASSWORD = 'admin';
+    private string $defaultAdminPasswordHash;
+
     private PathRegistry $pathRegistry; 
 
     public function __construct(
@@ -19,6 +21,7 @@ class Service
         array $systemConfig,
         PathRegistry $pathRegistry
     ) {
+        $this->defaultAdminPasswordHash = password_hash(self::DEFAULT_ADMIN_PASSWORD, PASSWORD_DEFAULT);
         $this->userModel = $userModel;
         $this->systemConfig = $systemConfig;
         $this->pathRegistry = $pathRegistry;
@@ -161,12 +164,29 @@ class Service
      */
     public function isLoggedIn(): bool
     {
-        // Prüfe zuerst, ob die Session-Variable überhaupt gesetzt ist.
+        // Prüfe zunächst, ob die Session-Variable überhaupt gesetzt ist.
         if (!isset($_SESSION['marques_user']['username']) || empty($_SESSION['marques_user']['username'])) {
-             // Nicht explizit 'logged_in' prüfen, da 'username' ausreicht und in login() gesetzt wird
             return false;
         }
-
+    
+        // Prüfe Session-Ablauf
+        $lastActivity = $_SESSION['marques_user']['last_activity'] ?? 0;
+        $timeout = $this->systemConfig['session_timeout'] ?? 3600; // 1 Stunde Standard
+        if (time() - $lastActivity > $timeout) {
+            error_log("Session timeout für Benutzer: " . $_SESSION['marques_user']['username']);
+            return false;
+        }
+        
+        // Optional: IP-Adresse prüfen (kann bei Nutzern mit wechselnden IPs Probleme verursachen)
+        if (isset($this->systemConfig['strict_session_security']) && $this->systemConfig['strict_session_security']) {
+            $currentIp = $this->getClientIp();
+            if (isset($_SESSION['marques_user']['ip_address']) && $_SESSION['marques_user']['ip_address'] !== $currentIp) {
+                error_log("IP-Adresse in Session stimmt nicht überein: " . 
+                        $_SESSION['marques_user']['ip_address'] . " vs aktuell " . $currentIp);
+                return false;
+            }
+        }
+    
         return true; // Der Benutzer gilt als eingeloggt.
     }
 
@@ -208,7 +228,7 @@ class Service
             error_log("Validating password for user: $username");
 
             // Ist es der Admin mit Standardpasswort (oder erstem Login)?
-            if ($username === 'admin' && password_verify($password, self::DEFAULT_ADMIN_PASSWORD)) {
+            if ($username === 'admin' && password_verify($password, $this->defaultAdminPasswordHash)) {
                  // Prüfe, ob das DB-Passwort leer ist ODER first_login gesetzt ist
                  if (empty($user['password']) || ($user['first_login'] ?? false)) {
                       $validPassword = true;
@@ -238,25 +258,27 @@ class Service
             'display_name' => $user['display_name'] ?? $username,
             'role'         => $user['role'] ?? 'user', // Standardrolle falls nicht gesetzt
             'last_login'   => time(),
-            // 'last_activity' => time(), // Wird jetzt in MarquesAdmin::init gesetzt
-            'ip_address'   => $ip, // Optional für spätere Checks speichern
-            'user_agent'   => $_SERVER['HTTP_USER_AGENT'] ?? '' // Optional speichern
+            'last_activity'=> time(), // Für Session-Timeout
+            'ip_address'   => $ip, // Für strenge Sicherheitsprüfungen
+            'user_agent'   => $_SERVER['HTTP_USER_AGENT'] ?? '' // Für strenge Sicherheitsprüfungen
         ];
-
-        // Flag für initialen Login korrekt setzen/entfernen
-        if ($username === 'admin' && password_verify($password, self::DEFAULT_ADMIN_PASSWORD) && (empty($user['password']) || ($user['first_login'] ?? false))) {
-             $_SESSION['marques_user']['initial_login'] = true;
+        
+        // Flag für initialen Login korrekt setzen
+        if ($username === 'admin' && password_verify($password, $this->defaultAdminPasswordHash) && 
+            (empty($user['password']) || ($user['first_login'] ?? false))) {
+            $_SESSION['marques_user']['initial_login'] = true;
         } else {
-             unset($_SESSION['marques_user']['initial_login']);
+            unset($_SESSION['marques_user']['initial_login']);
         }
-
+        
+        // CSRF-Token vor Session-Regenerierung sichern
         $csrfToken = $_SESSION['csrf_token'] ?? null;
         $this->regenerateSession();
-
+        
+        // CSRF-Token wiederherstellen oder neues generieren
         if ($csrfToken) {
             $_SESSION['csrf_token'] = $csrfToken;
         } else {
-            // Wenn keins existiert, erzeuge ein neues
             $this->generateCsrfToken();
         }
 
@@ -270,7 +292,15 @@ class Service
      */
     public function logout(): void
     {
+        // Logge Ausloggen für Audit-Zwecke
+        if (isset($_SESSION['marques_user']['username'])) {
+            error_log("Benutzer ausgeloggt: " . $_SESSION['marques_user']['username']);
+        }
+        
+        // Session-Daten leeren
         $_SESSION = [];
+        
+        // Session-Cookie löschen
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
             setcookie(session_name(), '', time() - 42000,
@@ -278,6 +308,8 @@ class Service
                 $params["secure"], $params["httponly"]
             );
         }
+        
+        // Session zerstören
         session_destroy();
     }
 
@@ -292,5 +324,57 @@ class Service
     private function getClientIp(): string {
         $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
         return filter_var(explode(',', $ip)[0], FILTER_VALIDATE_IP) ?: '0.0.0.0';
+    }
+
+    /**
+     * Prüft, ob eine Redirect-URL sicher ist.
+     * 
+     * @param string $url Die zu prüfende URL
+     * @return bool True, wenn die URL sicher ist
+     */
+    public function isValidRedirectUrl(string $url): bool
+    {
+        // Grundlegende Prüfungen
+        if (empty($url) || $url[0] !== '/') {
+            return false;
+        }
+        
+        // Protocol-relative URLs verhindern (//example.com)
+        if (isset($url[1]) && $url[1] === '/') {
+            return false;
+        }
+        
+        // Nur URLs im Admin-Bereich erlauben
+        if (strpos($url, '/admin/') !== 0) {
+            return false;
+        }
+        
+        // Whitelist erlaubter Admin-Pfade
+        $allowedPrefixes = [
+            '/admin/dashboard',
+            '/admin/pages',
+            '/admin/settings',
+            '/admin/blog',
+            '/admin/media',
+            '/admin/users'
+        ];
+        
+        foreach ($allowedPrefixes as $prefix) {
+            if (strpos($url, $prefix) === 0) {
+                return true;
+            }
+        }
+        
+        // Fallback für weitere Admin-URLs
+        $adminLoginPath = '/admin/login';
+        $adminPath = '/admin/';
+        
+        // Vermeidung von Redirect-Loops
+        if (rtrim($url, '/') === rtrim($adminLoginPath, '/')) {
+            return false;
+        }
+        
+        // Allgemeine /admin/ URLs erlauben
+        return strpos($url, $adminPath) === 0;
     }
 }

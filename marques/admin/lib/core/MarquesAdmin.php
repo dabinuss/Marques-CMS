@@ -277,25 +277,20 @@ class MarquesAdmin
     {
         ob_start();
         $this->startSession();
-
+    
         $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
-        $fullRequestUri = $_SERVER['REQUEST_URI'] ?? '';
-
-        $adminRegex = '#^' . preg_quote(MARQUES_ADMIN_DIR, '#') . '(/|$)#';
-        $isAdminPath = preg_match($adminRegex, $requestPath);
-
-        $loginPath = MARQUES_ADMIN_DIR . '/login';
-        $isLoginPath = rtrim($requestPath, '/') === $loginPath;
-        $isAssetsPath = strpos($requestPath, MARQUES_ADMIN_DIR . '/assets') === 0;
-
+    
+        // Session-Aktivität aktualisieren, wenn Benutzer eingeloggt ist
+        if (isset($_SESSION['marques_user']) && !empty($_SESSION['marques_user']['username'])) {
+            $_SESSION['marques_user']['last_activity'] = time();
+        }
+    
         $debugMode = $this->systemConfig['debug'] ?? false;
         error_reporting($debugMode ? E_ALL : 0);
         ini_set('display_errors', $debugMode ? '1' : '0');
         date_default_timezone_set($this->systemConfig['timezone'] ?? 'UTC');
-
-        // CSRF‑Token wird jetzt schon in startSession() erzeugt, doppelten Aufruf entfernt
     }
-
+    
     /**
      * Main entry point: handles admin request routing and error handling.
      *
