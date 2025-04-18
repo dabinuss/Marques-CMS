@@ -15,6 +15,7 @@ use Marques\Service\BlogManager;
 use Marques\Core\Cache;
 use Marques\Service\User;
 use Marques\Core\Logger; 
+use Marques\Filesystem\PathRegistry;
 
 class DashboardController
 {
@@ -29,6 +30,7 @@ class DashboardController
     private User $userManager; 
     private Logger $logger;
     private array $systemConfig = [];
+    private PathRegistry $pathRegistry;
 
     public function __construct(
         Template $template,
@@ -40,7 +42,8 @@ class DashboardController
         BlogManager $blogManager,
         Cache $cacheManager,
         User $user,
-        Logger $logger 
+        Logger $logger,
+        PathRegistry $pathRegistry
     )
     {
         $this->template = $template;
@@ -53,6 +56,7 @@ class DashboardController
         $this->cacheManager = $cacheManager;
         $this->userManager = $user; // Speichern das User-Objekt
         $this->logger = $logger;
+        $this->pathRegistry = $pathRegistry;
 
         // Lade System-Config einmal im Konstruktor (oder bei Bedarf)
         try {
@@ -148,7 +152,7 @@ class DashboardController
             'device_stats'     => ['Desktop' => 0, 'Mobile' => 0, 'Tablet' => 0],
             'hourly_stats'     => array_fill(0, 24, 0), 'daily_stats'      => []
         ];
-        $statsDir = MARQUES_ROOT_DIR . '/logs/stats';
+        $statsDir = $this->pathRegistry->combine('logs', 'stats');
 
         if (!is_dir($statsDir)) {
              if (!@mkdir($statsDir, 0755, true) && !is_dir($statsDir)) {

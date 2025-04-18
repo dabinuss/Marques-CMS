@@ -107,7 +107,8 @@ class MarquesAdmin
             }
             return new Service(
                 $container->get(User::class),
-                $securityConfig
+                $securityConfig,
+                $container->get(PathRegistry::class)
             );
         });
 
@@ -173,7 +174,8 @@ class MarquesAdmin
                 $resolve(BlogManager::class),
                 $resolve(Cache::class),
                 $resolve(User::class),
-                $resolve(Logger::class)
+                $resolve(Logger::class),
+                $resolve(PathRegistry::class)
             );
         });
 
@@ -185,7 +187,9 @@ class MarquesAdmin
             return new PageController(
                  $container->get(AdminTemplate::class),
                  $resolve(PageManager::class),
-                 $resolve(Helper::class)
+                 $resolve(Helper::class),
+                 $resolve(FileManager::class),
+                 $resolve(PathRegistry::class)
             );
         });
 

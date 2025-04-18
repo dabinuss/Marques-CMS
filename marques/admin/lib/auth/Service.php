@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Admin\Auth;
 
 use Marques\Service\User;
+use Marques\Filesystem\PathRegistry;
 
 class Service
 {
@@ -11,12 +12,17 @@ class Service
     private array $systemConfig;
     private string $loginAttemptsFile;
     private const DEFAULT_ADMIN_PASSWORD = '$2y$10$W6J5z7b8c9d0e1f2g3h4i.5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z'; // Gehashtes "admin"
+    private PathRegistry $pathRegistry; 
 
-    public function __construct(User $userModel, array $systemConfig)
-    {
+    public function __construct(
+        User $userModel, 
+        array $systemConfig,
+        PathRegistry $pathRegistry
+    ) {
         $this->userModel = $userModel;
         $this->systemConfig = $systemConfig;
-        $this->loginAttemptsFile = MARQUES_ROOT_DIR . '/logs/login_attempts.json';
+        $this->pathRegistry = $pathRegistry;
+        $this->loginAttemptsFile = $this->pathRegistry->combine('logs', 'login_attempts.json');
         $this->initLoginAttemptsLog();
     }
 

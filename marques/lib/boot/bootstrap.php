@@ -1,58 +1,74 @@
 <?php
 declare(strict_types=1);
 
-// Definiere den Root-Pfad (anpassen, falls nötig)
-define('MARQUES_ROOT_DIR', realpath(__DIR__ . '/../../'));
-define('MARQUES_ADMIN_DIR', MARQUES_ROOT_DIR . '/admin/');
+/* -----------------------------------------------------------------
+ * 0) Root‑Pfad ermitteln (mit Fallback)
+ * ----------------------------------------------------------------- */
+$root = realpath(__DIR__ . '/../../') ?: dirname(__DIR__, 2);
+define('MARQUES_ROOT_DIR', $root);   // if‑Abfrage entfernt
 
-// Konstanten (gemeinsam für beide Bereiche)
-define('MARQUES_VERSION', '0.3.0');
+/* -----------------------------------------------------------------
+ * 1) Basiskonstanten
+ * ----------------------------------------------------------------- */
+define('MARQUES_SYSTEM_DIR', MARQUES_ROOT_DIR . '/lib');   //  <‑‑ wieder da
+define('MARQUES_ADMIN_DIR', MARQUES_ROOT_DIR . '/admin');
+define('MARQUES_VERSION',  '0.3.0');
 
-// Other
-define('MARQUES_SYSTEM_DIR', MARQUES_ROOT_DIR . '/lib/');
-define('MARQUES_CONTENT_DIR', MARQUES_ROOT_DIR . '/content/');
-define('MARQUES_CACHE_DIR', MARQUES_SYSTEM_DIR . '/cache/');
-define('MARQUES_THEMES_DIR', MARQUES_ROOT_DIR . '/themes/');
-
-// ---------------------------------------------------------------------------
-// SAFE IMPLODE
-
-if (!function_exists('safe_implode')) {
+/* -----------------------------------------------------------------
+ * 2) SAFE_IMPLDODE: Sicheres Implodieren von Arrays
+ * ----------------------------------------------------------------- */
+ if (!function_exists('safe_implode')) {
     function safe_implode(string $glue, $array): string {
         if (!is_array($array)) {
-            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+            $trace  = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
             $caller = $trace[1] ?? $trace[0];
-            $file = $caller['file'] ?? 'unbekannte Datei';
-            $line = $caller['line'] ?? 'unbekannte Zeile';
-            throw new Exception("safe_implode erwartet ein Array, aber " . gettype($array) . " übergeben in $file, Zeile $line.");
+            $file   = $caller['file'] ?? 'unbekannte Datei';
+            $line   = $caller['line'] ?? 'unbekannte Zeile';
+            throw new \Exception(           //  <-- Backslash
+                "safe_implode erwartet ein Array, aber "
+                . gettype($array) . " übergeben in $file, Zeile $line."
+            );
         }
         return implode($glue, $array);
     }
 }
 
-// ---------------------------------------------------------------------------
-// Autoloader integrieren
-// Passe den Pfad zur Autoloader-Datei an, falls er anders liegt
-require_once MARQUES_SYSTEM_DIR . '/boot/Autoloader.php';
+/* -----------------------------------------------------------------
+ * 3) Autoloader laden
+ * ----------------------------------------------------------------- */
+require_once MARQUES_SYSTEM_DIR . '/boot/Autoloader.php';  //  Fix
 
 use Marques\Core\Autoloader;
 
-// Definiere das Mapping der Namespaces zu den entsprechenden Basis-Verzeichnissen
 $namespaceMap = [
-    'Marques\\'        => MARQUES_ROOT_DIR . '/lib/',
-    'Admin\\' => MARQUES_ROOT_DIR . '/admin/lib/',
-    'FlatFileDB\\'     => MARQUES_SYSTEM_DIR . '/flatfiledb/'
+    'Marques\\'    => MARQUES_SYSTEM_DIR . '/',            //  Fix
+    'Admin\\'      => MARQUES_ADMIN_DIR . '/lib/',         //  kein doppelter Slash
+    'FlatFileDB\\' => MARQUES_SYSTEM_DIR . '/flatfiledb/', //  Fix
 ];
 
-// Autoloader instanziieren und registrieren
 $autoloader = new Autoloader($namespaceMap, [
     'logging' => true,
-    'logFile' => MARQUES_ROOT_DIR . '/logs/autoloader.log'
+    'logFile' => MARQUES_ROOT_DIR . '/logs/autoloader.log',
 ]);
 $autoloader->register();
 
+/* -----------------------------------------------------------------
+ * 4) PathRegistry initialisieren + Legacy-Konstanten spiegeln
+ * ----------------------------------------------------------------- */
+$paths = new Marques\Filesystem\PathRegistry();
+
+foreach ([
+    'admin'   => 'MARQUES_ADMIN_DIR',
+    'content' => 'MARQUES_CONTENT_DIR',
+    'themes'  => 'MARQUES_THEMES_DIR',
+    'cache'   => 'MARQUES_CACHE_DIR',
+] as $key => $const) {
+    if (!defined($const)) {
+        define($const, rtrim($paths->getPath($key), '/') . '/');
+    }
+}
+
 // ---------------------------------------------------------------------------
-// Nun folgt der Rest deiner Bootstrap-Konfiguration
 
 use Marques\Core\Node;
 use Marques\Data\Database\Config as DatabaseConfig;
@@ -67,9 +83,7 @@ use Marques\Filesystem\FileManager;
 // Erstelle den Root-Container und registriere gemeinsame Services
 $rootContainer = new Node();
 
-$rootContainer->register(PathRegistry::class, function () {
-    return new PathRegistry();          // keine Abhängigkeiten
-});
+$rootContainer->register(PathRegistry::class, static fn () => $paths);
 
 // Logger registrieren (für Exception-Handler benötigt)
 $rootContainer->register(Logger::class, function (Node $c) {
@@ -146,11 +160,6 @@ try {
     error_log("Konnte Debug-Modus nicht aus Datenbank laden: " . $e->getMessage());
 }
 
-// Rest der Container-Registrierungen
-$rootContainer->register(\Marques\Filesystem\PathRegistry::class, function(Node $c) {
-    return new \Marques\Filesystem\PathRegistry();
-});
-
 $rootContainer->register(\Marques\Util\Helper::class, function(Node $container) {
     return new \Marques\Util\Helper($container->get(DatabaseHandler::class));
 });
@@ -164,16 +173,10 @@ $rootContainer->register(Cache::class, function (Node $c) {
 });
 
 $rootContainer->register(\Marques\Filesystem\FileManager::class, function (Node $c) {
-    $cache  = $c->get(\Marques\Core\Cache::class);
-
-    $knownDirectories  = [
-        'content'            => MARQUES_CONTENT_DIR,
-        'themes'             => MARQUES_THEMES_DIR,
-        'admin'              => MARQUES_ADMIN_DIR,
-        'backend_templates'  => MARQUES_ADMIN_DIR . '/templates',
-    ];
-
-    return new \Marques\Filesystem\FileManager($cache, $knownDirectories);
+    return new \Marques\Filesystem\FileManager(
+        $c->get(\Marques\Core\Cache::class),
+        $c->get(PathRegistry::class)          // <‑‑ neue Dependency
+    );
 });
 
 $rootContainer->register(\Marques\Service\ThemeManager::class, function (Node $c) {
