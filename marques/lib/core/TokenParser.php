@@ -255,6 +255,7 @@ class TokenParser
      */
 public function parseTokens(string $content): string
 {
+    $content = $this->parseUrlTokens($content);
     $content = $this->parseAssetDefinitions($content);
     $content = $this->parseBlockDefinitions($content);
     $content = $this->parseRenderTokens($content);
@@ -941,6 +942,56 @@ public function parseTokens(string $content): string
         }
         
         return $attributes;
+    }
+
+    private function parseUrlTokens(string $content): string
+    {
+        return preg_replace_callback('/\{url:([a-zA-Z0-9_.-]+)(.*?)\}/', function ($matches) {
+            $routeName   = $matches[1];
+            $paramString = trim($matches[2]);
+    
+            $params = [];
+            if ($paramString !== '') {
+                preg_match_all(
+                    '/([a-zA-Z0-9_]+)\s*=\s*"([^"]*)"|([a-zA-Z0-9_]+)\s*=\s*\'([^\']*)\'/',
+                    $paramString,
+                    $paramMatches,
+                    PREG_SET_ORDER
+                );
+    
+                foreach ($paramMatches as $param) {
+                    $key = $param[1] ?: $param[3];
+                    $val = $param[2] ?? $param[4] ?? '';
+                    $params[$key] = $val;
+                }
+            }
+    
+            $router = null;
+            if (
+                $this->templateContext &&
+                method_exists($this->templateContext, 'getTemplateVars')
+            ) {
+                $vars = $this->templateContext->getTemplateVars();
+                if (isset($vars['router']) && method_exists($vars['router'], 'generateUrl')) {
+                    $router = $vars['router'];
+                }
+            }
+    
+            if (!$router) {
+                return defined('MARQUES_DEBUG') && MARQUES_DEBUG
+                    ? "<!-- invalid router context for route: {$routeName} -->"
+                    : '#invalid-url';
+            }
+    
+            try {
+                $url = $router->generateUrl($routeName, $params);
+                return htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            } catch (\Throwable $e) {
+                return defined('MARQUES_DEBUG') && MARQUES_DEBUG
+                    ? '<!-- router error: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' -->'
+                    : '#invalid-url';
+            }
+        }, $content);
     }
     
     /**

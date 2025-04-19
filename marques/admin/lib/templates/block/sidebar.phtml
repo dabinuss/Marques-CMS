@@ -120,12 +120,12 @@ if (isset($user) && is_array($user)) {
             </div>
         </nav>
         <div class="sidebar-footer">
-            <a href="?page=logout" class="admin-logout-link">
+            <a href="{url:admin.logout}" class="admin-logout-link">
                 <? // $this->renderIcon('currency-quetzal', 'nav-menu-icon', '24'); 
                 ?>
                 Abmelden
             </a>
-            <p>marques CMS v<?= MARQUES_VERSION; ?></p>
+            <p>marques CMS v{var:version}</p>
         </div>
     </div>
 </aside>

@@ -99,39 +99,39 @@ class Template extends AppTemplate
             'template'    => $this,
             'tokenParser' => $this->tokenParser,
         ];
-
+    
         $baseVars['marques_user'] = $_SESSION['marques_user'] ?? ['username' => 'Admin'];
         $baseVars['username']     = $baseVars['marques_user']['username'] ?? 'Admin';
         $baseVars['user']         = $baseVars['marques_user'];
-
+    
         $templateVars = array_merge($baseVars, $vars);
-
+    
         $this->registerTemplateVars($templateVars);
-
+    
         if (!preg_match('/^[a-z0-9_-]+$/i', $templateKey)) {
             throw new \InvalidArgumentException('Invalid template key: ' . htmlspecialchars($templateKey));
         }
-
+    
         $viewFile = $this->templateDir . '/' . $templateKey . '.phtml';
         if (!file_exists($viewFile)) {
             throw new \RuntimeException('Admin view file not found: ' . htmlspecialchars($viewFile));
         }
-
+    
         $layoutExists     = file_exists($this->layoutFile);
         $layoutContent    = $layoutExists ? file_get_contents($this->layoutFile) : '';
         $contentForLayout = '';
-
+    
         try {
             foreach ($templateVars as $key => $value) {
                 if (preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $key)) {
                     ${$key} = $value;
                 }
             }
-
+    
             ob_start();
             include $viewFile;
             $viewContent = ob_get_clean();
-
+    
             $processedViewContent = $this->tokenParser->parseTokens($viewContent);
             $this->tokenParser->setBlock('content', $processedViewContent);
             $contentForLayout = $processedViewContent;
@@ -145,10 +145,12 @@ class Template extends AppTemplate
                 $e
             );
         }
-
+    
         if ($layoutExists) {
             try {
-                $finalOutput = $this->tokenParser->parseTokens($layoutContent);
+                // WICHTIGE ÄNDERUNG: Hier wird das Layout noch einmal auf Tokens geparst.
+                $finalOutput = str_replace('{render:block:content}', $contentForLayout, $layoutContent);
+                $finalOutput = $this->tokenParser->parseTokens($finalOutput);
                 $finalOutput = $this->tokenParser->renderInline($finalOutput);
                 echo $finalOutput;
             } catch (\Throwable $e) {
