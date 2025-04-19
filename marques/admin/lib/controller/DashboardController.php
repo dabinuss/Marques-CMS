@@ -70,7 +70,7 @@ class DashboardController
     /**
      * Zeigt das Admin-Dashboard an.
      */
-    public function index(Request $request, array $params): void
+    public function index(Request $request, array $params): \Marques\Http\Response
     {
         $isDebug = $this->systemConfig['debug'] ?? false;
 
@@ -137,7 +137,9 @@ class DashboardController
         ];
 
         // 3. Template rendern und Daten übergeben
-        $this->template->render($viewData, 'dashboard'); // rendert views/dashboard.phtml
+        //$this->template->render($viewData, 'dashboard'); // rendert views/dashboard.phtml
+        return new \Marques\Http\Response\ViewResponse($this->template, 'dashboard', $viewData);
+
     }
 
     /**
