@@ -100,6 +100,7 @@ a:hover {
     flex-direction: column;
     box-shadow: 2px 0 5px #0000001a;
     z-index: 10;
+    height:100%;
 }
 
 .sidebar-header {
