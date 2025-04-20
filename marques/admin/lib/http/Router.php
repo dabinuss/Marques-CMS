@@ -79,7 +79,7 @@ class Router extends AppRouter
         ], function (Router $router) {
             $router->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard');
 
-            $router->get('/pages', PageController::class . '@list')->name('admin.pages.list');
+            $router->get('/pages', PageController::class . '@list')->name('admin.pages');
             $router->get('/pages/add', PageController::class . '@showAddForm')->name('admin.pages.add');
             $router->post('/pages/add', PageController::class . '@handleAddForm')->name('admin.pages.add.post');
             $router->get('/pages/edit/{id}', PageController::class . '@showEditForm')->name('admin.pages.edit');
@@ -89,7 +89,7 @@ class Router extends AppRouter
             $router->get('/settings', SettingsController::class . '@showForm')->name('admin.settings');
             $router->post('/settings', SettingsController::class . '@handleForm')->name('admin.settings.post');
 
-            $router->get('/blog', BlogController::class . '@listPosts')->name('admin.blog.list');
+            $router->get('/blog', BlogController::class . '@listPosts')->name('admin.blog');
             $router->get('/blog/edit/{id}', BlogController::class . '@showEditForm')->name('admin.blog.edit');
             $router->post('/blog/edit/{id}', BlogController::class . '@handleEditForm')->name('admin.blog.edit.post');
         });

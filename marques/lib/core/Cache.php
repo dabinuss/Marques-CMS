@@ -458,7 +458,8 @@ class Cache {
         if (file_exists($path)) {
             $mtime = filemtime($path);
             $sep = strpos($url, '?') === false ? '?' : '&';
-            return $url . $sep . 'v=' . $mtime;
+            //return $url . $sep . 'v=' . $mtime;
+            return $url;
         }
         return $url;
     }

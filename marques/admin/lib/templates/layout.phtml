@@ -7,27 +7,29 @@
     
     <!-- CSS mittels Asset-Tags einbinden -->
     {asset:css}/assets/css/marques-panel-style.css{/asset}
-    {asset:css}/assets/css/fa-640.all.min.css{/asset}
+    {asset:js type:module}/admin/assets/js/lucide.min.js{/asset}
 
     {render:assets:css}
+    {render:assets:js}
 </head>
 <body>
+    
+ha<i data-lucide="menu"></i>ha
 
     {render:block:content}
 
-    <!-- JavaScript mittels Asset-Tags einbinden -->
-    {asset:js inline="true"}
+    {asset:js inline:true nonce:{var:csp_nonce}}
         // Globale JS-Variablen
         window.csrfToken = '{var:csrf_token}';
         window.baseUrl = '{var:base_url}';
         window.adminBaseUrl = '{var:admin_url}';
     {/asset}
 
+    {asset:js inline:true type:module nonce:{var:csp_nonce}}
+        import { createIcons, icons } from 'lucide';
+        createIcons({ icons });
+    {/asset}
+
     {render:inline:js}
-
-    {render:assets:js}
-    
-    {render:block:scripts}
-
 </body>
 </html>

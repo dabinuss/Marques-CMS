@@ -628,4 +628,20 @@ class AssetManager
         
         return implode('/', $path);
     }
+
+    /**
+     * Gibt die Basis-URL zurück
+     */
+    public function getBaseUrl(): string
+    {
+        return $this->baseUrl;
+    }
+
+    /**
+     * Gibt die aktuelle Version zurück
+     */
+    public function getVersion(): string
+    {
+        return $this->version;
+    }
 }
