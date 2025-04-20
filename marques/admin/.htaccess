@@ -12,3 +12,8 @@ RewriteRule ^ - [L]
 
 # 2) Alle anderen Anfragen an admin/index.php weiterleiten
 RewriteRule ^ index.php [L,QSA]
+
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType application/javascript .mjs
+</IfModule>

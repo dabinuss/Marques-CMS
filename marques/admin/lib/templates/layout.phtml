@@ -16,8 +16,6 @@
     {render:assets:js}
 </head>
 <body>
-    
-ha<i data-lucide="menu"></i>ha
 
     {render:block:content}
 
@@ -29,8 +27,10 @@ ha<i data-lucide="menu"></i>ha
     {/asset}
 
     {asset:js inline:true type:module nonce:{var:csp_nonce}}
-        import { createIcons, icons } from 'lucide';
-        createIcons({ icons });
+        //import { createIcons, icons } from '/admin/assets/js/lucide.min.js';
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     {/asset}
 
     {render:inline:js}
