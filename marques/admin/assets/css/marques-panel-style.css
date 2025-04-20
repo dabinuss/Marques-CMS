@@ -81,10 +81,33 @@ a:hover {
     color: var(--primary-dark);
 }
 
-.icon-tabler {
-    width: 32px;
-    height: 32px;
-    stroke-width: 2;
+.icon { 
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    fill: var(--text-primary);
+}
+
+.icon-space-right { padding-right:0.5rem; }
+.icon-space-left { padding-left:0.5rem; }
+.icon-space-top { padding-top:0.5rem; }
+.icon-space-bottom { padding-bottom:0.5rem; }
+.icon-space { padding:0.5rem; }
+
+.icon-12 > svg { width: 12px; height: 12px; }
+.icon-16 > svg { width: 16px; height: 16px; }
+.icon-20 > svg { width: 20px; height: 20px; }
+.icon-24 > svg { width: 24px; height: 24px; }
+.icon-28 > svg { width: 28px; height: 28px; }
+.icon-32 > svg { width: 32px; height: 32px; }
+
+.icon-input {
+    position: absolute;
+    top: 50%;
+    left: 0.5rem;
+    transform: translateY(-50%);
+    color: #6c757d;
 }
 
 .container {
