@@ -32,70 +32,62 @@ if (isset($user) && is_array($user)) {
             <div class="nav-item">
                 <a href="{url:admin.dashboard}"
                     class="nav-link <?= (!isset($current_page) || $current_page === '' || $current_page === 'dashboard') ? 'active' : ''; ?>">
-                    <span class="icon"><i data-lucide="circuit-board"></i></span>
+                    <span class="icon"><i data-lucide="layout-dashoard"></i></span>
                     Dashboard
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{url:admin.pages}"
                     class="nav-link <?= $current_page === 'pages' || $current_page === 'page-edit' ? 'active' : ''; ?>">
-                    <? // $this->renderIcon('files', 'nav-menu-icon', '24'); 
-                    ?>
+                    <span class="icon"><i data-lucide="book-open-text"></i></span>
                     Seiten
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{url:admin.navigation}" 
                     class="nav-link <?= $current_page === 'navigation' ? 'active' : ''; ?>">
-                    <? // $this->renderIcon('menu-3', 'nav-menu-icon', '24'); 
-                    ?>
+                    <span class="icon"><i data-lucide="map"></i></span>
                     Menüs
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{url:admin.media}"
                     class="nav-link <?= $current_page === 'media' ? 'active' : ''; ?>">
-                    <? // $this->renderIcon('library-photo', 'nav-menu-icon', '24'); 
-                    ?>
+                    <span class="icon"><i data-lucide="image"></i></span>
                     Medien
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{url:admin.blog}"
                     class="nav-link <?= $current_page === 'blog' || $current_page === 'blog-categories' || $current_page === 'blog-tags' || $current_page === 'blog-edit' ? 'active' : ''; ?>">
-                    <? // $this->renderIcon('news', 'nav-menu-icon', '24');
-                    ?>
+                    <span class="icon"><i data-lucide="notepad-text"></i></span>
                     Blog
                 </a>
                 <div class="nav-sub-item">
                     <a href="{url:admin.blog}"
                         class="nav-link <?= $current_page === 'blog' ? 'active' : ''; ?>">
-                        <? // $this->renderIcon('point', 'nav-menu-icon', '14'); 
-                        ?>
+                        <span class="icon icon-16"><i data-lucide="layout-list"></i></span>
                         Alle Beiträge
                     </a>
                 </div>
                 <div class="nav-sub-item">
                     <a href="{url:admin.blog.add}"
                         class="nav-link <?= $current_page === 'blog-edit' ? 'active' : ''; ?>">
-                        <? // $this->renderIcon('point', 'nav-menu-icon', '14'); 
-                        ?>
+                        <span class="icon icon-16"><i data-lucide="square-plus"></i></span>
                         Neuer Beitrag
                     </a>
                 </div>
                 <div class="nav-sub-item">
                     <a href="{url:admin.blog.tax.categories}"
                         class="nav-link <?= $current_page === 'blog-categories' ? 'active' : ''; ?>">
-                        <? // $this->renderIcon('point', 'nav-menu-icon', '14'); 
-                        ?>
+                        <span class="icon icon-16"><i data-lucide="between-horizontal-end"></i></span>
                         Kategorien
                     </a>
                 </div>
                 <div class="nav-sub-item">
                     <a href="{url:admin.blog.tax.tags}"
                         class="nav-link <?= $current_page === 'blog-tags' ? 'active' : ''; ?>">
-                        <? // $this->renderIcon('point', 'nav-menu-icon', '14'); 
-                        ?>
+                        <span class="icon icon-16"><i data-lucide="tags"></i></span>
                         Tags
                     </a>
                 </div>
@@ -103,27 +95,27 @@ if (isset($user) && is_array($user)) {
             <div class="nav-item">
                 <a href="{url:admin.users}"
                     class="nav-link <?= $current_page === 'users' || $current_page === 'user-edit' ? 'active' : ''; ?>">
-                    <? // $this->renderIcon('users-group', 'nav-menu-icon', '24'); 
-                     ?>
+                    <span class="icon"><i data-lucide="users"></i></span>
                     Benutzer
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{url:admin.settings}"
                     class="nav-link <?= $current_page === 'settings' ? 'active' : ''; ?>">
-                    <? // $this->renderIcon('adjustments-cog', 'nav-menu-icon', '24'); 
-                    ?>
+                    <span class="icon"><i data-lucide="sliders-horizontal"></i></span>
                     Einstellungen
                 </a>
             </div>
         </nav>
         <div class="sidebar-footer">
             <a href="{url:admin.logout}" class="admin-logout-link">
-                <? // $this->renderIcon('currency-quetzal', 'nav-menu-icon', '24'); 
-                ?>
+                <span class="icon"><i data-lucide="door-closed"></i></span>
                 Abmelden
             </a>
-            <p>marques CMS v{var:version}</p>
+            <p>
+                <span class="icon icon-12"><i data-lucide="copyright"></i></span>
+                marques CMS v{var:version}
+            </p>
         </div>
     </div>
 </aside>

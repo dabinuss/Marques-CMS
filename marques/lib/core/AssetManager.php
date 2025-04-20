@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Filesystem\PathRegistry;
+use Marques\Filesystem\PathResolver;
+
 /**
  * AssetManager - Verwaltet Web-Assets wie CSS, JavaScript, etc.
  */
@@ -12,32 +15,98 @@ class AssetManager
         'css' => [],
         'js' => []
     ];
-    
+
     private array $assetGroups = [];
     private string $baseUrl;
     private string $version = '1.0';
     private bool $developmentMode;
-    
+    private ?PathRegistry $pathRegistry;
+
     // Cache für kombinierte Assets
     private array $combinedCache = [];
-    
+
     /**
      * Konstruktor
      * 
      * @param string $baseUrl Basis-URL für Assets
      * @param string $version Versionsnummer für Cache-Busting
      * @param bool $developmentMode Im Entwicklungsmodus deaktivierte Optimierungen
+     * @param PathRegistry|null $pathRegistry Optionale PathRegistry für Dateisystem-Zugriff
      */
-    public function __construct(string $baseUrl = '', string $version = '', bool $developmentMode = false)
-    {
+    public function __construct(
+        string $baseUrl = '',
+        string $version = '',
+        bool $developmentMode = false,
+        ?PathRegistry $pathRegistry = null
+    ) {
         $this->baseUrl = $baseUrl;
         $this->developmentMode = $developmentMode;
-        
+        $this->pathRegistry = $pathRegistry;
+
         if (!empty($version)) {
             $this->version = $version;
         }
     }
-    
+
+    /**
+     * Löst den physischen Pfad zu einer Asset-Datei auf
+     */
+    private function resolveAssetPath(string $path): string
+    {
+        // Falls keine PathRegistry verfügbar ist, Fallback zur alten Methode
+        if (!$this->pathRegistry) {
+            return $this->getWebRootPath() . '/' . ltrim($path, '/');
+        }
+        
+        try {
+            // Versuche erst als eigenständigen Pfad zu verwenden (vollständiger Pfad)
+            if (file_exists($path) && !is_dir($path)) {
+                return $path;
+            }
+            
+            // Sonst via PathRegistry mit 'root' als Basis auflösen
+            return $this->pathRegistry->combine('root', $path);
+        } catch (\Throwable $e) {
+            if ($this->developmentMode) {
+                error_log("Fehler bei Asset-Pfadauflösung: " . $e->getMessage());
+            }
+            return $path; // Fallback
+        }
+    }
+
+    /**
+     * Erzeugt eine Web-URL für ein Asset
+     */
+    private function createAssetUrl(string $path): string
+    {
+        $baseUrl = rtrim($this->baseUrl, '/');
+        $path = '/' . ltrim($path, '/');
+        
+        // Prüfe, ob der Pfad bereits mit baseUrl beginnt
+        if (!empty($baseUrl) && strpos($path, $baseUrl) !== 0) {
+            return $baseUrl . $path;
+        }
+        
+        return $path;
+    }
+
+    /**
+     * Löst das Cache-Verzeichnis für kombinierte Assets auf
+     */
+    private function resolveAssetCacheDir(): string
+    {
+        if ($this->pathRegistry) {
+            try {
+                return $this->pathRegistry->combine('root', 'cache');
+            } catch (\Throwable $e) {
+                // Fallback
+            }
+        }
+        
+        // Fallback auf alte Methode
+        return $this->getWebRootPath() . '/cache';
+    }
+
     /**
      * Fügt ein Asset hinzu
      * 
@@ -49,7 +118,7 @@ class AssetManager
     public function add(string $type, string $path, array $options = []): self
     {
         $key = $options['group'] ?? $path;
-        
+
         // Standardoptionen
         $defaultOptions = [
             'external' => false,
@@ -61,15 +130,15 @@ class AssetManager
             'minify' => !$this->developmentMode,  // Standard: minifizieren in Produktion
             'combine' => !$this->developmentMode  // Standard: kombinieren in Produktion
         ];
-        
+
         $options = array_merge($defaultOptions, $options);
-        
+
         // Füge Asset zum entsprechenden Typ hinzu
         $this->assets[$type][$key] = [
             'path' => $path,
             'options' => $options
         ];
-        
+
         // Wenn eine Gruppe angegeben ist, füge es dort ebenfalls hinzu
         if (!empty($options['group'])) {
             $this->assetGroups[$options['group']][$type][$key] = [
@@ -77,15 +146,15 @@ class AssetManager
                 'options' => $options
             ];
         }
-        
+
         // Lösche den Kombinierungs-Cache für diesen Typ
         if (isset($this->combinedCache[$type])) {
             unset($this->combinedCache[$type]);
         }
-        
+
         return $this;
     }
-    
+
     /**
      * Fügt ein CSS-Asset hinzu
      * 
@@ -99,7 +168,7 @@ class AssetManager
         $options['external'] = $isExternal;
         return $this->add('css', $path, $options);
     }
-    
+
     /**
      * Fügt ein JavaScript-Asset hinzu
      * 
@@ -115,7 +184,7 @@ class AssetManager
         $options['defer'] = $defer;
         return $this->add('js', $path, $options);
     }
-    
+
     /**
      * Generiert HTML für alle Assets eines bestimmten Typs
      * 
@@ -127,20 +196,20 @@ class AssetManager
         if (!isset($this->assets[$type])) {
             return '';
         }
-        
+
         // Prüfen, ob wir Assets kombinieren können
         $canCombine = !$this->developmentMode;
-        
+
         // Sortiere Assets nach Priorität
         $assets = $this->assets[$type];
-        uasort($assets, function($a, $b) {
+        uasort($assets, function ($a, $b) {
             return ($a['options']['priority'] ?? 10) - ($b['options']['priority'] ?? 10);
         });
-        
+
         // Trennen in externe und interne Assets
         $externalAssets = [];
         $internalAssets = [];
-        
+
         foreach ($assets as $key => $asset) {
             if ($asset['options']['external'] || !$asset['options']['combine']) {
                 $externalAssets[$key] = $asset;
@@ -148,9 +217,9 @@ class AssetManager
                 $internalAssets[$key] = $asset;
             }
         }
-        
+
         $output = '';
-        
+
         // Kombiniere interne Assets, wenn möglich
         if ($canCombine && !empty($internalAssets)) {
             $output .= $this->renderCombinedAssets($type, $internalAssets);
@@ -160,15 +229,15 @@ class AssetManager
                 $output .= $this->renderSingleAsset($type, $asset);
             }
         }
-        
+
         // Rendere externe Assets immer einzeln
         foreach ($externalAssets as $asset) {
             $output .= $this->renderSingleAsset($type, $asset);
         }
-        
+
         return $output;
     }
-    
+
     /**
      * Rendert ein einzelnes Asset
      * 
@@ -180,26 +249,19 @@ class AssetManager
     {
         $path = $asset['path'];
         $options = $asset['options'];
-        
+
         // Versionierung hinzufügen, wenn aktiviert und nicht extern
         if (!$options['external'] && $options['version'] && !empty($this->version)) {
             $path = $this->addVersionToPath($path);
         }
-        
+
         // Volle URL erstellen, wenn nicht extern und keine absolute URL
         if (!$options['external'] && strpos($path, '://') === false && strpos($path, '//') !== 0) {
-            // Normalisiere den Pfad, um doppelte Präfixe zu vermeiden
-            $baseUrl = rtrim($this->baseUrl, '/');
-            $path = '/' . ltrim($path, '/');
-            
-            // Prüfe, ob der Pfad bereits mit baseUrl beginnt
-            if (!empty($baseUrl) && strpos($path, $baseUrl) !== 0) {
-                $path = $baseUrl . $path;
-            }
+            $path = $this->createAssetUrl($path);
         }
-        
+
         $output = '';
-        
+
         switch ($type) {
             case 'css':
                 $media = isset($options['media']) ? ' media="' . $options['media'] . '"' : '';
@@ -209,7 +271,7 @@ class AssetManager
                     $media
                 );
                 break;
-                
+
             case 'js':
                 $attributes = '';
                 if (!empty($options['defer']) && $options['defer']) {
@@ -224,12 +286,12 @@ class AssetManager
                 if (isset($options['integrity']) && isset($options['crossorigin'])) {
                     $attributes .= ' integrity="' . $options['integrity'] . '" crossorigin="' . $options['crossorigin'] . '"';
                 }
-                
+
                 // CSP Nonce hinzufügen, wenn definiert
                 if (defined('CSP_NONCE')) {
                     $attributes .= ' nonce="' . CSP_NONCE . '"';
                 }
-                
+
                 $output .= sprintf(
                     '<script src="%s"%s></script>' . PHP_EOL,
                     $path,
@@ -237,10 +299,10 @@ class AssetManager
                 );
                 break;
         }
-        
+
         return $output;
     }
-    
+
     /**
      * Rendert kombinierte Assets
      * 
@@ -268,16 +330,28 @@ class AssetManager
         
         $combinedFilename = $filenameBase . '.' . $type;
         $combinedPath = 'cache/' . $combinedFilename;
-        $fullPath = rtrim($this->baseUrl, '/') . '/' . ltrim($combinedPath, '/');
+        
+        // Verwende PathResolver für Web-URLs
+        $fullPath = $this->createAssetUrl($combinedPath);
         
         // Prüfe, ob die kombinierte Datei existiert
-        $webRootPath = $this->getWebRootPath();
-        $physicalPath = $webRootPath . '/' . $combinedPath;
+        $cacheDir = $this->resolveAssetCacheDir();
+        $physicalPath = $this->resolveAssetPath($combinedPath);
         
         // Cache-Verzeichnis erstellen, falls es nicht existiert
-        $cacheDir = dirname($physicalPath);
-        if (!is_dir($cacheDir) && is_writable(dirname($cacheDir))) {
-            mkdir($cacheDir, 0755, true);
+        if (!is_dir($cacheDir)) {
+            if (!mkdir($cacheDir, 0755, true) && !is_dir($cacheDir)) {
+                // Fallback: Wenn wir kein Verzeichnis erstellen können, rendere einzeln
+                if ($this->developmentMode) {
+                    error_log("Konnte Cache-Verzeichnis nicht erstellen: {$cacheDir}");
+                }
+                
+                $output = '';
+                foreach ($assets as $asset) {
+                    $output .= $this->renderSingleAsset($type, $asset);
+                }
+                return $output;
+            }
         }
         
         // Prüfen, ob wir eine neue kombinierte Datei erstellen müssen
@@ -289,8 +363,8 @@ class AssetManager
             
             foreach ($assets as $asset) {
                 if (!$asset['options']['external']) {
-                    $assetPath = $webRootPath . '/' . ltrim($asset['path'], '/');
-                    if (file_exists($assetPath) && filemtime($assetPath) > $combinedTime) {
+                    $assetPhysicalPath = $this->resolveAssetPath($asset['path']);
+                    if (file_exists($assetPhysicalPath) && filemtime($assetPhysicalPath) > $combinedTime) {
                         $needsRebuild = true;
                         break;
                     }
@@ -299,15 +373,15 @@ class AssetManager
         }
         
         // Kombinierte Datei erstellen, falls nötig
-        if ($needsRebuild && is_writable($cacheDir)) {
+        if ($needsRebuild && is_writable(dirname($physicalPath))) {
             $combinedContent = '';
             
             foreach ($assets as $asset) {
                 if (!$asset['options']['external']) {
-                    $assetPath = $webRootPath . '/' . ltrim($asset['path'], '/');
+                    $assetPhysicalPath = $this->resolveAssetPath($asset['path']);
                     
-                    if (file_exists($assetPath)) {
-                        $content = file_get_contents($assetPath);
+                    if (file_exists($assetPhysicalPath)) {
+                        $content = file_get_contents($assetPhysicalPath);
                         
                         // Minifizieren, falls gewünscht
                         if ($asset['options']['minify']) {
@@ -325,17 +399,21 @@ class AssetManager
                         }
                         
                         $combinedContent .= "/* {$asset['path']} */\n" . $content . "\n\n";
+                    } else if ($this->developmentMode) {
+                        error_log("Asset-Datei nicht gefunden: {$assetPhysicalPath}");
                     }
                 }
             }
             
             // Speichern der kombinierten Datei
-            file_put_contents($physicalPath, $combinedContent);
+            if (!file_put_contents($physicalPath, $combinedContent) && $this->developmentMode) {
+                error_log("Fehler beim Schreiben der kombinierten Datei: {$physicalPath}");
+            }
         }
         
         // HTML für die kombinierte Datei erzeugen
         $output = '';
-    
+
         if ($type === 'css') {
             $media = isset($commonOptions['media']) ? ' media="' . $commonOptions['media'] . '"' : '';
             $output = sprintf(
@@ -350,6 +428,9 @@ class AssetManager
             }
             if (!empty($commonOptions['async']) && $commonOptions['async']) {
                 $attributes .= ' async';
+            }
+            if (!empty($commonOptions['type'])) {
+                $attributes .= ' type="' . $commonOptions['type'] . '"';
             }
             
             // CSP Nonce hinzufügen, wenn definiert
@@ -369,7 +450,7 @@ class AssetManager
         
         return $output;
     }
-    
+
     /**
      * Findet gemeinsame Optionen in einer Sammlung von Assets
      * 
@@ -381,10 +462,10 @@ class AssetManager
         if (empty($assets)) {
             return [];
         }
-        
+
         // Beginne mit den Optionen des ersten Assets
         $commonOptions = reset($assets)['options'];
-        
+
         // Filtere Optionen, die über alle Assets gleich sind
         foreach ($assets as $asset) {
             foreach ($commonOptions as $key => $value) {
@@ -393,10 +474,10 @@ class AssetManager
                 }
             }
         }
-        
+
         return $commonOptions;
     }
-    
+
     /**
      * Generiert HTML für eine Gruppe von Assets
      * 
@@ -409,21 +490,21 @@ class AssetManager
         if (!isset($this->assetGroups[$group])) {
             return '';
         }
-        
+
         $output = '';
-        
+
         if (!empty($type)) {
             // Einen spezifischen Typ rendern
             if (isset($this->assetGroups[$group][$type])) {
                 $groupAssets = $this->assetGroups[$group][$type];
-                
+
                 // Temporär die Assets ersetzen
                 $originalAssets = $this->assets[$type] ?? [];
                 $this->assets[$type] = $groupAssets;
-                
+
                 // Rendern
                 $output = $this->render($type);
-                
+
                 // Original-Assets wiederherstellen
                 $this->assets[$type] = $originalAssets;
             }
@@ -433,18 +514,18 @@ class AssetManager
                 // Temporär die Assets ersetzen
                 $originalAssets = $this->assets[$assetType] ?? [];
                 $this->assets[$assetType] = $groupAssets;
-                
+
                 // Rendern
                 $output .= $this->render($assetType);
-                
+
                 // Original-Assets wiederherstellen
                 $this->assets[$assetType] = $originalAssets;
             }
         }
-        
+
         return $output;
     }
-    
+
     /**
      * Fügt eine Versionsnummer zu einem Pfad hinzu
      * 
@@ -456,7 +537,7 @@ class AssetManager
         $separator = (strpos($path, '?') !== false) ? '&' : '?';
         return $path . $separator . 'v=' . $this->version;
     }
-    
+
     /**
      * Gibt den Webroot-Pfad zurück
      * 
@@ -468,7 +549,7 @@ class AssetManager
         // Beispiel:
         return defined('DOCUMENT_ROOT') ? DOCUMENT_ROOT : $_SERVER['DOCUMENT_ROOT'];
     }
-    
+
     /**
      * Setzt die Basis-URL für Assets
      * 
@@ -480,7 +561,7 @@ class AssetManager
         $this->baseUrl = $baseUrl;
         return $this;
     }
-    
+
     /**
      * Setzt die Versionsnummer für Cache-Busting
      * 
@@ -493,7 +574,7 @@ class AssetManager
         $this->combinedCache = []; // Lösche Cache bei Versionsänderung
         return $this;
     }
-    
+
     /**
      * Setzt den Entwicklungsmodus
      * 
@@ -506,7 +587,7 @@ class AssetManager
         $this->combinedCache = []; // Lösche Cache bei Modusänderung
         return $this;
     }
-    
+
     /**
      * Gibt alle registrierten Assets zurück
      * 
@@ -516,7 +597,7 @@ class AssetManager
     {
         return $this->assets;
     }
-    
+
     /**
      * Gibt alle registrierten Asset-Gruppen zurück
      * 
@@ -526,7 +607,7 @@ class AssetManager
     {
         return $this->assetGroups;
     }
-    
+
     /**
      * Minimiert CSS-Inhalt
      * 
@@ -550,10 +631,10 @@ class AssetManager
         $content = preg_replace('/(:|\s)0(px|em|ex|pt|pc|cm|mm|in|%)/i', '${1}0', $content);
         // Ersetze #ffffff mit #fff
         $content = preg_replace('/#([a-f0-9])\1([a-f0-9])\2([a-f0-9])\3/i', '#$1$2$3', $content);
-        
+
         return trim($content);
     }
-    
+
     /**
      * Minimiert JavaScript-Inhalt
      * 
@@ -569,10 +650,10 @@ class AssetManager
         $content = preg_replace('/\s+/', ' ', $content);
         // Entferne Whitespace vor/nach Operatoren
         $content = preg_replace('/\s*([=\+\-\*\/\(\)\{\}\[\];:,<>])\s*/', '$1', $content);
-        
+
         return trim($content);
     }
-    
+
     /**
      * Korrigiert relative Pfade in CSS-Dateien
      * 
@@ -594,18 +675,23 @@ class AssetManager
                     return $matches[0];
                 }
                 
-                // Berechne den relativen Pfad vom neuen zum alten Verzeichnis
-                $relPath = $this->getRelativePath($newDir, $originalDir);
-                
-                // Kombiniere den relativen Pfad mit der URL
-                $newUrl = rtrim($relPath, '/') . '/' . ltrim($url, '/');
-                
-                return 'url("' . $newUrl . '")';
+                try {
+                    // Verwende PathResolver für die Pfadberechnung
+                    $relPath = $this->getRelativePath($newDir, $originalDir);
+                    $newUrl = rtrim($relPath, '/') . '/' . ltrim($url, '/');
+                    return 'url("' . $newUrl . '")';
+                } catch (\Throwable $e) {
+                    // Bei Fehler original URL beibehalten
+                    if ($this->developmentMode) {
+                        error_log("Fehler bei CSS-Pfadkorrektur: " . $e->getMessage());
+                    }
+                    return $matches[0];
+                }
             },
             $content
         );
     }
-    
+
     /**
      * Berechnet einen relativen Pfad zwischen zwei Verzeichnissen
      * 
@@ -618,7 +704,7 @@ class AssetManager
         // Normalisiere Verzeichnispfade
         $from = explode('/', trim($from, '/'));
         $to = explode('/', trim($to, '/'));
-        
+
         // Entferne gemeinsame Teile
         $length = min(count($from), count($to));
         for ($i = 0; $i < $length; $i++) {
@@ -626,13 +712,13 @@ class AssetManager
                 break;
             }
         }
-        
+
         // Baue relativen Pfad auf
         $up = array_fill(0, count($from) - $i, '..');
         $down = array_slice($to, $i);
-        
+
         $path = array_merge($up, $down);
-        
+
         return implode('/', $path);
     }
 
