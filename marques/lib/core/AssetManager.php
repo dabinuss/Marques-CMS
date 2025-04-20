@@ -188,7 +188,14 @@ class AssetManager
         
         // Volle URL erstellen, wenn nicht extern und keine absolute URL
         if (!$options['external'] && strpos($path, '://') === false && strpos($path, '//') !== 0) {
-            $path = rtrim($this->baseUrl, '/') . '/' . ltrim($path, '/');
+            // Normalisiere den Pfad, um doppelte Präfixe zu vermeiden
+            $baseUrl = rtrim($this->baseUrl, '/');
+            $path = '/' . ltrim($path, '/');
+            
+            // Prüfe, ob der Pfad bereits mit baseUrl beginnt
+            if (!empty($baseUrl) && strpos($path, $baseUrl) !== 0) {
+                $path = $baseUrl . $path;
+            }
         }
         
         $output = '';

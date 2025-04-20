@@ -32,9 +32,7 @@ if (isset($user) && is_array($user)) {
             <div class="nav-item">
                 <a href="{url:admin.dashboard}"
                     class="nav-link <?= (!isset($current_page) || $current_page === '' || $current_page === 'dashboard') ? 'active' : ''; ?>">
-                    <?php
-                    // $this->renderIcon('gauge', 'nav-menu-icon', '24'); 
-                    ?>
+                    <span class="icon"><i data-lucide="circuit-board"></i></span>
                     Dashboard
                 </a>
             </div>
