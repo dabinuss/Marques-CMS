@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="{var:admin_language}">
 <head>
+    {meta}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{var:page_title} - {var:site_name}</title>
-    
+    {/meta}
+    {render:meta}
+
     <!-- CSS mittels Asset-Tags einbinden -->
     {asset:css}/assets/css/marques-panel-style.css{/asset}
     {asset:js type:module}/admin/assets/js/lucide.min.js{/asset}

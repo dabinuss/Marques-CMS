@@ -305,16 +305,15 @@ class TokenParser
             // Inline-Assets speziell behandeln
             if (isset($options['inline']) && $options['inline'] === 'true') {
                 if ($type === 'js') {
-                    $this->blocks['inline_js'] = ($this->blocks['inline_js'] ?? '') . "\n" . $assetContent;
-                    // Renderten Cache invalidieren
+                    // Trennung nach module/non-module
+                    $key = isset($options['type']) && $options['type'] === 'module' ? 'inline_js_module' : 'inline_js';
+                    $this->blocks[$key] = ($this->blocks[$key] ?? '') . 
+                                         (isset($this->blocks[$key]) ? "\n\n" : "") . 
+                                         trim($assetContent);
+                    
+                    // Cache invalidieren
                     unset($this->renderedInlineAssets['js']);
-                    
-                    // Type:module für Inline-JS speichern
-                    if (isset($options['type']) && $options['type'] === 'module') {
-                        $this->blocks['inline_js_type'] = 'module';
-                    }
-                    
-                    if ($this->isDebugMode) error_log("🔍 Inline-JS hinzugefügt" . (isset($options['type']) ? " mit type:" . $options['type'] : ""));
+                    unset($this->renderedInlineAssets['js_module']);
                 } elseif ($type === 'css') {
                     $this->blocks['inline_css'] = ($this->blocks['inline_css'] ?? '') . "\n" . $assetContent;
                     // Renderten Cache invalidieren
@@ -334,6 +333,26 @@ class TokenParser
                         $options
                     );
                     if ($this->isDebugMode) error_log("🔍 JS hinzugefügt: $assetContent" . (isset($options['type']) ? " mit type:" . $options['type'] : ""));
+                }
+            }
+
+            if (isset($options['nonce'])) {
+                // Variablen im Nonce ersetzen, falls nötig
+                if (strpos($options['nonce'], '{var:') !== false) {
+                    $options['nonce'] = preg_replace_callback(
+                        self::PATTERN_VARIABLE,
+                        function($matches) {
+                            $varName = $matches[1];
+                            return $this->variables[$varName] ?? '';
+                        },
+                        $options['nonce']
+                    );
+                }
+                
+                // Nur für Inline-Assets
+                if (isset($options['inline']) && $options['inline'] === 'true') {
+                    $nonce_key = isset($options['type']) && $options['type'] === 'module' ? 'inline_js_module_nonce' : 'inline_js_nonce';
+                    $this->blocks[$nonce_key] = $options['nonce'];
                 }
             }
         }
@@ -517,6 +536,11 @@ class TokenParser
             function($matches) {
                 // Meta-Tags aus dem Content extrahieren
                 $metaContent = $matches[1];
+                
+                // Title-Tag extrahieren, falls vorhanden
+                if (preg_match('/<title[^>]*>(.*?)<\/title>/i', $metaContent, $titleMatch)) {
+                    $this->blocks['title'] = $titleMatch[1];
+                }
                 
                 // Parse die Meta-Tags mit einem regulären Ausdruck
                 preg_match_all('/<meta\s+(.*?)>/i', $metaContent, $metaMatches);
@@ -720,7 +744,7 @@ class TokenParser
     }
     
     /**
-     * Rendert Inline-JS und CSS mit Caching
+     * Rendert Inline-JS und CSS mit Caching und Variablen-Ersetzung
      *
      * @param string $content Template-Inhalt
      * @return string Verarbeiteter Inhalt
@@ -740,22 +764,89 @@ class TokenParser
             $content = preg_replace_callback(
                 self::PATTERN_RENDER_INLINE_JS,
                 function() {
-                    if (!isset($this->renderedInlineAssets['js']) && isset($this->blocks['inline_js'])) {
+                    // Cache prüfen
+                    if (isset($this->renderedInlineAssets['js'])) {
+                        return $this->renderedInlineAssets['js'];
+                    }
+                    
+                    $output = '';
+                    
+                    // Reguläres JavaScript
+                    if (isset($this->blocks['inline_js'])) {
+                        // Variablen im JS-Inhalt ersetzen
+                        $jsContent = $this->blocks['inline_js'];
+                        $jsContent = preg_replace_callback(
+                            self::PATTERN_VARIABLE,
+                            function($matches) {
+                                $varName = $matches[1];
+                                return htmlspecialchars_decode($this->variables[$varName] ?? '', ENT_QUOTES);
+                            },
+                            $jsContent
+                        );
+                        
+                        // Nonce-Attribut setzen
                         $attributes = '';
                         if (defined('CSP_NONCE')) {
                             $attributes .= ' nonce="' . CSP_NONCE . '"';
+                        } elseif (isset($this->blocks['inline_js_nonce'])) {
+                            $attributes .= ' nonce="' . htmlspecialchars($this->blocks['inline_js_nonce'], ENT_QUOTES) . '"';
                         }
                         
-                        // Prüfen auf type:module Option
-                        if (isset($this->blocks['inline_js_type']) && $this->blocks['inline_js_type'] === 'module') {
-                            $attributes .= ' type="module"';
-                        }
+                        // Debug-Info für Entwicklungsmodus
+                        $debugInfo = $this->isDebugMode ? "\n<!-- Begin Regular Inline JS -->\n" : "";
+                        $debugInfoEnd = $this->isDebugMode ? "\n<!-- End Regular Inline JS -->\n" : "";
                         
-                        $this->renderedInlineAssets['js'] = '<script' . $attributes . '>' . 
-                                                          $this->blocks['inline_js'] . 
-                                                          '</script>';
+                        // Entferne mögliche führende Klammern (Bugfix)
+                        $jsContent = ltrim($jsContent, "}\n\r\t ");
+                        
+                        $output .= $debugInfo . 
+                                '<script' . $attributes . '>' . 
+                                "\n" . $jsContent . "\n" .
+                                '</script>' . $debugInfoEnd;
                     }
-                    return $this->renderedInlineAssets['js'] ?? '';
+                    
+                    // Module JavaScript
+                    if (isset($this->blocks['inline_js_module'])) {
+                        // Variablen im JS-Modul-Inhalt ersetzen
+                        $jsModuleContent = $this->blocks['inline_js_module'];
+                        $jsModuleContent = preg_replace_callback(
+                            self::PATTERN_VARIABLE,
+                            function($matches) {
+                                $varName = $matches[1];
+                                return htmlspecialchars_decode($this->variables[$varName] ?? '', ENT_QUOTES);
+                            },
+                            $jsModuleContent
+                        );
+                        
+                        // Nonce-Attribut setzen
+                        $attributes = ' type="module"';
+                        if (defined('CSP_NONCE')) {
+                            $attributes .= ' nonce="' . CSP_NONCE . '"';
+                        } elseif (isset($this->blocks['inline_js_module_nonce'])) {
+                            $attributes .= ' nonce="' . htmlspecialchars($this->blocks['inline_js_module_nonce'], ENT_QUOTES) . '"';
+                        }
+                        
+                        // Debug-Info für Entwicklungsmodus
+                        $debugInfo = $this->isDebugMode ? "\n<!-- Begin Module Inline JS -->\n" : "";
+                        $debugInfoEnd = $this->isDebugMode ? "\n<!-- End Module Inline JS -->\n" : "";
+                        
+                        // Abstand zwischen regulärem JS und Modul-JS hinzufügen, wenn beide vorhanden sind
+                        if (!empty($output)) {
+                            $output .= "\n";
+                        }
+                        
+                        // Entferne mögliche führende Klammern (Bugfix)
+                        $jsModuleContent = ltrim($jsModuleContent, "}\n\r\t ");
+                        
+                        $output .= $debugInfo . 
+                                '<script' . $attributes . '>' . 
+                                "\n" . $jsModuleContent . "\n" .
+                                '</script>' . $debugInfoEnd;
+                    }
+                    
+                    // Ergebnis cachen
+                    $this->renderedInlineAssets['js'] = $output;
+                    return $output;
                 },
                 $content
             );
@@ -766,16 +857,47 @@ class TokenParser
             $content = preg_replace_callback(
                 self::PATTERN_RENDER_INLINE_CSS,
                 function() {
-                    if (!isset($this->renderedInlineAssets['css']) && isset($this->blocks['inline_css'])) {
+                    // Cache prüfen
+                    if (isset($this->renderedInlineAssets['css'])) {
+                        return $this->renderedInlineAssets['css'];
+                    }
+                    
+                    if (isset($this->blocks['inline_css'])) {
+                        // Variablen im CSS-Inhalt ersetzen
+                        $cssContent = $this->blocks['inline_css'];
+                        $cssContent = preg_replace_callback(
+                            self::PATTERN_VARIABLE,
+                            function($matches) {
+                                $varName = $matches[1];
+                                return htmlspecialchars_decode($this->variables[$varName] ?? '', ENT_QUOTES);
+                            },
+                            $cssContent
+                        );
+                        
+                        // Entferne mögliche führende Klammern (Bugfix)
+                        $cssContent = ltrim($cssContent, "}\n\r\t ");
+                        
+                        // Nonce-Attribut setzen
                         $attributes = '';
                         if (defined('CSP_NONCE')) {
                             $attributes .= ' nonce="' . CSP_NONCE . '"';
+                        } elseif (isset($this->blocks['inline_css_nonce'])) {
+                            $attributes .= ' nonce="' . htmlspecialchars($this->blocks['inline_css_nonce'], ENT_QUOTES) . '"';
                         }
-                        $this->renderedInlineAssets['css'] = '<style' . $attributes . '>' . 
-                                                           $this->blocks['inline_css'] . 
-                                                           '</style>';
+                        
+                        // Debug-Info für Entwicklungsmodus
+                        $debugInfo = $this->isDebugMode ? "\n<!-- Begin Inline CSS -->\n" : "";
+                        $debugInfoEnd = $this->isDebugMode ? "\n<!-- End Inline CSS -->\n" : "";
+                        
+                        $this->renderedInlineAssets['css'] = $debugInfo . 
+                                                        '<style' . $attributes . '>' . 
+                                                        "\n" . $cssContent . "\n" .
+                                                        '</style>' . $debugInfoEnd;
+                        
+                        return $this->renderedInlineAssets['css'];
                     }
-                    return $this->renderedInlineAssets['css'] ?? '';
+                    
+                    return '';
                 },
                 $content
             );
@@ -787,6 +909,21 @@ class TokenParser
     private function renderMeta(): string
     {
         $output = '';
+        
+        // Title-Tag hinzufügen, falls vorhanden
+        if (isset($this->blocks['title'])) {
+            $title = $this->blocks['title'];
+            // Variablen im Titel ersetzen
+            $title = preg_replace_callback(
+                self::PATTERN_VARIABLE,
+                function($matches) {
+                    $varName = $matches[1];
+                    return $this->variables[$varName] ?? '';
+                },
+                $title
+            );
+            $output .= '<title>' . htmlspecialchars($title, ENT_QUOTES) . '</title>' . PHP_EOL;
+        }
         
         // Zuerst die Meta-Tags ohne Schlüssel ausgeben
         foreach ($this->meta as $meta) {
