@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Marques\Core;
 
+use Marques\Core\Cache;
+use Marques\Core\AssetManager;
+
 /**
  * TokenParser - Zentrale Klasse für die Verwaltung von Template-Tokens
  */
@@ -29,18 +32,14 @@ class TokenParser
     private ?string $currentBlock = null;
     private ?string $templateDir = null;
     private $templateContext = null;
-    private AssetManager $assetManager;
+
+    private readonly AssetManager $assetManager;
+    private readonly Cache $cache;
     
-    // Cache für bereits verarbeitete Block-Templates
     private array $blockTemplateCache = [];
-    
-    // Cache für gerenderte Inline-Assets
     private array $renderedInlineAssets = [];
-    
-    // Debug-Modus Flag
     private bool $isDebugMode;
-    
-    // Cache für aufgelöste Router-Instanz
+
     private ?object $resolvedRouter = null;
     private bool $routerResolved = false;
     
@@ -49,9 +48,12 @@ class TokenParser
      * 
      * @param AssetManager|null $assetManager Asset-Manager-Instanz
      */
-    public function __construct(AssetManager $assetManager = null)
-    {
-        $this->assetManager = $assetManager ?? new AssetManager();
+    public function __construct(
+        Cache $cache,
+        AssetManager $assetManager = null,
+    ) {
+        $this->cache = $cache;
+        $this->assetManager = $assetManager;
         $this->isDebugMode = defined('MARQUES_DEBUG') && MARQUES_DEBUG;
     }
     

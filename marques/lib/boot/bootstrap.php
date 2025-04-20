@@ -217,13 +217,21 @@ $rootContainer->register(\Marques\Core\AssetManager::class, function(Node $conta
     $version = MARQUES_VERSION;
     $devMode = true; // TODO: Standardmäßig auf true setzen, kann später angepasst werden
     
-    return new \Marques\Core\AssetManager($baseUrl, $version, $devMode);
+    return new \Marques\Core\AssetManager(
+        $container->get(\Marques\Core\Cache::class), 
+        $baseUrl, 
+        $version, 
+        $devMode, 
+        $container->get(\Marques\Filesystem\PathRegistry::class));
 });
 
 $rootContainer->register(\Marques\Core\TokenParser::class, function(Node $container) {
-    return new \Marques\Core\TokenParser(
-        $container->get(\Marques\Core\AssetManager::class)
-    );
+    // Hole die benötigten Abhängigkeiten (Cache und AssetManager) aus dem Container
+    $cache = $container->get(\Marques\Core\Cache::class);
+    $assetManager = $container->get(\Marques\Core\AssetManager::class);
+
+    // Erstelle TokenParser mit den Abhängigkeiten
+    return new \Marques\Core\TokenParser($cache, $assetManager);
 });
 
 $rootContainer->register(\Marques\Core\Template::class, function(Node $container) {
